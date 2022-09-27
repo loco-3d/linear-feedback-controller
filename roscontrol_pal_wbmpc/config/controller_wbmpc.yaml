@@ -1,5 +1,5 @@
-memmo_subscriber_controller_sanding_lpf:
-  type: memmo::SubscriberControllerSandingLPF
+controller_wbmpc:
+  type: loco3d::controller_wbmpc
   dt: 0.0005
   interpolate: false
   controller_dt: 0.0005
@@ -18,4 +18,4 @@ memmo_subscriber_controller_sanding_lpf:
     robot_model_chains: [gripper_left_base_link, gripper_right_base_link, left_sole_link, right_sole_link, rgbd_rgb_frame, imu_link]
 
   contact_estimator: ""
-  config_file_name: 'memmo_publisher_sanding_lpf_vertical.yaml' #'memmo_publisher_sanding_lpf_horizontal.yaml'
+  # config_file_name: 'controller_wbmpc.yaml'
