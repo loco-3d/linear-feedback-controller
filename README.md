@@ -3,12 +3,12 @@
 ROS interface for the Whole Body Model Predictive Controller
 
 contents of the packages:
-- ros_server_wbmpc_server (optional)
+- ros-wbmpc-robot-interface (optional)
     - eigen interface to ros_server_wbmpc_msgs
     - easier usage of TF (mocap)
     - logger (PAL?)
     - a place to put the crocoddyl code, object usage or inheritance.
-- ros_server_wbmpc_client (optional)
+- ros-wbmpc-robot (optional)
     - math to parsing the ros msgs from the server and convert the Ricatti gains into torques ref.
 - ros_server_wbmpc_msgs (very practical in terms of ros infrastructure)
     - input msg

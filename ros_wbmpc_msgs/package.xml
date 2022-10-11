@@ -1,0 +1,32 @@
+<package format="2">
+  <name>ros_wbmpc_msgs</name>
+  <version>0.0.0</version>
+  <description>
+    ros-wbmpc server/client messages and services.
+  </description>
+  <maintainer email="guilhem.saurel@laas.fr">Guilhem Saurel</maintainer>
+  <author>Maximilien Naveau</author>
+
+  <license>BSD</license>
+  <url>https://github.com/loco-3d/ros-wbmpc</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_depend>roscpp</build_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <test_depend>rospy</test_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+</package>

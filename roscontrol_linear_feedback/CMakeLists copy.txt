@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(PROJECT_NAMESPACE loco-3d)
 set(PROJECT_NAME roscontrol_pal_wbmpc)
-set(PROJECT_DESCRIPTION "WBMPC Controller using Crocoddyl")
+set(PROJECT_DESCRIPTION "roscontrol controller using Crocoddyl")
 set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
 set(CXX_DISABLE_WERROR False)
 set(CMAKE_VERBOSE_MAKEFILE True)
