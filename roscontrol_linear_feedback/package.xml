@@ -1,0 +1,26 @@
+<package format="2">
+  <name>roscontrol_linear_feedback</name>
+  <version>0.0.0</version>
+  <description>
+    roscontrol controller package conputing a linear feedback. The user needs
+    to provide a model of the robot and a list of controlled joint and the
+    controller computes a linear feedback on the user defined state.
+  </description>
+  <maintainer email="guilhem.saurel@laas.fr">Guilhem Saurel</maintainer>
+  <author>Maximilien Naveau</author>
+
+  <license>BSD</license>
+  <url>https://github.com/loco-3d/ros-wbmpc</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <depend>roscpp</depend>
+  <depend>pinocchio</depend>
+  <depend>realtime_tools</depend>
+  <depend>ros_wbmpc_msgs</depend>
+  <depend>pal_base_ros_controller</depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+</package>

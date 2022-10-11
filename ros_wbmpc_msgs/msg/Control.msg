@@ -21,9 +21,10 @@
 ##########
 
 Header header
-string[] name
 
 # Control data
 ##############
-std_msgs/Float64MultiArray riccati # better naming?
-std_msgs/Float64MultiArray dKp0 # better naming?
+
+Sensor initial_state
+std_msgs/Float64MultiArray feedback_gain
+std_msgs/Float64MultiArray feedforward

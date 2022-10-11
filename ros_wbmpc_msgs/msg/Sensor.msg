@@ -26,18 +26,13 @@ string[] name
 # Sensory data:
 ###############
 
-# todo check for standard messages that do all that
-
 # free flyer state.
-float64[] base_position
-float64[] base_orientation
-float64[] base_velocity_linear
-float64[] base_velocity_angular
+nav_msgs/Odometry base_state
 # joint state.
-float64[] joint_position
-float64[] joint_velocity
-float64[] joint_acceleration # from where?
-float64[] joint_effort
-float64[] joint_effort_interpolated
-# Locomotion state.
-ContactSensor[] contacts
+sensor_msgs/JointState joint_state
+
+# float64[] joint_acceleration # from where?
+# float64[] joint_effort
+# float64[] joint_effort_interpolated
+# locomotion state.
+# Contact[] contacts
