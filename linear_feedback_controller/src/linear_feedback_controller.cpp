@@ -9,24 +9,35 @@
 
 #include <algorithm>
 #include <pinocchio/parsers/urdf.hpp>
-#include <ros_wbmpc_msgs/Contact.h>
-#include "ros-wbmpc/wbmpc.hpp"
+#include <pinocchio/parsers/srdf.hpp>
+#include <pinocchio/algorithm/model.hpp>
+// #include <ros_wbmpc_msgs/Contact.h>
+#include "linear_feedback_controller/linear_feedback_controller.hpp"
 
-namespace ros_wbmpc {
+namespace linear_feedback_controller {
 
-RosWBMPC::RosWBMPC() {}
-RosWBMPC::~RosWBMPC() {}
-
-void RosWBMPC::initialize(const ros::NodeHandle& node_handle) {
+bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   // First get access to the node handle.
   node_handle_ = node_handle;
 
-  // Get the parameters of the node.
-  assert(node_handle_.hasParam("robot_description"));
-  assert(node_handle_.hasParam("robot_description_semantic"));
-  assert(node_handle_.hasParam("controlled_joint_names"));
-  assert(node_handle_.hasParam("robot_has_free_flyer"));
-
+  // Get the parameters of the node return false in case of failure.
+  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
+  if (!node_handle_.hasParam("robot_description")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_description");
+    return false;
+  }
+  if (!node_handle_.hasParam("robot_description_semantic")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_description_semantic");
+    return false;
+  }
+  if (!node_handle_.hasParam("controlled_joint_names")) {
+    ROS_INFO_STREAM("Missing ROS arg: controlled_joint_names");
+    return false;
+  }
+  if (!node_handle_.hasParam("robot_has_free_flyer")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_has_free_flyer");
+    return false;
+  }
   node_handle_.getParam("robot_description", in_urdf_);
   node_handle_.getParam("robot_description_semantic", in_srdf_);
   node_handle_.getParam("controlled_joint_names", in_controlled_joint_names_);
@@ -38,21 +49,33 @@ void RosWBMPC::initialize(const ros::NodeHandle& node_handle) {
   } else {
     pinocchio::urdf::buildModelFromXML(in_urdf_, pinocchio_model_complete_);
   }
+  std::istringstream srdf(in_srdf_);
+  pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete_, srdf, false);
 
   // Reduce model and set initial position.
-  q_default_complete_ = pin_model_complete.referenceConfigurations["half_sitting"];
+  parse_controlled_joint_names(in_controlled_joint_names_, controlled_joint_names_, controlled_joint_ids_,
+                               locked_joint_ids_);
+  q_default_complete_ = pinocchio_model_complete_.referenceConfigurations["half_sitting"];
   pinocchio_model_reduced_ =
-      pinocchio::buildReducedModel(pinocchio_model_complete_, locked_joint_ids_, q_default_complete);
+      pinocchio::buildReducedModel(pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
 
   // Prepare the publisher for the actual state of the robot.
-  ros::TransportHints hints;
-  hints.tcpNoDelay(true);
-  state_publisher_ = realtime_tools::RealtimePublisher<sensor_msgs::JointState>(node_handle_, "sensor_state", 1)
+  // ros::TransportHints hints;
+  // hints.tcpNoDelay(true);
+  // state_publisher_ = realtime_tools::RealtimePublisher<sensor_msgs::JointState>(node_handle_, "sensor_state", 1);
+  return true;
 }
 
-void RosWBMPC::parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
-                                            std::vector<std::string>& controlled_joint_names,
-                                            std::vector<std::string>& controlled_joint_ids) {
+void LinearFeedbackController::updateExtras(const ros::Time& time, const ros::Duration& period) {}
+
+void LinearFeedbackController::startingExtras(const ros::Time& time) {}
+
+void LinearFeedbackController::stoppingExtra(const ros::Time& time) {}
+
+void LinearFeedbackController::parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
+                                                            std::vector<std::string>& controlled_joint_names,
+                                                            std::vector<long unsigned int>& controlled_joint_ids,
+                                                            std::vector<long unsigned int>& locked_joint_ids) {
   // Get controlled joints ids
   ROS_INFO_STREAM("Map the given controlled joints names with their urdf ids");
   controlled_joint_ids.clear();
@@ -72,7 +95,7 @@ void RosWBMPC::parse_controlled_joint_names(const std::vector<std::string>& in_c
   // Sort them to the pinocchio order (increasing number) and remove duplicates.
   std::sort(controlled_joint_ids.begin(), controlled_joint_ids.end());
   controlled_joint_ids.erase(unique(controlled_joint_ids.begin(), controlled_joint_ids.end()),
-                              controlled_joint_ids.end());
+                             controlled_joint_ids.end());
 
   // Remap the controlled joint names to the Pinocchio oder.
   controlled_joint_names.clear();
@@ -81,13 +104,13 @@ void RosWBMPC::parse_controlled_joint_names(const std::vector<std::string>& in_c
   }
 
   // Locked joint ids in the Pinocchio order.
-  locked_joints_ids_.clear();
+  locked_joint_ids.clear();
   for (std::vector<std::string>::const_iterator it = pinocchio_model_complete_.names.begin() + 1;
        it != pinocchio_model_complete_.names.end(); ++it) {
     const std::string& joint_name = *it;
     if (std::find(controlled_joint_names.begin(), controlled_joint_names.end(), joint_name) ==
         controlled_joint_names.end()) {
-      locked_joints_ids_.push_back(pinocchio_model_complete_.getJointId(joint_name));
+      locked_joint_ids.push_back(pinocchio_model_complete_.getJointId(joint_name));
     }
   }
 }
@@ -317,4 +340,4 @@ void RosWBMPC::parse_controlled_joint_names(const std::vector<std::string>& in_c
 // }
 
 // clang-format on
-}  // namespace ros_wbmpc
+}  // namespace linear_feedback_controller
