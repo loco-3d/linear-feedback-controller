@@ -16,8 +16,12 @@
 #include <ros/ros.h>
 
 // ROS Messages.
-#include <ros_wbmpc_msgs/Sensor.h>
-#include <ros_wbmpc_msgs/Control.h>
+// #include <ros_wbmpc_msgs/Sensor.h>
+// #include <ros_wbmpc_msgs/Control.h>
+
+// PAL roscontrol controller containing their estimator.
+#include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
+
 
 // #include <boost/algorithm/string.hpp>
 // #include <algorithm>
@@ -28,14 +32,14 @@
 // #include <tf2_msgs/TFMessage.h>
 // #include <pinocchio/algorithm/model.hpp>
 
-// #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
+// 
 // #include <realtime_tools/realtime_publisher.h>
 // #include <sensor_msgs/JointState.h>
 // #include <memmo_trajectory_controller/JointStateLPF.h>
 // #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 // #include <nav_msgs/Odometry.h>
 
-namespace ros_wbmpc {
+namespace linear_feedback_controller {
 
 /**
  * @brief This class has for purpose to connect Whole Body Model Predictive
@@ -96,9 +100,10 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    */
   void stoppingExtra(const ros::Time& time) override;
 
-  void parse_controlled_joint_names(const std::vector<std::string>& controlled_joint_names,
+  void parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
                                     std::vector<std::string>& controlled_joint_names,
-                                    std::vector<std::string>& controlled_joint_ids);
+                                    std::vector<long unsigned int>& controlled_joint_ids,
+                                    std::vector<long unsigned int>& locked_joint_ids);
 
  public:  // Setters and getters
   /**
@@ -120,7 +125,7 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<long unsigned int>& get_locked_joint_ids() { return locked_joints_ids_; }
+  const std::vector<long unsigned int>& get_locked_joint_ids() { return locked_joint_ids_; }
 
  private:  // Members
   // Settings:
@@ -145,16 +150,16 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
   /// @brief Sort the controlled joint names using the urdf order.
   std::vector<std::string> controlled_joint_names_;
   /// @brief Sort the locked (position controlled) joint names using the urdf order.
-  std::vector<pinocchio::JointIndex> locked_joints_ids_;
+  std::vector<pinocchio::JointIndex> locked_joint_ids_;
 
   /// @brief Initial whole body configuration setup in the SRDF file.
   Eigen::VectorXd q_default_complete_;
 
   /// @brief Actual robot state publisher.
-  realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> state_publisher_;
+  // realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> state_publisher_;
 };
 
-}  // namespace ros_wbmpc
+}  // namespace linear_feedback_controller
 
 #endif  // ROS_WBMPC_WBMPC_HPP
 

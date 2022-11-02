@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 # Project properties
 #
 set(PROJECT_NAMESPACE loco-3d)
-set(PROJECT_NAME roscontrol_linear_feedback)
+set(PROJECT_NAME linear_feedback_controller)
 set(PROJECT_DESCRIPTION "Network(ROS) interface to Whole Body MPC controllers.")
 set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
 
@@ -13,6 +13,9 @@ set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
 #
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 option(CXX_DISABLE_WERROR "If on, all warnings will be treated as errors" OFF)
+set(CMAKE_CXX_STANDARD
+    11
+    CACHE STRING "Version of C++ to be used")
 
 #
 # Project configuration
@@ -73,19 +76,31 @@ find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools ros_wbmpc_msgs
                                         pal_base_ros_controller)
 
 #
+# Export as catkin package (For ROS1 compatibility...).
+#
+# cmake-format: off
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS roscpp realtime_tools ros_wbmpc_msgs
+  DEPENDS pinocchio)
+# cmake-format: on
+
+#
 # Main Library
 #
-set(${PROJECT_NAME}_HEADERS # include/${PROJECT_NAME}/wbmpc.hpp #
-)
-set(${PROJECT_NAME}_SOURCES src/linear_feedback.cpp #
+set(${PROJECT_NAME}_HEADERS
+    include/${PROJECT_NAME}/linear_feedback_controller.hpp)
+set(${PROJECT_NAME}_SOURCES src/linear_feedback_controller.cpp #
                             # src/model-utils.cpp
 )
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES}
                                    ${${PROJECT_NAME}_HEADERS})
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${catkin_INCLUDE_DIRS})
 target_include_directories(
-  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include> ${catkin_INCLUDE_DIRS}
+  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp pinocchio::pinocchio
+target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio
                                              ${catkin_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX
                                                  INSTALL_RPATH "\$ORIGIN")
@@ -94,24 +109,17 @@ if(SUFFIX_SO_VERSION)
 endif()
 
 #
-# Export as catkin package (For ROS1 compatibility...).
-#
-# cmake-format: off
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp ros_wbmpc_msgs
-  DEPENDS pinocchio)
-# cmake-format: on
-
-#
 # Unit tests
 #
 if(BUILD_TESTING)
-  add_rostest_gtest(test_wbmpc_basic tests/test_wbmpc_basic.launch
-                    tests/test_wbmpc_basic.cpp tests/ros_gtest_main.cpp)
-  target_link_libraries(test_wbmpc_basic gtest ${PROJECT_NAME}
-                        example-robot-data::example-robot-data)
+  add_executable(
+    test_linear_feedback_controller_basic
+    tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
+  target_link_libraries(test_linear_feedback_controller_basic gtest
+                        ${PROJECT_NAME} example-robot-data::example-robot-data)
+
+  add_rostest(tests/test_linear_feedback_controller_basic.test)
+
 endif()
 
 #
