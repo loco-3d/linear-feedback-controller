@@ -59,7 +59,10 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenSensorConversion) {
   lfc_msgs::Eigen::Sensor etest;
 
   e.base_pose.translation() = Eigen::Vector3d::Random();
-  e.base_pose.linear() = Eigen::Matrix3d::Random();
+  Eigen::Quaterniond q;
+  q.coeffs() = Eigen::Vector4d::Random();
+  q.normalize();
+  e.base_pose.linear() = q.matrix();
   e.base_twist = Eigen::Matrix<double, 6, 1>::Random();
   e.joint_state.name = {"1", "2", "3", "4", "5", "6"};
   e.joint_state.position = Eigen::VectorXd::Random(e.joint_state.name.size());
@@ -70,10 +73,42 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenSensorConversion) {
   lfc_msgs::sensorMsgToEigen(m, etest);
 
   ASSERT_EQ(e.base_pose.translation(), etest.base_pose.translation());
-  ASSERT_EQ(e.base_pose.linear(), etest.base_pose.linear());
+  ASSERT_TRUE(e.base_pose.linear().isApprox(etest.base_pose.linear()));
   ASSERT_EQ(e.base_twist, etest.base_twist);
   ASSERT_EQ(e.joint_state.name, etest.joint_state.name);
   ASSERT_EQ(e.joint_state.position, etest.joint_state.position);
   ASSERT_EQ(e.joint_state.velocity, etest.joint_state.velocity);
   ASSERT_EQ(e.joint_state.effort, etest.joint_state.effort);
+}
+
+TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenControlConversion) {
+  lfc_msgs::Eigen::Control e;
+  lfc_msgs::Control m;
+  lfc_msgs::Eigen::Control etest;
+
+  e.initial_state.base_pose.translation() = Eigen::Vector3d::Random();
+  Eigen::Quaterniond q;
+  q.coeffs() = Eigen::Vector4d::Random();
+  q.normalize();
+  e.initial_state.base_pose.linear() = q.matrix();
+  e.initial_state.base_twist = Eigen::Matrix<double, 6, 1>::Random();
+  e.initial_state.joint_state.name = {"1", "2", "3", "4", "5", "6"};
+  e.initial_state.joint_state.position = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.initial_state.joint_state.velocity = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.initial_state.joint_state.effort = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.feedback_gain = Eigen::MatrixXd::Random(8, 4);
+  e.feedforward = Eigen::VectorXd::Random(8);
+
+  lfc_msgs::controlEigenToMsg(e, m);
+  lfc_msgs::controlMsgToEigen(m, etest);
+
+  ASSERT_EQ(e.initial_state.base_pose.translation(), etest.initial_state.base_pose.translation());
+  ASSERT_TRUE(e.initial_state.base_pose.linear().isApprox(etest.initial_state.base_pose.linear()));
+  ASSERT_EQ(e.initial_state.base_twist, etest.initial_state.base_twist);
+  ASSERT_EQ(e.initial_state.joint_state.name, etest.initial_state.joint_state.name);
+  ASSERT_EQ(e.initial_state.joint_state.position, etest.initial_state.joint_state.position);
+  ASSERT_EQ(e.initial_state.joint_state.velocity, etest.initial_state.joint_state.velocity);
+  ASSERT_EQ(e.initial_state.joint_state.effort, etest.initial_state.joint_state.effort);
+  ASSERT_EQ(e.feedback_gain, etest.feedback_gain);
+  ASSERT_EQ(e.feedforward, etest.feedforward);
 }

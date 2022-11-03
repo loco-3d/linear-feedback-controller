@@ -66,7 +66,7 @@ inline void jointStateMsgToEigen(const sensor_msgs::JointState& m,
   e.effort = ::Eigen::Map<const ::Eigen::VectorXd>(m.effort.data(), m.effort.size());
 }
 
-inline void sensorMsgToEigen(const Sensor& m, linear_feedback_controller_msgs::Eigen::Sensor e) {
+inline void sensorMsgToEigen(const Sensor& m, linear_feedback_controller_msgs::Eigen::Sensor& e) {
   tf::poseMsgToEigen(m.base_pose, e.base_pose);
   tf::twistMsgToEigen(m.base_twist, e.base_twist);
   jointStateMsgToEigen(m.joint_state, e.joint_state);

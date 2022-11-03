@@ -72,7 +72,11 @@ generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
 
 # Main lib.
 add_library(${PROJECT_NAME} INTERFACE)
-target_link_libraries(${PROJECT_NAME} INTERFACE Eigen3::Eigen)
+target_link_libraries(
+  ${PROJECT_NAME}
+  INTERFACE Eigen3::Eigen ${std_msgs_LIBRARIES} ${sensor_msgs_LIBRARIES}
+            ${eigen_conversions_LIBRARIES} ${geometry_msgs_LIBRARIES}
+            ${message_generation_LIBRARIES})
 target_include_directories(
   ${PROJECT_NAME} SYSTEM
   INTERFACE ${std_msgs_INCLUDE_DIRS} ${sensor_msgs_INCLUDE_DIRS}
