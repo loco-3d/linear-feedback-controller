@@ -86,10 +86,7 @@ generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
 message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
 
 # Main lib.
-set(${PROJECT_NAME}_HEADERS include/${PROJECT_NAME}/eigen_conversions.hpp)
-set(${PROJECT_NAME}_SOURCES "")
-add_library(${PROJECT_NAME} INTERFACE ${${PROJECT_NAME}_SOURCES}
-            ${${PROJECT_NAME}_HEADERS})
+add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(
   ${PROJECT_NAME}
   INTERFACE Eigen3::Eigen ${std_msgs_LIBRAIRIES} ${sensor_msgs_LIBRAIRIES}
