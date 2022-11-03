@@ -21,8 +21,8 @@
 #include <realtime_tools/realtime_publisher.h>
 
 // ROS Messages.
-#include <ros_wbmpc_msgs/Sensor.h>
-#include <ros_wbmpc_msgs/Control.h>
+#include <linear_feedback_controller_msgs/Sensor.h>
+#include <linear_feedback_controller_msgs/Control.h>
 
 // PAL roscontrol controller containing their estimator.
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
@@ -110,7 +110,7 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
                                     std::vector<long unsigned int>& controlled_joint_ids,
                                     std::vector<long unsigned int>& locked_joint_ids);
 
-  void control_subscriber_callback(const ros_wbmpc_msgs::Control& msg);
+  void control_subscriber_callback(const linear_feedback_controller_msgs::Control& msg);
 
  public:  // Setters and getters
   /**
@@ -163,17 +163,17 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
   Eigen::VectorXd q_default_complete_;
 
   /// @brief Actual robot state publisher.
-  std::shared_ptr<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> > sensor_publisher_;
+  std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
 
   /// @brief  ROS sensor message data.
-  ros_wbmpc_msgs::Sensor ros_sensor_msg_;
-  ros_wbmpc_msgs::Eigen::Sensor sensor_msg_;
+  linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
+  linear_feedback_controller_msgs::Eigen::Sensor sensor_msg_;
 
   /// @brief Actual robot state publisher.
   ros::Subscriber control_subscriber_;
 
   /// @brief  ROS sensor message data.
-  ros_wbmpc_msgs::Eigen::Control control_msg_;
+  linear_feedback_controller_msgs::Eigen::Control control_msg_;
 
   
 };
@@ -208,7 +208,7 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
 // double p_leg_gain_;
 // double d_leg_gain_;
 
-// boost::shared_ptr<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::JointState>> joint_states_pub_;
+// boost::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::JointState>> joint_states_pub_;
 // boost::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry>> base_state_pub_;
 // sensor_msgs::JointState actual_js_state_;
 // nav_msgs::Odometry actual_base_state_;

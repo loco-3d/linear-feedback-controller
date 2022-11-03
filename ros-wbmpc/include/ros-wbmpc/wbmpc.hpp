@@ -16,8 +16,8 @@
 #include <ros/ros.h>
 
 // ROS Messages.
-#include <ros_wbmpc_msgs/Sensor.h>
-#include <ros_wbmpc_msgs/Control.h>
+#include <linear_feedback_controller_msgs/Sensor.h>
+#include <linear_feedback_controller_msgs/Control.h>
 
 // #include <boost/algorithm/string.hpp>
 // #include <algorithm>
@@ -119,7 +119,7 @@ class RosWBMPC {
   Eigen::VectorXd q_default_complete_;
 
   /// @brief Actual robot state publisher.
-  realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> state_publisher_; 
+  realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> state_publisher_; 
   
   // ros::Subscriber state_sub_;
 
@@ -152,7 +152,7 @@ class RosWBMPC {
   // double p_leg_gain_;
   // double d_leg_gain_;
 
-  // boost::shared_ptr<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::JointState>> joint_states_pub_;
+  // boost::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::JointState>> joint_states_pub_;
   // boost::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry>> base_state_pub_;
   // sensor_msgs::JointState actual_js_state_;
   // nav_msgs::Odometry actual_base_state_;

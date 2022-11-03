@@ -17,7 +17,7 @@
   <depend>roscpp</depend>
   <depend>pinocchio</depend>
   <depend>realtime_tools</depend>
-  <depend>ros_wbmpc_msgs</depend>
+  <depend>linear_feedback_controller_msgs</depend>
   <depend>pal_base_ros_controller</depend>
 
   <test_depend>rostest</test_depend>
