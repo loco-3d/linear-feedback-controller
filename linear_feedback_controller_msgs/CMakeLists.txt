@@ -75,6 +75,7 @@ add_project_dependency(std_msgs REQUIRED)
 add_project_dependency(sensor_msgs REQUIRED)
 add_project_dependency(geometry_msgs REQUIRED)
 add_project_dependency(message_generation REQUIRED)
+add_project_dependency(eigen_conversions REQUIRED)
 
 message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
 
@@ -95,13 +96,13 @@ target_link_libraries(
             ${geometry_msgs_LIBRAIRIES} ${message_generation_LIBRAIRIES})
 target_include_directories(
   ${PROJECT_NAME} SYSTEM
-  INTERFACE ${std_msgs_INCLUDE_DIRS} ${sensor_msgs_INCLUDE_DIRS}
+  INTERFACE ${std_msgs_INCLUDE_DIRS} ${sensor_msgs_INCLUDE_DIRS} ${eigen_conversions_INCLUDE_DIRS}
             ${geometry_msgs_INCLUDE_DIRS} ${message_generation_INCLUDE_DIRS})
 target_include_directories(
   ${PROJECT_NAME}
   INTERFACE
     $<INSTALL_INTERFACE:include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include:${CMAKE_PREFIX_PATH}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
