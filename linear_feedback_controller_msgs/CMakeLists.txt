@@ -13,10 +13,6 @@ message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
 # Project options
 #
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
-option(CXX_DISABLE_WERROR "If on, all warnings will be treated as errors" OFF)
-set(CMAKE_CXX_STANDARD
-    11
-    CACHE STRING "Version of C++ to be used")
 
 #
 # Project configuration
