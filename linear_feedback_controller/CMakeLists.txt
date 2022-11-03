@@ -12,10 +12,6 @@ set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
 # Project options
 #
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
-option(CXX_DISABLE_WERROR "If on, all warnings will be treated as errors" OFF)
-set(CMAKE_CXX_STANDARD
-    11
-    CACHE STRING "Version of C++ to be used")
 
 #
 # Project configuration
