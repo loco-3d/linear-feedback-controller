@@ -69,6 +69,7 @@ if(BUILD_TESTING)
   include("${JRL_CMAKE_MODULES}/test.cmake")
   include("${JRL_CMAKE_MODULES}/gtest.cmake")
   add_gtest_suite("main")
+  add_unit_test(test_eigen_conversions tests/test_eigen_conversions.cpp)
 endif()
 add_project_dependency(Eigen3 REQUIRED)
 add_project_dependency(std_msgs REQUIRED)
@@ -87,10 +88,7 @@ message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
 
 # Main lib.
 add_library(${PROJECT_NAME} INTERFACE)
-target_link_libraries(
-  ${PROJECT_NAME}
-  INTERFACE Eigen3::Eigen ${std_msgs_LIBRAIRIES} ${sensor_msgs_LIBRAIRIES}
-            ${geometry_msgs_LIBRAIRIES} ${message_generation_LIBRAIRIES})
+target_link_libraries( ${PROJECT_NAME} INTERFACE Eigen3::Eigen)
 target_include_directories(
   ${PROJECT_NAME} SYSTEM
   INTERFACE ${std_msgs_INCLUDE_DIRS} ${sensor_msgs_INCLUDE_DIRS} ${eigen_conversions_INCLUDE_DIRS}
@@ -105,36 +103,6 @@ target_include_directories(
 message(WARNING "RUNTIME_OUTPUT_DIRECTORY = ${RUNTIME_OUTPUT_DIRECTORY}")
 
 if(BUILD_TESTING)
-  # .rst: .. command:: ADD_UNIT_TEST (NAME SOURCE [SOURCE ...])
-  #
-  # The behaviour of this function depends on :variable:`BUILD_TESTING` option.
-  # We need this as the jrl-cmakemodules default behavior is depending on the
-  # RUNTIME_OUTPUT_DIRECTORY which is oddly missing for this package...
-  #
-  macro(ADD_UNIT_TEST_CUSTOM NAME)
-    create_ctest_build_tests_target()
-    if(NOT BUILD_TESTING)
-      add_executable(${NAME} EXCLUDE_FROM_ALL ${ARGN})
-    else()
-      add_executable(${NAME} ${ARGN})
-    endif()
-    add_dependencies(build_tests ${NAME})
-    # Here we are NOT using the RUNTIME_OUTPUT_DIRECTORY variable.
-    add_test(NAME ${NAME} COMMAND ${NAME})
-    if(APPLE)
-      set_tests_properties(
-        ${NAME}
-        PROPERTIES
-          ENVIRONMENT
-          "LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH};DYLD_LIBRARY_PATH=$ENV{DYLD_LIBRARY_PATH}"
-      )
-    endif()
-    if(NOT BUILD_TESTING)
-      set_tests_properties(${NAME} PROPERTIES DEPENDS ctest_build_tests)
-    endif()
-  endmacro()
-
-  add_unit_test_custom(test_eigen_conversions tests/test_eigen_conversions.cpp)
   target_link_libraries(test_eigen_conversions gtest gtest_main ${PROJECT_NAME})
 endif()
 
