@@ -25,6 +25,12 @@ Header header
 # Control data
 ##############
 
-Sensor initial_state
+# Linear feedback gain matrix.
 std_msgs/Float64MultiArray feedback_gain
+# Vector of the feedforward. 
 std_msgs/Float64MultiArray feedforward
+
+# Initial state
+###############
+
+Sensor initial_state

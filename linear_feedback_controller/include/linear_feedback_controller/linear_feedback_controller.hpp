@@ -9,19 +9,23 @@
 #ifndef ROS_WBMPC_WBMPC_HPP
 #define ROS_WBMPC_WBMPC_HPP
 
+// Standard C++
+#include <memory>
+
+// Rigid body dynamics
 #include <pinocchio/fwd.hpp>
 #include <pinocchio/multibody/model.hpp>
 
 // ROS C++ api
 #include <ros/ros.h>
+#include <realtime_tools/realtime_publisher.h>
 
 // ROS Messages.
-// #include <ros_wbmpc_msgs/Sensor.h>
-// #include <ros_wbmpc_msgs/Control.h>
+#include <ros_wbmpc_msgs/Sensor.h>
+#include <ros_wbmpc_msgs/Control.h>
 
 // PAL roscontrol controller containing their estimator.
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
-
 
 // #include <boost/algorithm/string.hpp>
 // #include <algorithm>
@@ -32,7 +36,7 @@
 // #include <tf2_msgs/TFMessage.h>
 // #include <pinocchio/algorithm/model.hpp>
 
-// 
+//
 // #include <realtime_tools/realtime_publisher.h>
 // #include <sensor_msgs/JointState.h>
 // #include <memmo_trajectory_controller/JointStateLPF.h>
@@ -100,10 +104,13 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    */
   void stoppingExtra(const ros::Time& time) override;
 
+ private:  // Private methods.
   void parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
                                     std::vector<std::string>& controlled_joint_names,
                                     std::vector<long unsigned int>& controlled_joint_ids,
                                     std::vector<long unsigned int>& locked_joint_ids);
+
+  void control_subscriber_callback(const ros_wbmpc_msgs::Control& msg);
 
  public:  // Setters and getters
   /**
@@ -156,16 +163,25 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
   Eigen::VectorXd q_default_complete_;
 
   /// @brief Actual robot state publisher.
-  // realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> state_publisher_;
+  std::shared_ptr<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> > sensor_publisher_;
+
+  /// @brief  ROS sensor message data.
+  ros_wbmpc_msgs::Sensor ros_sensor_msg_;
+  ros_wbmpc_msgs::Eigen::Sensor sensor_msg_;
+
+  /// @brief Actual robot state publisher.
+  ros::Subscriber control_subscriber_;
+
+  /// @brief  ROS sensor message data.
+  ros_wbmpc_msgs::Eigen::Control control_msg_;
+
+  
 };
 
 }  // namespace linear_feedback_controller
 
 #endif  // ROS_WBMPC_WBMPC_HPP
-
-// ros::Subscriber state_sub_;
 // std::timed_mutex mutex_;
-// pinocchio::Model pin_model_;
 // std::vector<std::string> controlled_joint_names_;
 // std::map<std::string, int> actual_state_map_;
 // Eigen::VectorXd desired_effort_;

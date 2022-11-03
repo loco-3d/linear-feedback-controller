@@ -20,9 +20,9 @@
   <exec_depend>rospy</exec_depend>
   
   <depend>std_msgs</depend>
-  <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>eigen_conversions</depend>
 
   <test_depend>rospy</test_depend>
 
