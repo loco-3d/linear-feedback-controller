@@ -11,7 +11,9 @@
 #include <pinocchio/parsers/urdf.hpp>
 #include <pinocchio/parsers/srdf.hpp>
 #include <pinocchio/algorithm/model.hpp>
-// #include <ros_wbmpc_msgs/Contact.h>
+
+#include <ros_wbmpc_msgs/eigen_conversions.h>
+
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 namespace linear_feedback_controller {
@@ -59,10 +61,16 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   pinocchio_model_reduced_ =
       pinocchio::buildReducedModel(pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
 
-  // Prepare the publisher for the actual state of the robot.
-  // ros::TransportHints hints;
-  // hints.tcpNoDelay(true);
-  // state_publisher_ = realtime_tools::RealtimePublisher<sensor_msgs::JointState>(node_handle_, "sensor_state", 1);
+  // Prepare the publisher and subscriber exchanging the control and state.
+  sensor_publisher_ =
+      std::make_shared<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> >(node_handle_, "sensor_state", 1);
+  ros::TransportHints hints;
+  hints.tcpNoDelay(true);
+  control_subscriber_ = node_handle_.subscribe("desired_control", 1,
+                                               &LinearFeedbackController::control_subscriber_callback, this, hints);
+
+  
+
   return true;
 }
 
@@ -115,19 +123,14 @@ void LinearFeedbackController::parse_controlled_joint_names(const std::vector<st
   }
 }
 
+void LinearFeedbackController::control_subscriber_callback(const ros_wbmpc_msgs::Control& msg) {
+  
+}
+
 // clang-format off
 
 // bool SubscriberControllerSandingLPF::loadEtras(ros::NodeHandle& control_nh)
 // {   
-	
-//     ros::TransportHints hints;
-//     hints.tcpNoDelay(true);
-//     joint_states_pub_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(
-//                          control_nh, "actual_js_state", 1));
-//     base_state_pub_.reset(new realtime_tools::RealtimePublisher<nav_msgs::Odometry>(
-//                          control_nh, "actual_base_state", 1));
-
-//     state_sub_ = control_nh.subscribe("desired_state", 1, &SubscriberControllerSandingLPF::controlCb, this, hints);
 //     actual_js_state_.name = getControlledJointNames();
     
 //     ros::Time start_time = ros::Time::now();

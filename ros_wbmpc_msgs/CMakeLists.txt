@@ -12,7 +12,10 @@ else()
 endif()
 
 set(messages_to_build Contact.msg Control.msg Sensor.msg)
-set(message_dependencies std_msgs nav_msgs sensor_msgs geometry_msgs)
+set(message_dependencies std_msgs sensor_msgs geometry_msgs)
+
+set(${PROJECT_NAME}_HEADERS include/${PROJECT_NAME}/eigen_conversions.hpp)
+set(${PROJECT_NAME}_SOURCES "")
 
 if(ROS_VERSION EQUAL 1) # if ROS1
   # Here we use the jrl-cmakemodules to package things properly.
@@ -33,11 +36,14 @@ if(ROS_VERSION EQUAL 1) # if ROS1
   # And now generate the messages
   generate_messages(DEPENDENCIES ${message_dependencies})
 
-  add_library(${PROJECT_NAME} INTERFACE)
+  # Create a library to link to.
+  add_library(${PROJECT_NAME} INTERFACE ${${PROJECT_NAME}_SOURCES}
+                                        ${${PROJECT_NAME}_HEADERS})
   target_include_directories(${PROJECT_NAME}
                              INTERFACE $<INSTALL_INTERFACE:include>)
 
   catkin_package(
+    INCLUDE_DIRS include
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS message_runtime std_msgs geometry_msgs)
 
@@ -59,6 +65,8 @@ else() # if ROS2
     set(messages_to_build_realtive ${messages_to_build_realtive} msg/${msg})
   endforeach(msg ${messages_to_build})
   
+  install(FOLDER include DESTINATION include)
+
   rosidl_generate_interfaces(
     ${PROJECT_NAME} "${messages_to_build_realtive}")
   ament_export_dependencies(rosidl_default_runtime)

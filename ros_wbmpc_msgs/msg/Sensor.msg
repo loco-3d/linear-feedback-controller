@@ -21,18 +21,12 @@
 ##########
 
 Header header
-string[] name
 
 # Sensory data:
 ###############
 
 # free flyer state.
-nav_msgs/Odometry base_state
+geometry_msgs/Pose base_pose
+geometry_msgs/Twist base_twist
 # joint state.
 sensor_msgs/JointState joint_state
-
-# float64[] joint_acceleration # from where?
-# float64[] joint_effort
-# float64[] joint_effort_interpolated
-# locomotion state.
-# Contact[] contacts
