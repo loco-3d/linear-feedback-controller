@@ -50,7 +50,7 @@ project(${PROJECT_NAME} ${PROJECT_ARGS})
 
 add_project_dependency(pinocchio REQUIRED)
 add_project_dependency(yaml-cpp REQUIRED)
-find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools ros_wbmpc_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools linear_feedback_controller_msgs)
 
 if(BUILD_TESTING)
   find_package(rostest REQUIRED)
@@ -83,7 +83,7 @@ endif()
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp ros_wbmpc_msgs
+  CATKIN_DEPENDS roscpp linear_feedback_controller_msgs
   DEPENDS pinocchio yaml-cpp)
 
 # Unit tests

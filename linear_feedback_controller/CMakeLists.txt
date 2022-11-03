@@ -72,7 +72,7 @@ endif()
 # Dependencies
 #
 add_project_dependency(pinocchio REQUIRED)
-find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools ros_wbmpc_msgs
+find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools linear_feedback_controller_msgs
                                         pal_base_ros_controller)
 
 #
@@ -82,7 +82,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools ros_wbmpc_msgs
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp realtime_tools ros_wbmpc_msgs
+  CATKIN_DEPENDS roscpp realtime_tools linear_feedback_controller_msgs
   DEPENDS pinocchio)
 # cmake-format: on
 

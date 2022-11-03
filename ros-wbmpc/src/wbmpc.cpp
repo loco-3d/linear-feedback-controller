@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <pinocchio/parsers/urdf.hpp>
-#include <ros_wbmpc_msgs/Contact.h>
+#include <linear_feedback_controller_msgs/Contact.h>
 #include "ros-wbmpc/wbmpc.hpp"
 
 namespace ros_wbmpc {

@@ -12,7 +12,7 @@
 #include <pinocchio/parsers/srdf.hpp>
 #include <pinocchio/algorithm/model.hpp>
 
-#include <ros_wbmpc_msgs/eigen_conversions.h>
+#include <linear_feedback_controller_msgs/eigen_conversions.h>
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
@@ -63,7 +63,7 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
 
   // Prepare the publisher and subscriber exchanging the control and state.
   sensor_publisher_ =
-      std::make_shared<realtime_tools::RealtimePublisher<ros_wbmpc_msgs::Sensor> >(node_handle_, "sensor_state", 1);
+      std::make_shared<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> >(node_handle_, "sensor_state", 1);
   ros::TransportHints hints;
   hints.tcpNoDelay(true);
   control_subscriber_ = node_handle_.subscribe("desired_control", 1,
@@ -123,7 +123,7 @@ void LinearFeedbackController::parse_controlled_joint_names(const std::vector<st
   }
 }
 
-void LinearFeedbackController::control_subscriber_callback(const ros_wbmpc_msgs::Control& msg) {
+void LinearFeedbackController::control_subscriber_callback(const linear_feedback_controller_msgs::Control& msg) {
   
 }
 
