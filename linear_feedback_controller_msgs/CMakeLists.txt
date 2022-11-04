@@ -11,11 +11,6 @@ set(PROJECT_URL "https://github.com/${PROJECT_ORG}/ros-wbmpc")
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 
 #
-# Project configuration
-#
-set(PROJECT_USE_CMAKE_EXPORT TRUE)
-
-#
 # Check if the submodule cmake have been initialized
 #
 set(JRL_CMAKE_MODULES "${CMAKE_CURRENT_LIST_DIR}/../cmake")
@@ -66,11 +61,28 @@ add_project_dependency(geometry_msgs REQUIRED)
 add_project_dependency(message_generation REQUIRED)
 add_project_dependency(eigen_conversions REQUIRED)
 
+#
 # Generate the messages
+#
 add_message_files(DIRECTORY msg FILES Contact.msg Control.msg Sensor.msg)
 generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
 
+#
+# Export as catkin package (For ROS1 compatibility...).
+#
+# cmake-format: off
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS std_msgs sensor_msgs geometry_msgs message_runtime
+  DEPENDS EIGEN3)
+# cmake-format: on
+
+#
 # Main lib.
+#
+set(${PROJECT_NAME}_HEADERS include/${PROJECT_NAME}/eigen_conversions.hpp)
+set(${PROJECT_NAME}_SOURCES "")
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(
   ${PROJECT_NAME}
@@ -87,13 +99,19 @@ target_include_directories(
   INTERFACE $<INSTALL_INTERFACE:include/>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
+#
+# Unit tests
+#
 if(BUILD_TESTING)
   target_link_libraries(test_eigen_conversions gtest gtest_main ${PROJECT_NAME})
 endif()
 
+#
+# Install
+#
 install(
   TARGETS ${PROJECT_NAME}
   EXPORT ${TARGETS_EXPORT_NAME}
   DESTINATION lib)
-
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY include DESTINATION include PATTERN "third_party" EXCLUDE)
