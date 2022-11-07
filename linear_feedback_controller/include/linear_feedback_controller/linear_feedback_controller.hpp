@@ -1,13 +1,5 @@
-/*
- * Copyright 2020 PAL Robotics SL. All Rights Reserved
- *
- * Unauthorized copying of this file, via any medium is strictly prohibited,
- * unless it was supplied under the terms of a license agreement or
- * nondisclosure agreement with PAL Robotics SL. In this case it may not be
- * copied or disclosed except in accordance with the terms of that agreement.
- */
-#ifndef ROS_WBMPC_WBMPC_HPP
-#define ROS_WBMPC_WBMPC_HPP
+#ifndef LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
+#define LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
 
 // Standard C++
 #include <memory>
@@ -72,6 +64,16 @@ namespace linear_feedback_controller {
 class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEsimatorController {
  public:
   /**
+   * @brief Construct a new LinearFeedbackController object.
+   */
+  LinearFeedbackController();
+
+  /**
+   * @brief Destroy the Linear Feedback Controller object.
+   */
+  ~LinearFeedbackController();
+
+  /**
    * @brief Load the controller. Instantiate all memory and parse the ROS params
    *
    * @param node_handle this is the ROS object allowing us to use the middleware
@@ -105,12 +107,41 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
   void stoppingExtra(const ros::Time& time) override;
 
  private:  // Private methods.
-  void parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
+
+  /**
+   * @brief Parse the joint controlled names given by the user and build the
+   * rigid body models accordingly.
+   * 
+   * @param in_controlled_joint_names 
+   * @param controlled_joint_names 
+   * @param controlled_joint_ids 
+   * @param locked_joint_ids 
+   */
+  void parseControlledJointNames(const std::vector<std::string>& in_controlled_joint_names,
                                     std::vector<std::string>& controlled_joint_names,
                                     std::vector<long unsigned int>& controlled_joint_ids,
                                     std::vector<long unsigned int>& locked_joint_ids);
 
-  void control_subscriber_callback(const linear_feedback_controller_msgs::Control& msg);
+  /**
+   * @brief Acquire the control from the external controller.
+   * 
+   * @param msg 
+   */
+  void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
+
+  /**
+   * @brief Parse the ROS parameters.
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool parseRosParams();
+
+  /**
+   * @brief Filter the initial state during 1 second in order to start with
+   * clean data.
+   */
+  void filterInitialState();
 
  public:  // Setters and getters
   /**
@@ -118,21 +149,28 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    *
    * @return const std::vector<std::string>&
    */
-  const std::vector<std::string>& get_controlled_joint_names() { return controlled_joint_names_; }
+  const std::vector<std::string>& getControlledJointNames() { return controlled_joint_names_; }
 
   /**
    * @brief Get the controlled joint ids object.
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<long unsigned int>& get_controlled_joint_ids() { return controlled_joint_ids_; }
+  const std::vector<long unsigned int>& getControlledJointIds() { return controlled_joint_ids_; }
 
   /**
    * @brief Get the locked joint ids object.
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<long unsigned int>& get_locked_joint_ids() { return locked_joint_ids_; }
+  const std::vector<long unsigned int>& getLockedJointIds() { return locked_joint_ids_; }
+
+  /**
+   * @brief Get the torque offset.
+   *
+   * @return const std::vector<long unsigned int>&
+   */
+  const std::vector<double>& getTorqueOffsets() { return in_torque_offsets_; }
 
  private:  // Members
   // Settings:
@@ -144,6 +182,8 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
   std::vector<std::string> in_controlled_joint_names_;
   /// @brief Are we using a robot that has a free-flyer?
   bool in_robot_has_free_flyer_;
+  /// @brief Joint torque offsets based on the state of the hardware.
+  std::vector<double> in_torque_offsets_;
 
   /// @brief ROS handler allowing us to create topics/services etc.
   ros::NodeHandle node_handle_;
@@ -167,20 +207,28 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
 
   /// @brief  ROS sensor message data.
   linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
-  linear_feedback_controller_msgs::Eigen::Sensor sensor_msg_;
 
   /// @brief Actual robot state publisher.
   ros::Subscriber control_subscriber_;
 
-  /// @brief  ROS sensor message data.
-  linear_feedback_controller_msgs::Eigen::Control control_msg_;
+  /// @brief Initial joint effort measured.
+  std::vector<double> initial_torque_;
 
+  /// @brief Initial joint position.
+  std::vector<double> initial_position_;
+
+  /// @brief Desired joint torque.
+  std::vector<double> desired_torque_;
   
+  /// @brief Measured joint torque.
+  std::vector<double> actual_torque_;
 };
 
 }  // namespace linear_feedback_controller
 
-#endif  // ROS_WBMPC_WBMPC_HPP
+#endif  // LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
+
+
 // std::timed_mutex mutex_;
 // std::vector<std::string> controlled_joint_names_;
 // std::map<std::string, int> actual_state_map_;

@@ -14,20 +14,18 @@ class LinearFeedbackControllerTest : public ::testing::Test {
     std::string srdf_file = std::string(EXAMPLE_ROBOT_DATA_MODEL_DIR) + "/talos_data/srdf/talos.srdf";
 
     std::ifstream urdf_stream(urdf_file);
-    if(!urdf_stream)
-    {
+    if (!urdf_stream) {
       std::cout << "URDF file " << urdf_file << " is not found." << std::endl;
     }
-    GTEST_ASSERT_TRUE(urdf_stream);
+    ASSERT_TRUE(urdf_stream);
     std::stringstream urdf;
     urdf << urdf_stream.rdbuf();
 
     std::ifstream srdf_stream(srdf_file);
-    if(!srdf_stream)
-    {
+    if (!srdf_stream) {
       std::cout << "SRDF file " << srdf_file << " is not found." << std::endl;
     }
-    GTEST_ASSERT_TRUE(srdf_stream);
+    ASSERT_TRUE(srdf_stream);
     std::stringstream srdf;
     srdf << srdf_stream.rdbuf();
 
@@ -108,6 +106,27 @@ class LinearFeedbackControllerTest : public ::testing::Test {
     // clang-format on
     bool robot_has_free_flyer = true;
 
+    torque_offset_names_ = {
+        "joints/root_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_1_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_2_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_3_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_4_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_5_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_left_6_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_1_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_2_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_3_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_4_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_5_joint/actuator_params/torque_sensor_offset",
+        "joints/leg_right_6_joint/actuator_params/torque_sensor_offset",
+        "joints/torso_1_joint/actuator_params/torque_sensor_offset",
+        "joints/torso_2_joint/actuator_params/torque_sensor_offset",
+    };
+    torque_offset_values_ = {
+        0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
+    };
+
     // Get the parameters of the node.
     nh_.setParam("robot_description", urdf.str());
     nh_.setParam("robot_description_semantic", srdf.str());
@@ -124,6 +143,8 @@ class LinearFeedbackControllerTest : public ::testing::Test {
   std::vector<std::string> mixed_controlled_joint_names_;
   std::vector<std::string> wrong_controlled_joint_names_;
   std::vector<std::string> duplicate_controlled_joint_names_;
+  std::vector<std::string> torque_offset_names_;
+  std::vector<double> torque_offset_values_;
 };
 class DISABLED_LinearFeedbackControllerTest : public LinearFeedbackControllerTest {};
 
@@ -131,134 +152,138 @@ TEST_F(LinearFeedbackControllerTest, checkConstructor) { LinearFeedbackControlle
 
 TEST_F(LinearFeedbackControllerTest, checkInitializeNoThrow) {
   LinearFeedbackController obj;
-  GTEST_ASSERT_TRUE(obj.loadEtras(nh_));
+  ASSERT_TRUE(obj.loadEtras(nh_));
 }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesSorted) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_names(), sorted_controlled_joint_names_);
-}
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesSorted) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   ASSERT_EQ(obj.getControlledJointNames(), sorted_controlled_joint_names_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesMixed) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_names(), sorted_controlled_joint_names_);
-}
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesMixed) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   ASSERT_EQ(obj.getControlledJointNames(), sorted_controlled_joint_names_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesWrong) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  sorted_controlled_joint_names_.pop_back();
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_names(), sorted_controlled_joint_names_);
-}
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesWrong) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   sorted_controlled_joint_names_.pop_back();
+//   ASSERT_EQ(obj.getControlledJointNames(), sorted_controlled_joint_names_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesDuplicate) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_names(), sorted_controlled_joint_names_);
-}
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointNamesDuplicate) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   ASSERT_EQ(obj.getControlledJointNames(), sorted_controlled_joint_names_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsSorted) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsSorted) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> controlled_joint_ids = obj.get_controlled_joint_ids();
-  for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_ids(), sorted_controlled_joint_ids_);
-}
+//   std::vector<long unsigned int> controlled_joint_ids = obj.getControlledJointIds();
+//   for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
+//     ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getControlledJointIds(), sorted_controlled_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsMixed) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsMixed) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> controlled_joint_ids = obj.get_controlled_joint_ids();
-  for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_ids(), sorted_controlled_joint_ids_);
-}
+//   std::vector<long unsigned int> controlled_joint_ids = obj.getControlledJointIds();
+//   for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
+//     ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getControlledJointIds(), sorted_controlled_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsWrong) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  sorted_controlled_joint_names_.pop_back();
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsWrong) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   sorted_controlled_joint_names_.pop_back();
 
-  std::vector<long unsigned int> controlled_joint_ids = obj.get_controlled_joint_ids();
-  for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
-  }
-  sorted_controlled_joint_ids_.pop_back();
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_ids(), sorted_controlled_joint_ids_);
-}
+//   std::vector<long unsigned int> controlled_joint_ids = obj.getControlledJointIds();
+//   for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
+//     ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
+//   }
+//   sorted_controlled_joint_ids_.pop_back();
+//   ASSERT_EQ(obj.getControlledJointIds(), sorted_controlled_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsDuplicate) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkControlledJointIdsDuplicate) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> controlled_joint_ids = obj.get_controlled_joint_ids();
-  for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_controlled_joint_ids(), sorted_controlled_joint_ids_);
-}
+//   std::vector<long unsigned int> controlled_joint_ids = obj.getControlledJointIds();
+//   for (std::size_t i = 1; i < controlled_joint_ids.size(); ++i) {
+//     ASSERT_LE(controlled_joint_ids[i - 1], controlled_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getControlledJointIds(), sorted_controlled_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsSorted) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsSorted) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", sorted_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
-}
+//   std::vector<long unsigned int> locked_joint_ids = obj.getLockedJointIds();
+//   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
+//     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsMixed) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsMixed) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", mixed_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
-}
+//   std::vector<long unsigned int> locked_joint_ids = obj.getLockedJointIds();
+//   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
+//     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsWrong) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
-  obj.loadEtras(nh_);
-  sorted_controlled_joint_names_.pop_back();
+// TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsWrong) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", wrong_controlled_joint_names_);
+//   obj.loadEtras(nh_);
+//   sorted_controlled_joint_names_.pop_back();
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  sorted_locked_joint_ids_.insert(sorted_locked_joint_ids_.begin(), sorted_controlled_joint_ids_.back());
-  GTEST_ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
-}
+//   std::vector<long unsigned int> locked_joint_ids = obj.getLockedJointIds();
+//   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
+//     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
+//   }
+//   sorted_locked_joint_ids_.insert(sorted_locked_joint_ids_.begin(), sorted_controlled_joint_ids_.back());
+//   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
+// }
 
-TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsDuplicate) {
-  LinearFeedbackController obj;
-  nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
-  obj.loadEtras(nh_);
+// TEST_F(LinearFeedbackControllerTest, checkLockedJointIdsDuplicate) {
+//   LinearFeedbackController obj;
+//   nh_.setParam("controlled_joint_names", duplicate_controlled_joint_names_);
+//   obj.loadEtras(nh_);
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    GTEST_ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  GTEST_ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
-}
+//   std::vector<long unsigned int> locked_joint_ids = obj.getLockedJointIds();
+//   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
+//     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
+//   }
+//   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
+// }
+
+// TEST_F(LinearFeedbackControllerTest, DISABLED_checkJointTorqueOffsets) {
+//   ASSERT_TRUE(false);
+// }

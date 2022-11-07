@@ -12,38 +12,21 @@
 #include <pinocchio/parsers/srdf.hpp>
 #include <pinocchio/algorithm/model.hpp>
 
-#include <linear_feedback_controller_msgs/eigen_conversions.h>
-
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 namespace linear_feedback_controller {
+
+LinearFeedbackController::LinearFeedbackController() : pal_base_ros_controller::BaseRobotWithEsimatorController() {}
+LinearFeedbackController::~LinearFeedbackController() {}
 
 bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   // First get access to the node handle.
   node_handle_ = node_handle;
 
-  // Get the parameters of the node return false in case of failure.
-  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
-  if (!node_handle_.hasParam("robot_description")) {
-    ROS_INFO_STREAM("Missing ROS arg: robot_description");
+  // Parse the parameters.
+  if (!parseRosParams()) {
     return false;
   }
-  if (!node_handle_.hasParam("robot_description_semantic")) {
-    ROS_INFO_STREAM("Missing ROS arg: robot_description_semantic");
-    return false;
-  }
-  if (!node_handle_.hasParam("controlled_joint_names")) {
-    ROS_INFO_STREAM("Missing ROS arg: controlled_joint_names");
-    return false;
-  }
-  if (!node_handle_.hasParam("robot_has_free_flyer")) {
-    ROS_INFO_STREAM("Missing ROS arg: robot_has_free_flyer");
-    return false;
-  }
-  node_handle_.getParam("robot_description", in_urdf_);
-  node_handle_.getParam("robot_description_semantic", in_srdf_);
-  node_handle_.getParam("controlled_joint_names", in_controlled_joint_names_);
-  node_handle_.getParam("robot_has_free_flyer", in_robot_has_free_flyer_);
 
   // Build the rigid body model of the robot.
   if (in_robot_has_free_flyer_) {
@@ -55,35 +38,52 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete_, srdf, false);
 
   // Reduce model and set initial position.
-  parse_controlled_joint_names(in_controlled_joint_names_, controlled_joint_names_, controlled_joint_ids_,
-                               locked_joint_ids_);
+  parseControlledJointNames(in_controlled_joint_names_, controlled_joint_names_, controlled_joint_ids_,
+                            locked_joint_ids_);
   q_default_complete_ = pinocchio_model_complete_.referenceConfigurations["half_sitting"];
   pinocchio_model_reduced_ =
       pinocchio::buildReducedModel(pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
 
   // Prepare the publisher and subscriber exchanging the control and state.
-  sensor_publisher_ =
-      std::make_shared<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> >(node_handle_, "sensor_state", 1);
+  sensor_publisher_ = std::make_shared<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> >(
+      node_handle_, "sensor_state", 1);
   ros::TransportHints hints;
   hints.tcpNoDelay(true);
-  control_subscriber_ = node_handle_.subscribe("desired_control", 1,
-                                               &LinearFeedbackController::control_subscriber_callback, this, hints);
+  control_subscriber_ =
+      node_handle_.subscribe("desired_control", 1, &LinearFeedbackController::controlSubscriberCallback, this, hints);
 
-  
+  // Filter the initial measured joint position and torque and save it.
+  filterInitialState();
+
+  // Define the current desired torque as the current measured one;
+  actual_torque_ = initial_torque_;
+  desired_torque_ = initial_torque_;
+
+  // initialize the sensor message.
+  ros_sensor_msg_.joint_state.name = controlled_joint_names_;
+
+  // for (std::size_t i = 0; i < 20; i++) {
+  //   v_measures_.push_front(getActualJointVelocities());
+  //   tau_measures_.push_front(actual_torque_);
+  // }
+  // actual_js_state_.velocity = getActualJointVelocities();
+  // actual_js_state_.effort = actual_torque_;
+  // sensor_msg_.joint_state.name = getControlledJointNames();
+  // sensor_msg_.joint_state.velocity = getActualJointVelocities();
 
   return true;
 }
 
-void LinearFeedbackController::updateExtras(const ros::Time& time, const ros::Duration& period) {}
+void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros::Duration& /*period*/) {}
 
-void LinearFeedbackController::startingExtras(const ros::Time& time) {}
+void LinearFeedbackController::startingExtras(const ros::Time& /*time*/) {}
 
-void LinearFeedbackController::stoppingExtra(const ros::Time& time) {}
+void LinearFeedbackController::stoppingExtra(const ros::Time& /*time*/) {}
 
-void LinearFeedbackController::parse_controlled_joint_names(const std::vector<std::string>& in_controlled_joint_names,
-                                                            std::vector<std::string>& controlled_joint_names,
-                                                            std::vector<long unsigned int>& controlled_joint_ids,
-                                                            std::vector<long unsigned int>& locked_joint_ids) {
+void LinearFeedbackController::parseControlledJointNames(const std::vector<std::string>& in_controlled_joint_names,
+                                                         std::vector<std::string>& controlled_joint_names,
+                                                         std::vector<long unsigned int>& controlled_joint_ids,
+                                                         std::vector<long unsigned int>& locked_joint_ids) {
   // Get controlled joints ids
   ROS_INFO_STREAM("Map the given controlled joints names with their urdf ids");
   controlled_joint_ids.clear();
@@ -123,8 +123,65 @@ void LinearFeedbackController::parse_controlled_joint_names(const std::vector<st
   }
 }
 
-void LinearFeedbackController::control_subscriber_callback(const linear_feedback_controller_msgs::Control& msg) {
-  
+void LinearFeedbackController::controlSubscriberCallback(const linear_feedback_controller_msgs::Control& /*msg*/) {}
+
+bool LinearFeedbackController::parseRosParams() {
+  // Get the parameters of the node return false in case of failure.
+  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
+  if (!node_handle_.hasParam("robot_description")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_description");
+    return false;
+  }
+  node_handle_.getParam("robot_description", in_urdf_);
+
+  if (!node_handle_.hasParam("robot_description_semantic")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_description_semantic");
+    return false;
+  }
+  node_handle_.getParam("robot_description_semantic", in_srdf_);
+
+  if (!node_handle_.hasParam("controlled_joint_names")) {
+    ROS_INFO_STREAM("Missing ROS arg: controlled_joint_names");
+    return false;
+  }
+  node_handle_.getParam("controlled_joint_names", in_controlled_joint_names_);
+
+  if (!node_handle_.hasParam("robot_has_free_flyer")) {
+    ROS_INFO_STREAM("Missing ROS arg: robot_has_free_flyer");
+    return false;
+  }
+  node_handle_.getParam("robot_has_free_flyer", in_robot_has_free_flyer_);
+
+  in_torque_offsets_.resize(getControlledJointNames().size());
+  for (size_t i = 0; i < getControlledJointNames().size(); i++) {
+    std::string param_name = "joints/" + getControlledJointNames()[i] + "/actuator_params/torque_sensor_offset";
+    if (!node_handle_.hasParam(param_name)) {
+      ROS_INFO_STREAM("Missing ROS arg: " << param_name);
+      return false;
+    }
+    node_handle_.getParam(param_name, in_torque_offsets_[i]);
+  }
+  return true;
+}
+
+void LinearFeedbackController::filterInitialState() {
+  int nb_joint = static_cast<int>(getControlledJointNames().size());
+  int nb_samples = 0;
+  initial_position_.resize(nb_joint, 0.0);
+  initial_torque_.resize(nb_joint, 0.0);
+  ros::Time start_time = ros::Time::now() - ros::Duration(0, 1000000);  // An epsilon time before now;
+  while ((ros::Time::now() - start_time) < ros::Duration(1.0)) {
+    for (int i = 0; i < nb_joint; ++i) {
+      initial_torque_[i] += getJointMeasuredTorque(i) - in_torque_offsets_[i];
+      initial_position_[i] += getActualJointPosition(i);
+    }
+    ++nb_samples;
+    ros::Duration(0.01).sleep();
+  }
+  for (int i = 0; i < nb_joint; i++) {
+    initial_torque_[i] /= static_cast<double>(nb_samples);
+    initial_position_[i] /= nb_samples;
+  }
 }
 
 // clang-format off

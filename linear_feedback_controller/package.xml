@@ -13,7 +13,7 @@
   <url>https://github.com/loco-3d/ros-wbmpc</url>
 
   <buildtool_depend>catkin</buildtool_depend>
-  
+
   <depend>roscpp</depend>
   <depend>pinocchio</depend>
   <depend>realtime_tools</depend>
