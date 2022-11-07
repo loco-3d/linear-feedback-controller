@@ -1,10 +1,10 @@
 <launch>
     
     <env name="ROSCONSOLE_CONFIG_FILE"
-       value="$(find linear_feedback_controller)/config/rosconsole.conf"/>
+       value="$(find linear_feedback_controller)/test/rosconsole.conf"/>
 
     <test test-name="LinearFeedbackControllerBasic"
           pkg="linear_feedback_controller"
           type="test_linear_feedback_controller_basic"
-          args="--text"/>
+          prefix="gdb run --args"/>
 </launch>

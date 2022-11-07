@@ -73,7 +73,6 @@ generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
 # cmake-format: off
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS std_msgs sensor_msgs geometry_msgs message_runtime
   DEPENDS EIGEN3)
 # cmake-format: on
@@ -112,6 +111,6 @@ endif()
 install(
   TARGETS ${PROJECT_NAME}
   EXPORT ${TARGETS_EXPORT_NAME}
-  DESTINATION lib)
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY include DESTINATION include PATTERN "third_party" EXCLUDE)

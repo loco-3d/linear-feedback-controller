@@ -14,11 +14,6 @@ set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
 option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
 
 #
-# Project configuration
-#
-set(PROJECT_USE_CMAKE_EXPORT TRUE)
-
-#
 # Check if the submodule cmake have been initialized
 #
 set(JRL_CMAKE_MODULES "${CMAKE_CURRENT_LIST_DIR}/../cmake")
@@ -62,14 +57,19 @@ if(BUILD_TESTING)
   add_gtest_suite("main")
   find_package(rostest REQUIRED)
   find_package(example-robot-data REQUIRED)
+  # Add the unit-test here in order for ctest to find it.
+  add_unit_test(test_averaging_filter tests/test_averaging_filter.cpp)
 endif()
 
 #
 # Dependencies
 #
 add_project_dependency(pinocchio REQUIRED)
-find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools linear_feedback_controller_msgs
-                                        pal_base_ros_controller)
+add_project_dependency(roscpp REQUIRED)
+add_project_dependency(realtime_tools REQUIRED)
+add_project_dependency(pal_base_ros_controller REQUIRED)
+add_project_dependency(linear_feedback_controller_msgs CONFIG REQUIRED)
+add_project_dependency(catkin REQUIRED)
 
 #
 # Export as catkin package (For ROS1 compatibility...).
@@ -78,7 +78,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp realtime_tools linear_feedback_co
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp realtime_tools linear_feedback_controller_msgs
+  CATKIN_DEPENDS roscpp realtime_tools linear_feedback_controller_msgs pal_base_ros_controller
   DEPENDS pinocchio)
 # cmake-format: on
 
@@ -87,17 +87,26 @@ catkin_package(
 #
 set(${PROJECT_NAME}_HEADERS
     include/${PROJECT_NAME}/linear_feedback_controller.hpp)
-set(${PROJECT_NAME}_SOURCES src/linear_feedback_controller.cpp #
-                            # src/model-utils.cpp
+set(${PROJECT_NAME}_SOURCES
+    src/linear_feedback_controller.cpp #
+    src/averaging_filter.cpp #
+    # src/model-utils.cpp
 )
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES}
                                    ${${PROJECT_NAME}_HEADERS})
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${catkin_INCLUDE_DIRS})
+target_include_directories(
+  ${PROJECT_NAME} SYSTEM
+  PUBLIC ${roscpp_INCLUDE_DIRS} ${realtime_tools_INCLUDE_DIRS}
+         ${pal_base_ros_controller_INCLUDE_DIRS}
+         ${linear_feedback_controller_msgs_INCLUDE_DIRS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio
-                                             ${catkin_LIBRARIES})
+target_link_libraries(
+  ${PROJECT_NAME}
+  PUBLIC pinocchio::pinocchio ${roscpp_LIBRARIES} ${realtime_tools_LIBRARIES}
+         ${pal_base_ros_controller_LIBRARIES}
+         ${linear_feedback_controller_msgs_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX
                                                  INSTALL_RPATH "\$ORIGIN")
 if(SUFFIX_SO_VERSION)
@@ -116,6 +125,7 @@ if(BUILD_TESTING)
 
   add_rostest(tests/test_linear_feedback_controller_basic.test)
 
+  target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
 endif()
 
 #
