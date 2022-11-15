@@ -7,10 +7,10 @@
  * copied or disclosed except in accordance with the terms of that agreement.
  */
 
-#include <algorithm>
-#include <pinocchio/parsers/urdf.hpp>
-#include <pinocchio/parsers/srdf.hpp>
-#include <pinocchio/algorithm/model.hpp>
+// #include <algorithm>
+// #include <pinocchio/parsers/urdf.hpp>
+// #include <pinocchio/parsers/srdf.hpp>
+// #include <pinocchio/algorithm/model.hpp>
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
@@ -20,11 +20,6 @@ namespace linear_feedback_controller
 LinearFeedbackController::LinearFeedbackController()
   : pal_base_ros_controller::BaseRobotWithEsimatorController()
 {
-  in_urdf_.reserve(100000);
-  in_srdf_.reserve(100000);
-  in_moving_joint_names_.clear();
-  in_robot_has_free_flyer_ = false;
-  in_torque_offsets_.clear();
 }
 
 LinearFeedbackController::~LinearFeedbackController()
@@ -33,28 +28,44 @@ LinearFeedbackController::~LinearFeedbackController()
 
 bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle)
 {
-  // Parse the parameters.
-  if (!parseRosParams(node_handle))
+  // Get the parameters of the node return false in case of failure.
+  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
+  if (!node_handle.hasParam("robot_description"))
   {
+    ROS_INFO_STREAM("Missing ROS arg: robot_description");
     return false;
   }
+  node_handle.getParam("robot_description", in_urdf_);
+  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters... Done.");
 
-  // Build the rigid body model of the robot.
+  // Parse the parameters.
+  // std::string urdf;
+  // std::string srdf;
+  // std::vector<std::string> moving_joint_names;
+  // bool robot_has_free_flyer;
+  // std::vector<double> torque_offsets;
+  // if (!parseRosParams(node_handle, urdf, srdf, moving_joint_names, robot_has_free_flyer,
+  //                     torque_offsets))
+  // {
+  //   return false;
+  // }
+
+  // // Build the rigid body model of the robot.
   // if (in_robot_has_free_flyer_)
   // {
-  //   pinocchio::urdf::buildModelFromXML(in_urdf_, pinocchio::JointModelFreeFlyer(),
+  //   pinocchio::urdf::buildModelFromXML(urdf, pinocchio::JointModelFreeFlyer(),
   //                                      pinocchio_model_complete_);
   // }
   // else
   // {
-  //   pinocchio::urdf::buildModelFromXML(in_urdf_, pinocchio_model_complete_);
+  //   pinocchio::urdf::buildModelFromXML(urdf, pinocchio_model_complete_);
   // }
-  // std::istringstream srdf(in_srdf_);
-  // pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete_, srdf, false);
+  // std::istringstream iss_srdf(srdf);
+  // pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete_, iss_srdf, false);
 
   // // Reduce model and set initial position.
-  // parseMovingJointNames(in_moving_joint_names_, moving_joint_names_,
-  //                           moving_joint_ids_, locked_joint_ids_);
+  // parseMovingJointNames(moving_joint_names, moving_joint_names_, moving_joint_ids_,
+  //                       locked_joint_ids_);
   // q_default_complete_ = pinocchio_model_complete_.referenceConfigurations["half_sitting"];
   // pinocchio_model_reduced_ = pinocchio::buildReducedModel(
   //     pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
@@ -102,149 +113,140 @@ void LinearFeedbackController::stoppingExtra(const ros::Time& /*time*/)
 {
 }
 
-void LinearFeedbackController::parseMovingJointNames(
-    const std::vector<std::string>& /*in_moving_joint_names*/,
-    std::vector<std::string>& /*moving_joint_names*/,
-    std::vector<long unsigned int>& /*moving_joint_ids*/,
-    std::vector<long unsigned int>& /*locked_joint_ids*/)
-{
-  // // Get moving joints ids
-  // ROS_INFO_STREAM("Map the given moving joints names with their urdf ids");
-  // moving_joint_ids.clear();
-  // for (std::vector<std::string>::const_iterator it = in_moving_joint_names.begin();
-  //      it != in_moving_joint_names.end(); ++it)
-  // {
-  //   const std::string& joint_name = *it;
-  //   pinocchio::JointIndex joint_id = 0;
-  //   // do not consider joint that are not in the model
-  //   if (pinocchio_model_complete_.existJointName(joint_name))
-  //   {
-  //     joint_id = pinocchio_model_complete_.getJointId(joint_name);
-  //     moving_joint_ids.push_back(joint_id);
-  //     ROS_INFO_STREAM("joint_name=" << joint_name << ", joint_id=" << joint_id);
-  //   }
-  //   else
-  //   {
-  //     ROS_WARN_STREAM("joint_name=" << joint_name << " does not belong to the model");
-  //   }
-  // }
-  // // Sort them to the pinocchio order (increasing number) and remove duplicates.
-  // std::sort(moving_joint_ids.begin(), moving_joint_ids.end());
-  // moving_joint_ids.erase(unique(moving_joint_ids.begin(), moving_joint_ids.end()),
-  //                            moving_joint_ids.end());
+// void LinearFeedbackController::parseMovingJointNames(
+//     const std::vector<std::string>& in_moving_joint_names,
+//     std::vector<std::string>& moving_joint_names,
+//     std::vector<long unsigned int>& moving_joint_ids,
+//     std::vector<long unsigned int>& locked_joint_ids)
+// {
+//   // Get moving joints ids
+//   ROS_INFO_STREAM("Map the given moving joints names with their urdf ids");
+//   moving_joint_ids.clear();
+//   for (std::vector<std::string>::const_iterator it = in_moving_joint_names.begin();
+//        it != in_moving_joint_names.end(); ++it)
+//   {
+//     const std::string& joint_name = *it;
+//     pinocchio::JointIndex joint_id = 0;
+//     // do not consider joint that are not in the model
+//     if (pinocchio_model_complete_.existJointName(joint_name))
+//     {
+//       joint_id = pinocchio_model_complete_.getJointId(joint_name);
+//       moving_joint_ids.push_back(joint_id);
+//       ROS_INFO_STREAM("joint_name=" << joint_name << ", joint_id=" << joint_id);
+//     }
+//     else
+//     {
+//       ROS_WARN_STREAM("joint_name=" << joint_name << " does not belong to the model");
+//     }
+//   }
+//   // Sort them to the pinocchio order (increasing number) and remove duplicates.
+//   std::sort(moving_joint_ids.begin(), moving_joint_ids.end());
+//   moving_joint_ids.erase(unique(moving_joint_ids.begin(), moving_joint_ids.end()),
+//                          moving_joint_ids.end());
 
-  // // Remap the moving joint names to the Pinocchio oder.
-  // moving_joint_names.clear();
-  // for (std::size_t i = 0; i < moving_joint_ids.size(); ++i)
-  // {
-  //   moving_joint_names.push_back(pinocchio_model_complete_.names[moving_joint_ids[i]]);
-  // }
+//   // Remap the moving joint names to the Pinocchio oder.
+//   moving_joint_names.clear();
+//   for (std::size_t i = 0; i < moving_joint_ids.size(); ++i)
+//   {
+//     moving_joint_names.push_back(pinocchio_model_complete_.names[moving_joint_ids[i]]);
+//   }
 
-  // // Locked joint ids in the Pinocchio order.
-  // locked_joint_ids.clear();
-  // for (std::vector<std::string>::const_iterator it = pinocchio_model_complete_.names.begin() + 1;
-  //      it != pinocchio_model_complete_.names.end(); ++it)
-  // {
-  //   const std::string& joint_name = *it;
-  //   if (std::find(moving_joint_names.begin(), moving_joint_names.end(), joint_name) ==
-  //       moving_joint_names.end())
-  //   {
-  //     locked_joint_ids.push_back(pinocchio_model_complete_.getJointId(joint_name));
-  //   }
-  // }
-}
+//   // Locked joint ids in the Pinocchio order.
+//   locked_joint_ids.clear();
+//   for (std::vector<std::string>::const_iterator it = pinocchio_model_complete_.names.begin() + 1;
+//        it != pinocchio_model_complete_.names.end(); ++it)
+//   {
+//     const std::string& joint_name = *it;
+//     if (std::find(moving_joint_names.begin(), moving_joint_names.end(), joint_name) ==
+//         moving_joint_names.end())
+//     {
+//       locked_joint_ids.push_back(pinocchio_model_complete_.getJointId(joint_name));
+//     }
+//   }
+// }
 
-void LinearFeedbackController::controlSubscriberCallback(
-    const linear_feedback_controller_msgs::Control& /*msg*/)
-{
-}
+// void LinearFeedbackController::controlSubscriberCallback(
+//     const linear_feedback_controller_msgs::Control& /*msg*/)
+// {
+// }
 
-bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
-{
-  std::string urdf;
-  std::string srdf;
-  std::vector<std::string> moving_joint_names;
-  bool robot_has_free_flyer;
-  std::vector<double> torque_offsets;
+// bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle,
+//                                               std::string& urdf, std::string& srdf,
+//                                               std::vector<std::string>& moving_joint_names,
+//                                               bool& robot_has_free_flyer,
+//                                               std::vector<double>& torque_offsets)
+// {
+//   // Get the parameters of the node return false in case of failure.
+//   ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
+//   if (!node_handle.hasParam("robot_description"))
+//   {
+//     ROS_INFO_STREAM("Missing ROS arg: robot_description");
+//     return false;
+//   }
+//   node_handle.getParam("robot_description", urdf);
 
-  // Get the parameters of the node return false in case of failure.
-  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters...");
-  if (!node_handle.hasParam("robot_description"))
-  {
-    ROS_INFO_STREAM("Missing ROS arg: robot_description");
-    return false;
-  }
-  node_handle.getParam("robot_description", urdf);
+//   if (!node_handle.hasParam("robot_description_semantic"))
+//   {
+//     ROS_INFO_STREAM("Missing ROS arg: robot_description_semantic");
+//     return false;
+//   }
+//   node_handle.getParam("robot_description_semantic", srdf);
 
-  if (!node_handle.hasParam("robot_description_semantic"))
-  {
-    ROS_INFO_STREAM("Missing ROS arg: robot_description_semantic");
-    return false;
-  }
-  node_handle.getParam("robot_description_semantic", srdf);
+//   if (!node_handle.hasParam("moving_joint_names"))
+//   {
+//     ROS_INFO_STREAM("Missing ROS arg: moving_joint_names");
+//     return false;
+//   }
+//   node_handle.getParam("moving_joint_names", moving_joint_names);
 
-  if (!node_handle.hasParam("moving_joint_names"))
-  {
-    ROS_INFO_STREAM("Missing ROS arg: moving_joint_names");
-    return false;
-  }
-  node_handle.getParam("moving_joint_names", moving_joint_names);
+//   if (!node_handle.hasParam("robot_has_free_flyer"))
+//   {
+//     ROS_INFO_STREAM("Missing ROS arg: robot_has_free_flyer");
+//     return false;
+//   }
+//   node_handle.getParam("robot_has_free_flyer", robot_has_free_flyer);
 
-  if (!node_handle.hasParam("robot_has_free_flyer"))
-  {
-    ROS_INFO_STREAM("Missing ROS arg: robot_has_free_flyer");
-    return false;
-  }
-  node_handle.getParam("robot_has_free_flyer", robot_has_free_flyer);
+//   size_t nbjoint = getControlledJointNames().size();
+//   torque_offsets.resize(nbjoint, 0.0);
+//   for (size_t i = 0; i < nbjoint; ++i)
+//   {
+//     std::string param_name =
+//         "joints/" + getControlledJointNames()[i] + "/actuator_params/torque_sensor_offset";
+//     if (!node_handle.hasParam(param_name))
+//     {
+//       ROS_INFO_STREAM("Missing ROS arg: " << param_name);
+//       return false;
+//     }
+//     node_handle.getParam(param_name, in_torque_offsets_[i]);
+//   }
+//   ROS_INFO_STREAM("LinearFeedbackController: Loading parameters... Done.");
+//   return true;
+// }
 
-  size_t nbjoint = getControlledJointNames().size();
-  torque_offsets.resize(nbjoint, 0.0);
-  for (size_t i = 0; i < nbjoint; ++i)
-  {
-    std::string param_name =
-        "joints/" + getControlledJointNames()[i] + "/actuator_params/torque_sensor_offset";
-    if (!node_handle.hasParam(param_name))
-    {
-      ROS_INFO_STREAM("Missing ROS arg: " << param_name);
-      return false;
-    }
-    node_handle.getParam(param_name, in_torque_offsets_[i]);
-  }
-
-  // copy the param acquired
-  in_urdf_ = urdf;
-  in_srdf_ = srdf;
-  in_moving_joint_names_ = moving_joint_names;
-  in_robot_has_free_flyer_ = robot_has_free_flyer;
-  in_torque_offsets_ = torque_offsets;
-  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters... Done.");
-  return true;
-}
-
-void LinearFeedbackController::filterInitialState()
-{
-  // int nb_joint = static_cast<int>(getControlledJointNames().size());
-  // int nb_samples = 0;
-  // initial_position_.resize(nb_joint, 0.0);
-  // initial_torque_.resize(nb_joint, 0.0);
-  // ros::Time start_time =
-  //     ros::Time::now() - ros::Duration(0, 1000000);  // An epsilon time before now;
-  // while ((ros::Time::now() - start_time) < ros::Duration(1.0))
-  // {
-  //   for (int i = 0; i < nb_joint; ++i)
-  //   {
-  //     initial_torque_[i] += getJointMeasuredTorque(i) - in_torque_offsets_[i];
-  //     initial_position_[i] += getActualJointPosition(i);
-  //   }
-  //   ++nb_samples;
-  //   ros::Duration(0.01).sleep();
-  // }
-  // for (int i = 0; i < nb_joint; i++)
-  // {
-  //   initial_torque_[i] /= static_cast<double>(nb_samples);
-  //   initial_position_[i] /= nb_samples;
-  // }
-}
+// void LinearFeedbackController::filterInitialState()
+// {
+//   int nb_joint = static_cast<int>(getControlledJointNames().size());
+//   int nb_samples = 0;
+//   initial_position_.resize(nb_joint, 0.0);
+//   initial_torque_.resize(nb_joint, 0.0);
+//   ros::Time start_time =
+//       ros::Time::now() - ros::Duration(0, 1000000);  // An epsilon time before now;
+//   while ((ros::Time::now() - start_time) < ros::Duration(1.0))
+//   {
+//     for (int i = 0; i < nb_joint; ++i)
+//     {
+//       initial_torque_[i] += getJointMeasuredTorque(i) - in_torque_offsets_[i];
+//       initial_position_[i] += getActualJointPosition(i);
+//     }
+//     ++nb_samples;
+//     ros::Duration(0.01).sleep();
+//   }
+//   for (int i = 0; i < nb_joint; i++)
+//   {
+//     initial_torque_[i] /= static_cast<double>(nb_samples);
+//     initial_position_[i] /= nb_samples;
+//   }
+// }
 
 // clang-format off
 

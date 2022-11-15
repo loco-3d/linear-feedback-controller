@@ -1,0 +1,10 @@
+<library path="lib/liblinear_feedback_controller_plugins">
+
+  <class type="linear_feedback_controller::LinearFeedbackController"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+      Local effort controller
+    </description>
+  </class>
+  
+</library>

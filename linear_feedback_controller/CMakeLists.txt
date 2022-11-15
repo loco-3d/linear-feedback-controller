@@ -1,39 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 #
-# Project properties
-#
-set(PROJECT_NAMESPACE loco-3d)
-set(PROJECT_NAME linear_feedback_controller)
-set(PROJECT_DESCRIPTION "Network(ROS) interface to Whole Body MPC controllers.")
-set(PROJECT_URL https://github.com/${PROJECT_NAMESPACE}/ros-wbmpc)
-
-#
-# Project options
-#
-option(SUFFIX_SO_VERSION "Suffix library name with its version" ON)
-
-#
-# Check if the submodule cmake have been initialized
-#
-set(JRL_CMAKE_MODULES "${CMAKE_CURRENT_LIST_DIR}/../cmake")
-if(NOT EXISTS "${JRL_CMAKE_MODULES}/base.cmake")
-  if(${CMAKE_VERSION} VERSION_LESS "3.14.0")
-    message(
-      FATAL_ERROR
-        "\nPlease run the following command first:\ngit submodule update --init\n"
-    )
-  else()
-    include(FetchContent)
-    FetchContent_Declare(
-      "jrl-cmakemodules"
-      GIT_REPOSITORY "https://github.com/jrl-umi3218/jrl-cmakemodules.git")
-    FetchContent_MakeAvailable("jrl-cmakemodules")
-    FetchContent_GetProperties("jrl-cmakemodules" SOURCE_DIR JRL_CMAKE_MODULES)
-  endif()
-endif()
-
-#
 # Choosing to build the unittest (Catkin vs Modern CMake vs Ament).
 #
 if(DEFINED CATKIN_ENABLE_TESTING)
@@ -43,33 +10,25 @@ endif()
 #
 # Project definition
 #
-include("${JRL_CMAKE_MODULES}/base.cmake")
-compute_project_args(PROJECT_ARGS LANGUAGES CXX)
-project(${PROJECT_NAME} ${PROJECT_ARGS})
+project(linear_feedback_controller LANGUAGES CXX)
 
 #
 # Setup unit-tests
 #
 if(BUILD_TESTING)
-  # To be done before finding catkin because catkin looks for gtest.
-  include("${JRL_CMAKE_MODULES}/test.cmake")
-  include("${JRL_CMAKE_MODULES}/gtest.cmake")
-  add_gtest_suite("main")
   find_package(rostest REQUIRED)
   find_package(example-robot-data REQUIRED)
-  # Add the unit-test here in order for ctest to find it.
-  add_unit_test(test_averaging_filter tests/test_averaging_filter.cpp)
 endif()
 
 #
 # Dependencies
 #
-add_project_dependency(pinocchio REQUIRED)
-add_project_dependency(roscpp REQUIRED)
-add_project_dependency(realtime_tools REQUIRED)
-add_project_dependency(pal_base_ros_controller REQUIRED)
-add_project_dependency(linear_feedback_controller_msgs CONFIG REQUIRED)
-add_project_dependency(catkin REQUIRED)
+find_package(pinocchio REQUIRED)
+find_package(roscpp REQUIRED)
+find_package(realtime_tools REQUIRED)
+find_package(pal_base_ros_controller REQUIRED)
+find_package(linear_feedback_controller_msgs CONFIG REQUIRED)
+find_package(catkin REQUIRED)
 
 #
 # Export as catkin package (For ROS1 compatibility...).
@@ -79,8 +38,9 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp
-                 realtime_tools
+                #  realtime_tools
                  linear_feedback_controller_msgs
+                 pluginlib
                  pal_base_ros_controller 
   DEPENDS pinocchio)
 # cmake-format: on
@@ -107,37 +67,56 @@ target_include_directories(
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_link_libraries(
   ${PROJECT_NAME}
-  PUBLIC pinocchio::pinocchio ${roscpp_LIBRARIES} ${realtime_tools_LIBRARIES}
+  PUBLIC # pinocchio::pinocchio
+         ${roscpp_LIBRARIES} ${realtime_tools_LIBRARIES}
          ${pal_base_ros_controller_LIBRARIES}
          ${linear_feedback_controller_msgs_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX
                                                  INSTALL_RPATH "\$ORIGIN")
-if(SUFFIX_SO_VERSION)
-  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION})
-endif()
+
+#
+# Plugins
+#
+add_library(${PROJECT_NAME}_plugins SHARED src/plugins.cpp)
+target_include_directories(${PROJECT_NAME}_plugins SYSTEM
+                           PUBLIC ${pluginlib_INCLUDE_DIRS})
+target_include_directories(
+  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
+                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${PROJECT_NAME}
+                                                     ${pluginlib_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_plugins
+                      PROPERTIES LINKER_LANGUAGE CXX INSTALL_RPATH "\$ORIGIN")
 
 #
 # Unit tests
 #
 if(BUILD_TESTING)
-  add_executable(
+  add_rostest_gtest(
     test_linear_feedback_controller_basic
-    tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
-  target_link_libraries(test_linear_feedback_controller_basic gtest
+    tests/test_linear_feedback_controller_basic.test
+    tests/test_linear_feedback_controller_basic.cpp
+    tests/ros_gtest_main.cpp
+    )
+  target_link_libraries(test_linear_feedback_controller_basic
                         ${PROJECT_NAME} example-robot-data::example-robot-data)
-  target_compile_definitions(test_linear_feedback_controller_basic PRIVATE 
-      TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
+  target_compile_definitions(
+    test_linear_feedback_controller_basic
+    PRIVATE TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
 
-  add_rostest(tests/test_linear_feedback_controller_basic.test)
-
+  # Add the unit-test here in order for ctest to find it.
+  catkin_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
   target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
 endif()
 
 #
 # Installation
 #
+install(FILES package.xml controller_plugins.xml
+        DESTINATION share/${PACKAGE_NAME})
+install(DIRECTORY config/ DESTINATION share/${PACKAGE_NAME}/config)
 install(
-  TARGETS ${PROJECT_NAME}
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_plugins
   EXPORT ${TARGETS_EXPORT_NAME}
   DESTINATION lib)
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
