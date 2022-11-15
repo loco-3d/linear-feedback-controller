@@ -78,7 +78,10 @@ add_project_dependency(catkin REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp realtime_tools linear_feedback_controller_msgs pal_base_ros_controller
+  CATKIN_DEPENDS roscpp
+                 realtime_tools
+                 linear_feedback_controller_msgs
+                 pal_base_ros_controller 
   DEPENDS pinocchio)
 # cmake-format: on
 
@@ -122,6 +125,8 @@ if(BUILD_TESTING)
     tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
   target_link_libraries(test_linear_feedback_controller_basic gtest
                         ${PROJECT_NAME} example-robot-data::example-robot-data)
+  target_compile_definitions(test_linear_feedback_controller_basic PRIVATE 
+      TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
 
   add_rostest(tests/test_linear_feedback_controller_basic.test)
 

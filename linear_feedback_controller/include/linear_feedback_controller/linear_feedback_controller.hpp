@@ -35,7 +35,8 @@
 // #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 // #include <nav_msgs/Odometry.h>
 
-namespace linear_feedback_controller {
+namespace linear_feedback_controller
+{
 
 /**
  * @brief This class has for purpose to connect Whole Body Model Predictive
@@ -61,8 +62,11 @@ namespace linear_feedback_controller {
  * Hence base data which are available in this controller come from this
  * estimator.
  */
-class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEsimatorController {
- public:
+class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEsimatorController
+{
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /**
    * @brief Construct a new LinearFeedbackController object.
    */
@@ -106,36 +110,35 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    */
   void stoppingExtra(const ros::Time& time) override;
 
- private:  // Private methods.
-
+private:  // Private methods.
   /**
-   * @brief Parse the joint controlled names given by the user and build the
+   * @brief Parse the joint moving names given by the user and build the
    * rigid body models accordingly.
-   * 
-   * @param in_controlled_joint_names 
-   * @param controlled_joint_names 
-   * @param controlled_joint_ids 
-   * @param locked_joint_ids 
+   *
+   * @param in_moving_joint_names
+   * @param moving_joint_names
+   * @param moving_joint_ids
+   * @param locked_joint_ids
    */
-  void parseControlledJointNames(const std::vector<std::string>& in_controlled_joint_names,
-                                    std::vector<std::string>& controlled_joint_names,
-                                    std::vector<long unsigned int>& controlled_joint_ids,
-                                    std::vector<long unsigned int>& locked_joint_ids);
+  void parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
+                             std::vector<std::string>& moving_joint_names,
+                             std::vector<long unsigned int>& moving_joint_ids,
+                             std::vector<long unsigned int>& locked_joint_ids);
 
   /**
    * @brief Acquire the control from the external controller.
-   * 
-   * @param msg 
+   *
+   * @param msg
    */
   void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
 
   /**
    * @brief Parse the ROS parameters.
-   * 
-   * @return true 
-   * @return false 
+   *
+   * @return true
+   * @return false
    */
-  bool parseRosParams();
+  bool parseRosParams(ros::NodeHandle& node_handle);
 
   /**
    * @brief Filter the initial state during 1 second in order to start with
@@ -143,85 +146,115 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
    */
   void filterInitialState();
 
- public:  // Setters and getters
-  /**
-   * @brief Get the controlled joint names object.
-   *
-   * @return const std::vector<std::string>&
-   */
-  const std::vector<std::string>& getControlledJointNames() { return controlled_joint_names_; }
+public:  // Setters and getters
+  // /**
+  //  * @brief Get the moving joint names object.
+  //  *
+  //  * @return const std::vector<std::string>&
+  //  */
+  // const std::vector<std::string>& getMovingJointNames() const
+  // {
+  //   return moving_joint_names_;
+  // }
+
+  // /**
+  //  * @brief Get the moving joint ids object.
+  //  *
+  //  * @return const std::vector<long unsigned int>&
+  //  */
+  // const std::vector<long unsigned int>& getMovingJointIds() const
+  // {
+  //   return moving_joint_ids_;
+  // }
+
+  // /**
+  //  * @brief Get the locked joint ids object.
+  //  *
+  //  * @return const std::vector<long unsigned int>&
+  //  */
+  // const std::vector<long unsigned int>& getLockedJointIds() const
+  // {
+  //   return locked_joint_ids_;
+  // }
+
+
+  // /**
+  //  * @brief Get the torque offset.
+  //  *
+  //  * @return const std::vector<long unsigned int>&
+  //  */
+  // const std::vector<double>& getTorqueOffsets() const
+  // {
+  //   return in_torque_offsets_;
+  // }
 
   /**
-   * @brief Get the controlled joint ids object.
-   *
-   * @return const std::vector<long unsigned int>&
+   * @brief Get the Urdf object
+   * 
+   * @return const std::string& 
    */
-  const std::vector<long unsigned int>& getControlledJointIds() { return controlled_joint_ids_; }
+  const std::string& getUrdf() const
+  {
+    return in_urdf_;
+  }
 
   /**
-   * @brief Get the locked joint ids object.
-   *
-   * @return const std::vector<long unsigned int>&
+   * @brief Get the Srdf object
+   * 
+   * @return const std::string& 
    */
-  const std::vector<long unsigned int>& getLockedJointIds() { return locked_joint_ids_; }
+  const std::string& getSrdf() const
+  {
+    return in_srdf_;
+  }
 
-  /**
-   * @brief Get the torque offset.
-   *
-   * @return const std::vector<long unsigned int>&
-   */
-  const std::vector<double>& getTorqueOffsets() { return in_torque_offsets_; }
-
- private:  // Members
+private:  // Members
   // Settings:
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
   /// @brief String containing the extras of the model of the robot.
   std::string in_srdf_;
-  /// @brief List of names that correspond to the joints controlled by the MPC.
-  std::vector<std::string> in_controlled_joint_names_;
+  /// @brief List of names that correspond to the joints moving by the MPC.
+  std::vector<std::string> in_moving_joint_names_;
   /// @brief Are we using a robot that has a free-flyer?
   bool in_robot_has_free_flyer_;
   /// @brief Joint torque offsets based on the state of the hardware.
   std::vector<double> in_torque_offsets_;
 
-  /// @brief ROS handler allowing us to create topics/services etc.
-  ros::NodeHandle node_handle_;
+  // /// @brief Pinocchio (Rigid body dynamics robot model).
+  // pinocchio::Model pinocchio_model_complete_;
+  // pinocchio::Model pinocchio_model_reduced_;
 
-  /// @brief Pinocchio (Rigid body dynamics robot model).
-  pinocchio::Model pinocchio_model_complete_;
-  pinocchio::Model pinocchio_model_reduced_;
+  // /// @brief Moving joint ids sorted in the urdf order.
+  // std::vector<pinocchio::JointIndex> moving_joint_ids_;
+  // /// @brief Sort the moving joint names using the urdf order.
+  // std::vector<std::string> moving_joint_names_;
+  // /// @brief Sort the locked (position moving) joint names using the urdf order.
+  // std::vector<pinocchio::JointIndex> locked_joint_ids_;
 
-  /// @brief Controlled joint ids sorted in the urdf order.
-  std::vector<pinocchio::JointIndex> controlled_joint_ids_;
-  /// @brief Sort the controlled joint names using the urdf order.
-  std::vector<std::string> controlled_joint_names_;
-  /// @brief Sort the locked (position controlled) joint names using the urdf order.
-  std::vector<pinocchio::JointIndex> locked_joint_ids_;
+  // /// @brief Initial whole body configuration setup in the SRDF file.
+  // Eigen::VectorXd q_default_complete_;
 
-  /// @brief Initial whole body configuration setup in the SRDF file.
-  Eigen::VectorXd q_default_complete_;
+  // /// @brief Actual robot state publisher.
+  // // std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
 
-  /// @brief Actual robot state publisher.
-  std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
+  // /// @brief  ROS sensor message data.
+  // linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
 
-  /// @brief  ROS sensor message data.
-  linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
+  // /// @brief Actual robot state publisher.
+  // // ros::Subscriber control_subscriber_;
 
-  /// @brief Actual robot state publisher.
-  ros::Subscriber control_subscriber_;
+  // /// @brief Initial joint effort measured.
+  // std::vector<double> initial_torque_;
 
-  /// @brief Initial joint effort measured.
-  std::vector<double> initial_torque_;
+  // /// @brief Initial joint position.
+  // std::vector<double> initial_position_;
 
-  /// @brief Initial joint position.
-  std::vector<double> initial_position_;
+  // /// @brief Desired joint torque.
+  // std::vector<double> desired_torque_;
 
-  /// @brief Desired joint torque.
-  std::vector<double> desired_torque_;
-  
-  /// @brief Measured joint torque.
-  std::vector<double> actual_torque_;
+  // /// @brief Measured joint torque.
+  // std::vector<double> actual_torque_;
 };
 
 }  // namespace linear_feedback_controller
@@ -230,7 +263,7 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
 
 
 // std::timed_mutex mutex_;
-// std::vector<std::string> controlled_joint_names_;
+// std::vector<std::string> moving_joint_names_;
 // std::map<std::string, int> actual_state_map_;
 // Eigen::VectorXd desired_effort_;
 // Eigen::VectorXd desired_pos_;
@@ -256,10 +289,10 @@ class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEs
 // double p_leg_gain_;
 // double d_leg_gain_;
 
-// boost::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::JointState>> joint_states_pub_;
+// boost::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::JointState>>
+// joint_states_pub_;
 // boost::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry>> base_state_pub_;
-// sensor_msgs::JointState actual_js_state_;
-// nav_msgs::Odometry actual_base_state_;
+// sensor_msgs::JointState actual_js_state_; nav_msgs::Odometry actual_base_state_;
 
 // pal_statistics::RegistrationsRAII registered_variables_;
 // pal_robot_tools::TimeProfilerPtr tp_;
