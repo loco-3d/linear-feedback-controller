@@ -2,19 +2,22 @@
 #define LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
 
 // Standard C++
-#include <memory>
+// #include <memory>
 
 // Rigid body dynamics
-#include <pinocchio/fwd.hpp>
-#include <pinocchio/multibody/model.hpp>
+// #include <pinocchio/fwd.hpp>
+// #include <pinocchio/multibody/model.hpp>
 
 // ROS C++ api
 #include <ros/ros.h>
-#include <realtime_tools/realtime_publisher.h>
+// #include <realtime_tools/realtime_publisher.h>
+
+// export this lib as plugin
+#include <pluginlib/class_list_macros.h>
 
 // ROS Messages.
-#include <linear_feedback_controller_msgs/Sensor.h>
-#include <linear_feedback_controller_msgs/Control.h>
+// #include <linear_feedback_controller_msgs/Sensor.h>
+// #include <linear_feedback_controller_msgs/Control.h>
 
 // PAL roscontrol controller containing their estimator.
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
@@ -111,40 +114,41 @@ public:
   void stoppingExtra(const ros::Time& time) override;
 
 private:  // Private methods.
-  /**
-   * @brief Parse the joint moving names given by the user and build the
-   * rigid body models accordingly.
-   *
-   * @param in_moving_joint_names
-   * @param moving_joint_names
-   * @param moving_joint_ids
-   * @param locked_joint_ids
-   */
-  void parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
-                             std::vector<std::string>& moving_joint_names,
-                             std::vector<long unsigned int>& moving_joint_ids,
-                             std::vector<long unsigned int>& locked_joint_ids);
+          // /**
+          //  * @brief Parse the joint moving names given by the user and build the
+          //  * rigid body models accordingly.
+          //  *
+          //  * @param in_moving_joint_names
+          //  * @param moving_joint_names
+          //  * @param moving_joint_ids
+          //  * @param locked_joint_ids
+          //  */
+          // void parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
+          //                            std::vector<std::string>& moving_joint_names,
+          //                            std::vector<long unsigned int>& moving_joint_ids,
+          //                            std::vector<long unsigned int>& locked_joint_ids);
+  // /**
+  //  * @brief Acquire the control from the external controller.
+  //  *
+  //  * @param msg
+  //  */
+  // void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
 
-  /**
-   * @brief Acquire the control from the external controller.
-   *
-   * @param msg
-   */
-  void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
+  // /**
+  //  * @brief Parse the ROS parameters.
+  //  *
+  //  * @return true
+  //  * @return false
+  //  */
+  // bool parseRosParams(ros::NodeHandle& node_handle, std::string& urdf, std::string& srdf,
+  //                     std::vector<std::string>& moving_joint_names,
+  //                     bool& robot_has_free_flyer, std::vector<double>& torque_offsets);
 
-  /**
-   * @brief Parse the ROS parameters.
-   *
-   * @return true
-   * @return false
-   */
-  bool parseRosParams(ros::NodeHandle& node_handle);
-
-  /**
-   * @brief Filter the initial state during 1 second in order to start with
-   * clean data.
-   */
-  void filterInitialState();
+  // /**
+  //  * @brief Filter the initial state during 1 second in order to start with
+  //  * clean data.
+  //  */
+  // void filterInitialState();
 
 public:  // Setters and getters
   // /**
@@ -177,6 +181,15 @@ public:  // Setters and getters
   //   return locked_joint_ids_;
   // }
 
+  /**
+   * @brief Get the URDF string.
+   *
+   * @return const std::string&
+   */
+  const std::string& getUrdf()
+  {
+    return in_urdf_;
+  }
 
   // /**
   //  * @brief Get the torque offset.
@@ -188,38 +201,17 @@ public:  // Setters and getters
   //   return in_torque_offsets_;
   // }
 
-  /**
-   * @brief Get the Urdf object
-   * 
-   * @return const std::string& 
-   */
-  const std::string& getUrdf() const
-  {
-    return in_urdf_;
-  }
-
-  /**
-   * @brief Get the Srdf object
-   * 
-   * @return const std::string& 
-   */
-  const std::string& getSrdf() const
-  {
-    return in_srdf_;
-  }
-
 private:  // Members
-  // Settings:
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
-  /// @brief String containing the extras of the model of the robot.
-  std::string in_srdf_;
-  /// @brief List of names that correspond to the joints moving by the MPC.
-  std::vector<std::string> in_moving_joint_names_;
-  /// @brief Are we using a robot that has a free-flyer?
-  bool in_robot_has_free_flyer_;
-  /// @brief Joint torque offsets based on the state of the hardware.
-  std::vector<double> in_torque_offsets_;
+  // /// @brief String containing the extras of the model of the robot.
+  // std::string in_srdf_;
+  // /// @brief List of names that correspond to the joints moving by the MPC.
+  // std::vector<std::string> in_moving_joint_names_;
+  // /// @brief Are we using a robot that has a free-flyer?
+  // bool in_robot_has_free_flyer_;
+  // /// @brief Joint torque offsets based on the state of the hardware.
+  // std::vector<double> in_torque_offsets_;
 
   // /// @brief Pinocchio (Rigid body dynamics robot model).
   // pinocchio::Model pinocchio_model_complete_;

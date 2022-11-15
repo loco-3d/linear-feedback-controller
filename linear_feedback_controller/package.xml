@@ -19,11 +19,13 @@
   <depend>realtime_tools</depend>
   <depend>linear_feedback_controller_msgs</depend>
   <depend>pal_base_ros_controller</depend>
+  <depend>pluginlib</depend>
 
   <test_depend>rostest</test_depend>
   <test_depend>gtest</test_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />
+    <controller_interface plugin="${prefix}/controller_plugins.xml" />
   </export>
 </package>
