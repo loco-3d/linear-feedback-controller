@@ -16,10 +16,14 @@
 #include <ros/ros.h>
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "test_linear_feedback_controller_basic");
-  
+  std::string test_ros_node_name = std::string(TEST_ROS_NODE_NAME);
+  throw std::runtime_error(test_ros_node_name);
+  ros::init(argc, argv, test_ros_node_name);
+  // Start the spinner here to be able to use callbacks.
+  ros::AsyncSpinner spinner(4); // Use 4 threads
+  spinner.start();
+
   ::testing::InitGoogleTest(&argc, argv);
-  
   auto ret = RUN_ALL_TESTS();
 
   ros::shutdown();

@@ -1,7 +1,8 @@
 <launch>
     <test test-name="LinearFeedbackControllerBasic"
           pkg="linear_feedback_controller"
-          type="test_linear_feedback_controller_basic">
+          type="test_linear_feedback_controller_basic"
+          launch-prefix="valgrind --leak-check=yes">
       <env name="ROSCONSOLE_CONFIG_FILE"
          value="$(find linear_feedback_controller)/tests/rosconsole.conf"/>
       <env name="CTEST_OUTPUT_ON_FAILURE" value="1" />
