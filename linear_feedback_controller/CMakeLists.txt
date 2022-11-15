@@ -23,12 +23,12 @@ endif()
 #
 # Dependencies
 #
-find_package(pinocchio REQUIRED)
-find_package(roscpp REQUIRED)
-find_package(realtime_tools REQUIRED)
-find_package(pal_base_ros_controller REQUIRED)
-find_package(linear_feedback_controller_msgs CONFIG REQUIRED)
+# find_package(pinocchio REQUIRED)
 find_package(catkin REQUIRED)
+# find_package(roscpp REQUIRED)
+# find_package(realtime_tools REQUIRED)
+find_package(pal_base_ros_controller REQUIRED)
+# find_package(linear_feedback_controller_msgs CONFIG REQUIRED)
 
 #
 # Export as catkin package (For ROS1 compatibility...).
