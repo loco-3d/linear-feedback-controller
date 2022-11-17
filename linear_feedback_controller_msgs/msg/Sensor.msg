@@ -25,8 +25,10 @@ Header header
 # Sensory data:
 ###############
 
-# free flyer state.
+# Free flyer state.
 geometry_msgs/Pose base_pose
 geometry_msgs/Twist base_twist
-# joint state.
+# Joint state.
 sensor_msgs/JointState joint_state
+# Contact state.
+Contact[] contacts

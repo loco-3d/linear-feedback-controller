@@ -1,3 +1,3 @@
-bool contact_status
-string contact_name
+bool active
+string name
 geometry_msgs/Wrench wrench
