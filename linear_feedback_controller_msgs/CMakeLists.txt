@@ -73,7 +73,7 @@ generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
 # cmake-format: off
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS std_msgs sensor_msgs geometry_msgs message_runtime
+  CATKIN_DEPENDS std_msgs sensor_msgs geometry_msgs message_runtime eigen_conversions
   DEPENDS EIGEN3)
 # cmake-format: on
 
