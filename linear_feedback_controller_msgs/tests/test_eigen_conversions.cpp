@@ -96,7 +96,6 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenControlConversion) {
   e.initial_state.joint_state.velocity = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
   e.initial_state.joint_state.effort = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
   e.feedback_gain = Eigen::MatrixXd::Random(8, 4);
-  e.feedforward = Eigen::VectorXd::Random(8);
 
   lfc_msgs::controlEigenToMsg(e, m);
   lfc_msgs::controlMsgToEigen(m, etest);
@@ -108,5 +107,4 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenControlConversion) {
   ASSERT_EQ(e.initial_state.joint_state.velocity, etest.initial_state.joint_state.velocity);
   ASSERT_EQ(e.initial_state.joint_state.effort, etest.initial_state.joint_state.effort);
   ASSERT_EQ(e.feedback_gain, etest.feedback_gain);
-  ASSERT_EQ(e.feedforward, etest.feedforward);
 }

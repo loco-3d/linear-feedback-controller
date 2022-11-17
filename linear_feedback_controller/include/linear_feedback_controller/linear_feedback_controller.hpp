@@ -2,25 +2,29 @@
 #define LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
 
 // Standard C++
-// #include <memory>
+#include <memory>
 
 // Rigid body dynamics
-// #include <pinocchio/fwd.hpp>
-// #include <pinocchio/multibody/model.hpp>
+#include <pinocchio/fwd.hpp>
+#include <pinocchio/multibody/model.hpp>
 
 // ROS C++ api
 #include <ros/ros.h>
-// #include <realtime_tools/realtime_publisher.h>
+#include <realtime_tools/realtime_publisher.h>
 
 // export this lib as plugin
 #include <pluginlib/class_list_macros.h>
 
 // ROS Messages.
-// #include <linear_feedback_controller_msgs/Sensor.h>
-// #include <linear_feedback_controller_msgs/Control.h>
+#include <linear_feedback_controller_msgs/Sensor.h>
+#include <linear_feedback_controller_msgs/Control.h>
+#include <linear_feedback_controller_msgs/eigen_conversions.hpp>
 
 // PAL roscontrol controller containing their estimator.
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
+
+// local include
+#include "linear_feedback_controller/averaging_filter.hpp"
 
 // #include <boost/algorithm/string.hpp>
 // #include <algorithm>
@@ -114,72 +118,79 @@ public:
   void stoppingExtra(const ros::Time& time) override;
 
 private:  // Private methods.
-          // /**
-          //  * @brief Parse the joint moving names given by the user and build the
-          //  * rigid body models accordingly.
-          //  *
-          //  * @param in_moving_joint_names
-          //  * @param moving_joint_names
-          //  * @param moving_joint_ids
-          //  * @param locked_joint_ids
-          //  */
-          // void parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
-          //                            std::vector<std::string>& moving_joint_names,
-          //                            std::vector<long unsigned int>& moving_joint_ids,
-          //                            std::vector<long unsigned int>& locked_joint_ids);
-  // /**
-  //  * @brief Acquire the control from the external controller.
-  //  *
-  //  * @param msg
-  //  */
-  // void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
+  /**
+   * @brief Parse the joint moving names given by the user and build the
+   * rigid body models accordingly.
+   *
+   * @param in_moving_joint_names
+   * @param moving_joint_names
+   * @param moving_joint_ids
+   * @param locked_joint_ids
+   */
+  bool parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
+                             std::vector<std::string>& moving_joint_names,
+                             std::vector<long unsigned int>& moving_joint_ids,
+                             std::vector<long unsigned int>& locked_joint_ids);
+  /**
+   * @brief Acquire the control from the external controller.
+   *
+   * @param msg
+   */
+  void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
 
-  // /**
-  //  * @brief Parse the ROS parameters.
-  //  *
-  //  * @return true
-  //  * @return false
-  //  */
-  // bool parseRosParams(ros::NodeHandle& node_handle, std::string& urdf, std::string& srdf,
-  //                     std::vector<std::string>& moving_joint_names,
-  //                     bool& robot_has_free_flyer, std::vector<double>& torque_offsets);
+  /**
+   * @brief Parse the ROS parameters.
+   *
+   * @return true
+   * @return false
+   */
+  bool parseRosParams(ros::NodeHandle& node_handle);
 
-  // /**
-  //  * @brief Filter the initial state during 1 second in order to start with
-  //  * clean data.
-  //  */
-  // void filterInitialState();
+  /**
+   * @brief Filter the initial state during 1 second in order to start with
+   * clean data.
+   */
+  void filterInitialState();
+
+  /**
+   * @brief Acquire the sensor data and fill in the sensor message.
+   * The indexing of the ROS message is in the order of the moving_joint_names_.
+   * Which means that it is in the order of the pinocchio indexing.
+   * We use a map pin_to_hwi_ in order to map the data from the hardware
+   * interface indexing to the pinnochio one.
+   */
+  void acquireSensorAndPublish();
 
 public:  // Setters and getters
-  // /**
-  //  * @brief Get the moving joint names object.
-  //  *
-  //  * @return const std::vector<std::string>&
-  //  */
-  // const std::vector<std::string>& getMovingJointNames() const
-  // {
-  //   return moving_joint_names_;
-  // }
+  /**
+   * @brief Get the moving joint names object.
+   *
+   * @return const std::vector<std::string>&
+   */
+  const std::vector<std::string>& getMovingJointNames() const
+  {
+    return moving_joint_names_;
+  }
 
-  // /**
-  //  * @brief Get the moving joint ids object.
-  //  *
-  //  * @return const std::vector<long unsigned int>&
-  //  */
-  // const std::vector<long unsigned int>& getMovingJointIds() const
-  // {
-  //   return moving_joint_ids_;
-  // }
+  /**
+   * @brief Get the moving joint ids object.
+   *
+   * @return const std::vector<long unsigned int>&
+   */
+  const std::vector<long unsigned int>& getMovingJointIds() const
+  {
+    return moving_joint_ids_;
+  }
 
-  // /**
-  //  * @brief Get the locked joint ids object.
-  //  *
-  //  * @return const std::vector<long unsigned int>&
-  //  */
-  // const std::vector<long unsigned int>& getLockedJointIds() const
-  // {
-  //   return locked_joint_ids_;
-  // }
+  /**
+   * @brief Get the locked joint ids object.
+   *
+   * @return const std::vector<long unsigned int>&
+   */
+  const std::vector<long unsigned int>& getLockedJointIds() const
+  {
+    return locked_joint_ids_;
+  }
 
   /**
    * @brief Get the URDF string.
@@ -191,62 +202,119 @@ public:  // Setters and getters
     return in_urdf_;
   }
 
-  // /**
-  //  * @brief Get the torque offset.
-  //  *
-  //  * @return const std::vector<long unsigned int>&
-  //  */
-  // const std::vector<double>& getTorqueOffsets() const
-  // {
-  //   return in_torque_offsets_;
-  // }
+  /**
+   * @brief Get the torque offset.
+   *
+   * @return const std::vector<long unsigned int>&
+   */
+  const std::vector<double>& getTorqueOffsets() const
+  {
+    return in_torque_offsets_;
+  }
 
 private:  // Members
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
-  // /// @brief String containing the extras of the model of the robot.
-  // std::string in_srdf_;
-  // /// @brief List of names that correspond to the joints moving by the MPC.
-  // std::vector<std::string> in_moving_joint_names_;
-  // /// @brief Are we using a robot that has a free-flyer?
-  // bool in_robot_has_free_flyer_;
-  // /// @brief Joint torque offsets based on the state of the hardware.
-  // std::vector<double> in_torque_offsets_;
+  /// @brief String containing the extras of the model of the robot.
+  std::string in_srdf_;
+  /// @brief List of names that correspond to the joints moving by the MPC.
+  std::vector<std::string> in_moving_joint_names_;
+  /// @brief Are we using a robot that has a free-flyer?
+  bool in_robot_has_free_flyer_;
+  /** @brief Joint torque offsets based on the state of the hardware.
+   *  They are used in the hardware interface indexing.
+   */
+  std::vector<double> in_torque_offsets_;
 
-  // /// @brief Pinocchio (Rigid body dynamics robot model).
-  // pinocchio::Model pinocchio_model_complete_;
-  // pinocchio::Model pinocchio_model_reduced_;
+  /// @brief Pinocchio (Rigid body dynamics robot model).
+  pinocchio::Model pinocchio_model_complete_;
+  pinocchio::Model pinocchio_model_reduced_;
 
-  // /// @brief Moving joint ids sorted in the urdf order.
-  // std::vector<pinocchio::JointIndex> moving_joint_ids_;
-  // /// @brief Sort the moving joint names using the urdf order.
-  // std::vector<std::string> moving_joint_names_;
-  // /// @brief Sort the locked (position moving) joint names using the urdf order.
-  // std::vector<pinocchio::JointIndex> locked_joint_ids_;
+  /// @brief Moving joint ids sorted in the urdf order.
+  std::vector<pinocchio::JointIndex> moving_joint_ids_;
+  /// @brief Sort the moving joint names using the urdf order.
+  std::vector<std::string> moving_joint_names_;
+  /// @brief Sort the locked (position moving) joint names using the urdf order.
+  std::vector<pinocchio::JointIndex> locked_joint_ids_;
+  /// @brief Mapping from the pinocchio indexing to the hardware interface.
+  std::map<int, int> pin_to_hwi_;
 
-  // /// @brief Initial whole body configuration setup in the SRDF file.
-  // Eigen::VectorXd q_default_complete_;
+  /// @brief Initial whole body configuration setup in the SRDF file.
+  Eigen::VectorXd q_default_complete_;
 
-  // /// @brief Actual robot state publisher.
-  // // std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
+  /// @brief Actual robot state publisher.
+  std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
 
-  // /// @brief  ROS sensor message data.
-  // linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
+  /// @brief  ROS sensor message data.
+  linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
+  linear_feedback_controller_msgs::Eigen::Sensor eigen_sensor_msg_;
 
-  // /// @brief Actual robot state publisher.
-  // // ros::Subscriber control_subscriber_;
+  /// @brief Actual robot state publisher.
+  ros::Subscriber control_subscriber_;
 
-  // /// @brief Initial joint effort measured.
-  // std::vector<double> initial_torque_;
+  /// @brief  ROS sensor message data.
+  linear_feedback_controller_msgs::Eigen::Control eigen_control_msg_;
 
-  // /// @brief Initial joint position.
-  // std::vector<double> initial_position_;
+  /// @brief Configuration around which the controller is linearized.
+  Eigen::VectorXd desired_configuration_;
 
-  // /// @brief Desired joint torque.
-  // std::vector<double> desired_torque_;
+  /// @brief Generalized velocity around which the controller is linearized.
+  Eigen::VectorXd desired_velocity_;
 
-  // /// @brief Measured joint torque.
-  // std::vector<double> actual_torque_;
+  /// @brief Configuration around which the controller is linearized.
+  Eigen::VectorXd measured_configuration_;
+
+  /// @brief Generalized velocity around which the controller is linearized.
+  Eigen::VectorXd measured_velocity_;
+
+  /// @brief PD controller desired torque.
+  Eigen::VectorXd pd_desired_torque_;
+
+  /// @brief Initial joint torque.
+  std::vector<double> initial_torque_;
+
+  /// @brief Initial joint position.
+  std::vector<double> initial_position_;
+
+  /**
+   *  @brief Difference between the measured and the desired state,
+   *  \$f x = [ q^T, \dot{q}^T ]^T \$f
+   * 
+   */
+  Eigen::VectorXd diff_state_;
+
+  /** @brief Mutex used in the update function in order to prevent updates of
+   * the user control while the desired joint torque is computed. This mutex
+   * is also used in the callback function of the subscriber.
+   */
+  std::timed_mutex mutex_;
+
+  /// @brief List of end-effector swinging, hence not in contact.
+  std::vector<std::string> desired_swing_ids_;
+
+  /// @brief List of end-effector in contact, hence not swinging.
+  std::vector<std::string> desired_stance_ids_;
+
+  // /// @brief Allow to reconfigure online the PD gains used during the initialization.
+  // ddynamic_reconfigure::DDynamicReconfigurePtr dd_reconfigure_;
+
+  /// @brief Arm P gain of the PD control of the joints when the robot is standing still.
+  double p_arm_gain_;
+
+  /// @brief Arm D gain of the PD control of the joints when the robot is standing still.
+  double d_arm_gain_;
+
+  /// @brief Torso P gain of the PD control of the joints when the robot is standing still.
+  double p_torso_gain_;
+
+  /// @brief Torso D gain of the PD control of the joints when the robot is standing still.
+  double d_torso_gain_;
+
+  /// @brief Leg P gain of the PD control of the joints when the robot is standing still.
+  double p_leg_gain_;
+
+  /// @brief Leg D gain of the PD control of the joints when the robot is standing still.
+  double d_leg_gain_;
 };
 
 }  // namespace linear_feedback_controller
@@ -270,7 +338,7 @@ private:  // Members
 // std::vector<double> initial_torque_;
 // std::vector<double> initial_position_;
 // std::vector<double> desired_torque_;
-// std::vector<double> actual_torque_;
+// std::vector<double> measured_torque_;
 // std::vector<double> torque_offsets_;
 
 // ddynamic_reconfigure::DDynamicReconfigurePtr dd_reconfigure_;
