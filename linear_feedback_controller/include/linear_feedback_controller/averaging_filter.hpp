@@ -36,7 +36,14 @@ class AveragingFilter {
    *
    * @return int
    */
-  std::size_t getMaxSize() { return max_size_; }
+  const std::size_t& getMaxSize() const { return max_size_; }
+
+  /**
+   * @brief Get the buffer max size.
+   *
+   * @return int
+   */
+  const std::deque<double>& getBuffer() const { return buffer_; }
 
   /**
    * @brief Get the filtered data. In case the buffer is not initialize return
