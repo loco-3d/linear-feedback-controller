@@ -23,12 +23,11 @@ endif()
 #
 # Dependencies
 #
-# find_package(pinocchio REQUIRED)
-find_package(catkin REQUIRED)
-# find_package(roscpp REQUIRED)
-# find_package(realtime_tools REQUIRED)
-find_package(pal_base_ros_controller REQUIRED)
-# find_package(linear_feedback_controller_msgs CONFIG REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(pinocchio REQUIRED)
+set(MY_CATKIN_COMPONENTS roscpp realtime_tools pal_base_ros_controller
+                         linear_feedback_controller_msgs)
+find_package(catkin REQUIRED COMPONENTS ${MY_CATKIN_COMPONENTS})
 
 #
 # Export as catkin package (For ROS1 compatibility...).
@@ -37,12 +36,8 @@ find_package(pal_base_ros_controller REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp
-                #  realtime_tools
-                 linear_feedback_controller_msgs
-                 pluginlib
-                 pal_base_ros_controller 
-  DEPENDS pinocchio)
+  CATKIN_DEPENDS ${MY_CATKIN_COMPONENTS}
+  DEPENDS EIGEN3 pinocchio)
 # cmake-format: on
 
 #
@@ -59,18 +54,15 @@ add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES}
                                    ${${PROJECT_NAME}_HEADERS})
 target_include_directories(
   ${PROJECT_NAME} SYSTEM
-  PUBLIC ${roscpp_INCLUDE_DIRS} ${realtime_tools_INCLUDE_DIRS}
-         ${pal_base_ros_controller_INCLUDE_DIRS}
-         ${linear_feedback_controller_msgs_INCLUDE_DIRS})
+  PUBLIC ${catkin_INCLUDE_DIRS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_link_libraries(
   ${PROJECT_NAME}
-  PUBLIC # pinocchio::pinocchio
-         ${roscpp_LIBRARIES} ${realtime_tools_LIBRARIES}
-         ${pal_base_ros_controller_LIBRARIES}
-         ${linear_feedback_controller_msgs_LIBRARIES})
+  PUBLIC pinocchio::pinocchio
+         Eigen3::Eigen
+         ${catkin_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX
                                                  INSTALL_RPATH "\$ORIGIN")
 
@@ -95,11 +87,9 @@ if(BUILD_TESTING)
   add_rostest_gtest(
     test_linear_feedback_controller_basic
     tests/test_linear_feedback_controller_basic.test
-    tests/test_linear_feedback_controller_basic.cpp
-    tests/ros_gtest_main.cpp
-    )
-  target_link_libraries(test_linear_feedback_controller_basic
-                        ${PROJECT_NAME} example-robot-data::example-robot-data)
+    tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
+  target_link_libraries(test_linear_feedback_controller_basic ${PROJECT_NAME}
+                        example-robot-data::example-robot-data)
   target_compile_definitions(
     test_linear_feedback_controller_basic
     PRIVATE TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
