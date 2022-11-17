@@ -41,7 +41,6 @@ struct Sensor
 struct Control
 {
   ::Eigen::MatrixXd feedback_gain;
-  ::Eigen::VectorXd feedforward;
   linear_feedback_controller_msgs::Eigen::Sensor initial_state;
 };
 }  // namespace Eigen
@@ -117,7 +116,6 @@ inline void sensorMsgToEigen(const Sensor& m, linear_feedback_controller_msgs::E
 inline void controlMsgToEigen(const Control& m, linear_feedback_controller_msgs::Eigen::Control& e)
 {
   matrixMsgToEigen(m.feedback_gain, e.feedback_gain);
-  matrixMsgToEigen(m.feedforward, e.feedforward);
   sensorMsgToEigen(m.initial_state, e.initial_state);
 }
 
@@ -163,7 +161,6 @@ inline void sensorEigenToMsg(const linear_feedback_controller_msgs::Eigen::Senso
 inline void controlEigenToMsg(const linear_feedback_controller_msgs::Eigen::Control& e, Control& m)
 {
   matrixEigenToMsg(e.feedback_gain, m.feedback_gain);
-  matrixEigenToMsg(e.feedforward, m.feedforward);
   sensorEigenToMsg(e.initial_state, m.initial_state);
 }
 
