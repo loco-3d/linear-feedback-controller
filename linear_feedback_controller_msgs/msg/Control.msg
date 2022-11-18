@@ -28,6 +28,9 @@ Header header
 # Linear feedback gain matrix.
 std_msgs/Float64MultiArray feedback_gain
 
+# Vector of the feedforward. 
+std_msgs/Float64MultiArray feedforward
+
 # Initial state
 ###############
 

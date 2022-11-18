@@ -25,6 +25,7 @@
   <depend>eigen_conversions</depend>
 
   <test_depend>rospy</test_depend>
+  <test_depend>gtest</test_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />
