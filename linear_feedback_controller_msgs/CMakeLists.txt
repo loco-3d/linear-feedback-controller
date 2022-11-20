@@ -74,6 +74,6 @@ install(
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 install(
-  DIRECTORY include
+  DIRECTORY include/${PROJECT_NAME}
   DESTINATION include
   PATTERN "third_party" EXCLUDE)
