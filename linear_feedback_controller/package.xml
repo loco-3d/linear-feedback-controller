@@ -21,6 +21,8 @@
   <depend>pal_base_ros_controller</depend>
   <depend>pluginlib</depend>
 
+  <exec_depend>python-rospkg</exec_depend>
+
   <test_depend>rostest</test_depend>
   <test_depend>gtest</test_depend>
 
