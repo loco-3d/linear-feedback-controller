@@ -267,7 +267,7 @@ private:  // Members
   /// @brief Generalized velocity around which the controller is linearized.
   Eigen::VectorXd measured_velocity_;
 
-  /// @brief PD controller desired torque.
+  /// @brief PD controller desired torque.torque.
   Eigen::VectorXd pd_desired_torque_;
 
   /// @brief Initial joint torque.
@@ -288,6 +288,9 @@ private:  // Members
    * is also used in the callback function of the subscriber.
    */
   std::timed_mutex mutex_;
+
+  /// @brief Time during which we wait for the mutex to get unlocked.
+  int ms_mutex_;
 
   /// @brief List of end-effector swinging, hence not in contact.
   std::vector<std::string> desired_swing_ids_;

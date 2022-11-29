@@ -311,10 +311,3 @@ TEST_F(LinearFeedbackControllerTest, checkLoadEtras_LockedJointIdsDuplicate) {
   }
   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
 }
-
-TEST_F(LinearFeedbackControllerTest, checkLoadEtras_JointTorqueOffsets) {
-  ROS_WARN_STREAM("This test is only valid because no roscontrol hardware exists here.");
-  LinearFeedbackController obj;
-  obj.loadEtras(nh_);
-  ASSERT_EQ(obj.getTorqueOffsets(), std::vector<double>());
-}

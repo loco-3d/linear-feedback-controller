@@ -1,0 +1,29 @@
+<?xml version = "1.0"?>
+<launch>
+     <!-- Load the linear feedback controller. -->
+     <arg name = "spawn"
+          default = "true" />
+     <arg name = "simulation"
+          default = "false" />
+     <arg name = "ns"
+          default = "linear_feedback_controller" />
+  
+     <include file = "$(find linear_feedback_controller)/launch/talos_params.launch">
+          <arg name = "simulation"
+               value = "$(arg simulation)" />
+          <arg name = "ns"
+               value = "$(arg ns)" />
+     </include> 
+
+     <rosparam command = "load"
+               file = "$(find linear_feedback_controller)/config/talos_linear_feedback_controller_params.yaml" />
+
+     <group if = "$(arg spawn)">
+          <node name = "linear_feedback_controller_spawner"
+                pkg = "controller_manager"
+                type = "spawner"
+                output = "screen"
+                args = "linear_feedback_controller" />
+     </group>
+        
+</launch>

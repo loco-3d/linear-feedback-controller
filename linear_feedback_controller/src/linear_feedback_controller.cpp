@@ -119,6 +119,9 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle)
   // dd_reconfigure_->RegisterVariable(&p_leg_gain_, "p_leg");
   // dd_reconfigure_->RegisterVariable(&d_leg_gain_, "d_leg");
   // dd_reconfigure_->PublishServicesTopics();
+
+  // Mutex watch dog deadline.
+  ms_mutex_ = (int)getControllerDt().toSec() * 1000;
   return true;
 }
 
@@ -154,7 +157,6 @@ void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros
     int nb_joint = ctrl_js.name.size();
     desired_configuration_.tail(nb_joint) = ctrl_js.position;
     desired_velocity_.tail(nb_joint) = ctrl_js.velocity;
-    const Eigen::VectorXd desired_torque = ctrl_js.effort;
     measured_configuration_.tail(nb_joint) = sensor_js.position;
     measured_velocity_.tail(nb_joint) = sensor_js.velocity;
 
@@ -163,13 +165,16 @@ void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros
                           diff_state_.head(pinocchio_model_reduced_.nv));
     diff_state_.tail(pinocchio_model_reduced_.nv) = desired_velocity_ - measured_velocity_;
 
-    for (std::size_t i = 1; i < ctrl_js.name.size(); ++i)
+    for (std::size_t i = 0; i < ctrl_js.name.size(); ++i)
     {
-      /// @todo Figure out why i = 1 in this for loop.
-      setDesiredJointState(ctrl_js.name[i], ctrl_js.position[i], ctrl_js.velocity[i],
-                           0.0,  // Acceleration.
-                           ctrl_js.effort[i] +
-                               eigen_control_msg_.feedback_gain.row(i - 1) * diff_state_);
+      /// @todo Figure out why i = 1 in this for loop in memmo_subscriber_controller_squat.cpp.
+      setDesiredJointState(
+          ctrl_js.name[i],      //
+          ctrl_js.position[i],  //
+          ctrl_js.velocity[i],  //
+          0.0,                  // Acceleration.
+          static_cast<double>(eigen_control_msg_.feedforward(i - 1) +
+                              eigen_control_msg_.feedback_gain.row(i - 1) * diff_state_));
     }
 
     // Define the support foot
@@ -195,7 +200,6 @@ void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros
   }
   else if (ctrl_js.name.empty())  // No control has been sent yet.
   {
-    
     for (std::size_t i = 0; i < sensor_js.name.size(); i++)
     {
       const int i_int = static_cast<int>(i);
@@ -256,7 +260,7 @@ bool LinearFeedbackController::parseMovingJointNames(
     std::vector<long unsigned int>& locked_joint_ids)
 {
   // Get moving joints ids
-  ROS_INFO_STREAM("Map the given moving joints names with their urdf ids");
+  ROS_DEBUG_STREAM("Map the given moving joints names with their urdf ids");
   moving_joint_ids.clear();
   for (std::vector<std::string>::const_iterator it = in_moving_joint_names.begin();
        it != in_moving_joint_names.end(); ++it)
@@ -268,7 +272,7 @@ bool LinearFeedbackController::parseMovingJointNames(
     {
       joint_id = pinocchio_model_complete_.getJointId(joint_name);
       moving_joint_ids.push_back(joint_id);
-      ROS_INFO_STREAM("joint_name=" << joint_name << ", joint_id=" << joint_id);
+      ROS_DEBUG_STREAM("joint_name=" << joint_name << ", joint_id=" << joint_id);
     }
     else
     {
@@ -308,8 +312,8 @@ bool LinearFeedbackController::parseMovingJointNames(
     // verify that the found moving joints are part of the hardware interface.
     if (it == getControlledJointNames().end())
     {
-      ROS_ERROR_STREAM("Moving joint "
-                       << moving_joint_names[i]
+      ROS_ERROR_STREAM("LinearFeedbackController::parseMovingJointNames(): "
+                       << "Moving joint " << moving_joint_names[i]
                        << " is not part of the current roscontrol hardware interface.");
       return false;
     }
@@ -319,18 +323,22 @@ bool LinearFeedbackController::parseMovingJointNames(
   return true;
 }
 
-void LinearFeedbackController::controlSubscriberCallback(
-    const linear_feedback_controller_msgs::Control& /*msg*/)
+void LinearFeedbackController::controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg)
 {
+  std::unique_lock<std::timed_mutex> lock(mutex_, std::defer_lock);
+  if (lock.try_lock_for(std::chrono::milliseconds(ms_mutex_)))
+  {
+    linear_feedback_controller_msgs::controlMsgToEigen(msg, eigen_control_msg_);
+  }
 }
 
 // Get the parameters of the node return false in case of failure.
-#define GET_ROS_PARAM(nh, name, var)                                                     \
-  if (!nh.hasParam(name))                                                                \
-  {                                                                                      \
-    ROS_INFO_STREAM("Missing ROS arg: " << name);                                        \
-    return false;                                                                        \
-  }                                                                                      \
+#define GET_ROS_PARAM(nh, name, var)                                                          \
+  if (!nh.hasParam(name))                                                                     \
+  {                                                                                           \
+    ROS_INFO_STREAM("LinearFeedbackController::parseRosParams(): Missing ROS arg: " << name); \
+    return false;                                                                             \
+  }                                                                                           \
   nh.getParam(name, var);
 
 bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
@@ -348,7 +356,7 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
         "joints/" + getControlledJointNames()[i] + "/actuator_params/torque_sensor_offset";
     GET_ROS_PARAM(node_handle, param_name, in_torque_offsets_[i]);
   }
-  ROS_INFO_STREAM("LinearFeedbackController: Loading parameters... Done.");
+  ROS_INFO_STREAM("LinearFeedbackController::parseRosParams(): Loading parameters... Done.");
   return true;
 }
 
@@ -435,37 +443,4 @@ void LinearFeedbackController::acquireSensorAndPublish()
   }
 }
 
-// clang-format off
-
-
-
-// void SubscriberControllerSandingLPF::stoppingExtra(const ros::Time& time)
-// {
-//     for (size_t i = 0; i < getControlledJointNames().size(); ++i)
-//     {
-//         //setDesiredJointTorque(i, 0.);
-//         setDesiredJointState(i,0.,0.,0.,0.);
-//     }
-// }
-
-// void SubscriberControllerSandingLPF::controlCb(const memmo_trajectory_controller::JointStateLPF &desired_state)
-// {
-//     //ROS_INFO_STREAM("Received desired torque from publisher");
-// 	tp_->startTimer("subscriber");
-//     std::unique_lock<std::timed_mutex> lock(mutex_, std::defer_lock);
-//     tp_->startTimer("mutex_subscriber");
-//     if(lock.try_lock_for(std::chrono::milliseconds(ms_mutex_)))
-//     {
-//         desired_state_ = desired_state;
-//     }
-//     tp_->stopTime("mutex_subscriber");
-//     tp_->stopTime("subscriber");
-//     for(size_t i = 0; i < desired_state_.riccati.size(); ++i) {
-// 		for (size_t j = 0; j < desired_state_.riccati[i].data.size(); ++j) {
-// 		    riccati_gains_(i,j) = desired_state_.riccati[i].data[j];
-// 		}
-// 	}
-// }
-
-// clang-format on
 }  // namespace linear_feedback_controller
