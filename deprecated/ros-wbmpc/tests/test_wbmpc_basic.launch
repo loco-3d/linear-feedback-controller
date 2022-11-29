@@ -1,3 +1,0 @@
-<launch>
-    <test test-name="test_wbmpc_basic" pkg="ros-wbmpc" type="test_wbmpc_basic"/>
-</launch>
