@@ -1,9 +1,10 @@
 <library path="lib/liblinear_feedback_controller_plugins">
 
-  <class type="linear_feedback_controller::LinearFeedbackController"
+  <class name="linear_feedback_controller::LinearFeedbackController"
+         type="linear_feedback_controller::LinearFeedbackController"
          base_class_type="controller_interface::ControllerBase">
     <description>
-      Local effort controller
+      Linear feedback controller with ROS topic based feedback loop.
     </description>
   </class>
   

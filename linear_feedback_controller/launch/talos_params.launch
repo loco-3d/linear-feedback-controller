@@ -54,7 +54,7 @@
     <rosparam command = "load"
               file = "$(find talos_pal_locomotion)/config/estimator/kinematic_estimator_params.yaml"
               ns = "$(arg ns)" />
-
+<!-- 
     <rosparam command = "load"
               file = "$(find talos_pal_locomotion)/config/estimator/imu_parameters.yaml"
               ns = "$(arg ns)" />
@@ -365,6 +365,6 @@
             <arg name = "joint_name_2"
                  value = "torso_2_joint" /> 
         </include> 
-    </group>
+    </group> -->
 
 </launch>

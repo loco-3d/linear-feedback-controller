@@ -25,8 +25,9 @@ endif()
 #
 find_package(Eigen3 REQUIRED)
 find_package(pinocchio REQUIRED)
-set(MY_CATKIN_COMPONENTS roscpp realtime_tools pal_base_ros_controller
-                         linear_feedback_controller_msgs)
+set(MY_CATKIN_COMPONENTS
+    roscpp realtime_tools pal_base_ros_controller
+    linear_feedback_controller_msgs pluginlib controller_interface)
 find_package(catkin REQUIRED COMPONENTS ${MY_CATKIN_COMPONENTS})
 
 #
@@ -45,40 +46,23 @@ catkin_package(
 #
 set(${PROJECT_NAME}_HEADERS
     include/${PROJECT_NAME}/linear_feedback_controller.hpp)
-set(${PROJECT_NAME}_SOURCES
-    src/linear_feedback_controller.cpp #
-    src/averaging_filter.cpp #
-    # src/model-utils.cpp
+set(${PROJECT_NAME}_SOURCES src/linear_feedback_controller.cpp #
+                            src/averaging_filter.cpp #
 )
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES}
                                    ${${PROJECT_NAME}_HEADERS})
-target_include_directories(
-  ${PROJECT_NAME} SYSTEM
-  PUBLIC ${catkin_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${catkin_INCLUDE_DIRS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC pinocchio::pinocchio
-         Eigen3::Eigen
-         ${catkin_LIBRARIES})
-set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX
-                                                 INSTALL_RPATH "\$ORIGIN")
+target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio Eigen3::Eigen
+                                             ${catkin_LIBRARIES})
 
 #
 # Plugins
 #
 add_library(${PROJECT_NAME}_plugins SHARED src/plugins.cpp)
-target_include_directories(${PROJECT_NAME}_plugins SYSTEM
-                           PUBLIC ${pluginlib_INCLUDE_DIRS})
-target_include_directories(
-  ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
-                         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${PROJECT_NAME}
-                                                     ${pluginlib_LIBRARIES})
-set_target_properties(${PROJECT_NAME}_plugins
-                      PROPERTIES LINKER_LANGUAGE CXX INSTALL_RPATH "\$ORIGIN")
+target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${PROJECT_NAME})
 
 #
 # Unit tests
@@ -97,7 +81,7 @@ if(BUILD_TESTING)
   target_compile_definitions(
     test_linear_feedback_controller_basic
     PRIVATE TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
-  
+
   # Test the Averaging filter class.
   catkin_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
   target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
@@ -107,10 +91,11 @@ endif()
 # Installation
 #
 install(FILES package.xml controller_plugins.xml
-        DESTINATION share/${PACKAGE_NAME})
-install(DIRECTORY config/ DESTINATION share/${PACKAGE_NAME}/config)
+        DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(
   TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_plugins
-  EXPORT ${TARGETS_EXPORT_NAME}
-  DESTINATION lib)
-install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})

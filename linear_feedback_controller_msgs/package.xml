@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <package format="2">
   <name>linear_feedback_controller_msgs</name>
   <version>0.0.0</version>
@@ -27,7 +28,4 @@
   <test_depend>rospy</test_depend>
   <test_depend>gtest</test_depend>
 
-  <export>
-    <rosdoc config="rosdoc.yaml" />
-  </export>
 </package>

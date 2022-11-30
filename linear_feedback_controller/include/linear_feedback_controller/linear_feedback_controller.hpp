@@ -12,9 +12,6 @@
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
 
-// export this lib as plugin
-#include <pluginlib/class_list_macros.h>
-
 // ROS Messages.
 #include <linear_feedback_controller_msgs/Sensor.h>
 #include <linear_feedback_controller_msgs/Control.h>
