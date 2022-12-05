@@ -65,7 +65,6 @@ class CheckInitPause(object):
         )
 
 
-## A sample python unit test
 class TestLinearFeedbackController(unittest.TestCase):
     lfc_process = None
 
@@ -84,6 +83,7 @@ class TestLinearFeedbackController(unittest.TestCase):
             time.sleep(0.001)
         default_ctrl_process.terminate()
         default_ctrl_process.wait()
+        time.sleep(2.0)
 
     @classmethod
     def load_and_start_linear_feedback_controller(cls):
@@ -92,19 +92,24 @@ class TestLinearFeedbackController(unittest.TestCase):
                 "roslaunch",
                 PKG,
                 "talos_linear_feedback_controller.launch",
+                "simulation:=true",
+                "default_params:=true",
             ]
         )
 
     @classmethod
     def setUpClass(cls):
         rospy.init_node("LinearFeedbackController")
-        time.sleep(2)
+        time.sleep(5)
         cls.start_and_stop_default_controller()
         cls.load_and_start_linear_feedback_controller()
 
     def setUp(self):
         pass
-    
+
+    def tearDown(self):
+        pass
+
     @classmethod
     def tearDownClass(cls):
         cls.lfc_process.terminate()
@@ -113,10 +118,6 @@ class TestLinearFeedbackController(unittest.TestCase):
     def test_load_params(
         self,
     ):
-        self.assertEqual(
-            rospy.get_param("linear_feedback_controller/robot_has_free_flyer"),
-            True,
-        )
         self.assertEqual(
             rospy.get_param("linear_feedback_controller/moving_joint_names"),
             [
@@ -148,7 +149,6 @@ class TestLinearFeedbackController(unittest.TestCase):
         self.assertEqual(
             msg.joint_state.name,
             [
-                "root_joint",
                 "leg_left_1_joint",
                 "leg_left_2_joint",
                 "leg_left_3_joint",

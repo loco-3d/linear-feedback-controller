@@ -94,8 +94,10 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle)
   eigen_sensor_msg_.joint_state.effort.resize(moving_joint_names_.size());
   eigen_sensor_msg_.joint_state.effort.fill(0.0);
   eigen_sensor_msg_.contacts.resize(2);
-  pd_desired_torque_.resize(moving_joint_names_.size());
+  pd_desired_torque_.resize(getControlledJointNames().size());
   pd_desired_torque_.fill(0.0);
+  lf_desired_torque_.resize(moving_joint_names_.size());
+  lf_desired_torque_.fill(0.0);
   /// @todo automatize this.
   eigen_sensor_msg_.contacts[0].name = "left_sole_link";
   eigen_sensor_msg_.contacts[1].name = "right_sole_link";
@@ -104,36 +106,30 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle)
   desired_stance_ids_.push_back("left_sole_link");
   desired_stance_ids_.push_back("right_sole_link");
 
+  min_jerk_.setParameters(from_pd_to_lf_duration_, 1.0);
+
   /// @todo Automatize the parametrization of these gains.
   p_arm_gain_ = 100.0;  // 500.0
   d_arm_gain_ = 8.0;    // 20.0
   p_torso_gain_ = 500.0;
   d_torso_gain_ = 20.0;
-  p_leg_gain_ = 800.0;  // 100.0; // 800.0
+  p_leg_gain_ = 800.0;  // 100.0
   d_leg_gain_ = 35.0;   // 8.0; //50.0
-  // dd_reconfigure_.reset(new ddynamic_reconfigure::DDynamicReconfigure(control_nh));
-  // dd_reconfigure_->RegisterVariable(&p_arm_gain_, "p_arm");
-  // dd_reconfigure_->RegisterVariable(&d_arm_gain_, "d_arm");
-  // dd_reconfigure_->RegisterVariable(&p_torso_gain_, "p_torso");
-  // dd_reconfigure_->RegisterVariable(&d_torso_gain_, "d_torso");
-  // dd_reconfigure_->RegisterVariable(&p_leg_gain_, "p_leg");
-  // dd_reconfigure_->RegisterVariable(&d_leg_gain_, "d_leg");
-  // dd_reconfigure_->PublishServicesTopics();
 
   // Mutex watch dog deadline.
   ms_mutex_ = (int)getControllerDt().toSec() * 1000;
+
+  ROS_INFO_STREAM("LinearFeedbackController::loadEtras(): Done.");
   return true;
 }
 
-void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros::Duration& /*period*/)
+void LinearFeedbackController::updateExtras(const ros::Time& time, const ros::Duration& /*period*/)
 {
   // Shortcuts for easier code writing.
   const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
       eigen_sensor_msg_.joint_state;
   const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
       eigen_control_msg_.initial_state.joint_state;
-  const linear_feedback_controller_msgs::Eigen::Sensor& ctrl_init =
-      eigen_control_msg_.initial_state;
 
   acquireSensorAndPublish();
 
@@ -146,93 +142,42 @@ void LinearFeedbackController::updateExtras(const ros::Time& /*time*/, const ros
   // arriving. Hence we skip the update from the message.
   if (lock.owns_lock() && (!ctrl_js.name.empty()))
   {
-    // Reconstruct the state vector: x = [q, v]
-    if (in_robot_has_free_flyer_)
-    {
-      desired_configuration_.head<7>() = ctrl_init.base_pose;
-      desired_velocity_.head<6>() = ctrl_init.base_twist;
-      measured_configuration_.head<7>() = eigen_sensor_msg_.base_pose;
-      measured_velocity_.head<6>() = eigen_sensor_msg_.base_twist;
-    }
-    int nb_joint = ctrl_js.name.size();
-    desired_configuration_.tail(nb_joint) = ctrl_js.position;
-    desired_velocity_.tail(nb_joint) = ctrl_js.velocity;
-    measured_configuration_.tail(nb_joint) = sensor_js.position;
-    measured_velocity_.tail(nb_joint) = sensor_js.velocity;
+    ROS_INFO_ONCE("LinearFeedbackController::updateExtras(): compute lfc.");
+    // compute the freeze robot action and create a smooth transition between
+    // the 2 controllers
+    pd_controller();
+    lf_controller();
 
-    // Compute the difference between the poses.
-    pinocchio::difference(pinocchio_model_reduced_, measured_configuration_, desired_configuration_,
-                          diff_state_.head(pinocchio_model_reduced_.nv));
-    diff_state_.tail(pinocchio_model_reduced_.nv) = desired_velocity_ - measured_velocity_;
+    double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
+    weighted_desired_torque_ = lf_desired_torque_ * (1 - weight) + weight * pd_desired_torque_;
 
     for (std::size_t i = 0; i < ctrl_js.name.size(); ++i)
     {
-      /// @todo Figure out why i = 1 in this for loop in memmo_subscriber_controller_squat.cpp.
-      setDesiredJointState(
-          ctrl_js.name[i],      //
-          ctrl_js.position[i],  //
-          ctrl_js.velocity[i],  //
-          0.0,                  // Acceleration.
-          static_cast<double>(eigen_control_msg_.feedforward(i - 1) +
-                              eigen_control_msg_.feedback_gain.row(i - 1) * diff_state_));
-    }
-
-    // Define the support foot
-    /// @todo automatize this in the estimator?
-    desired_swing_ids_.clear();
-    desired_stance_ids_.clear();
-    if (ctrl_init.contacts[0].active)
-    {
-      desired_stance_ids_.push_back("left_sole_link");
-    }
-    else
-    {
-      desired_swing_ids_.push_back("left_sole_link");
-    }
-    if (ctrl_init.contacts[1].active)
-    {
-      desired_stance_ids_.push_back("right_sole_link");
-    }
-    else
-    {
-      desired_swing_ids_.push_back("right_sole_link");
+      setDesiredJointState(ctrl_js.name[i],      //
+                           ctrl_js.position[i],  //
+                           ctrl_js.velocity[i],  //
+                           0.0,                  // Acceleration.
+                           weighted_desired_torque_(i));
     }
   }
   else if (ctrl_js.name.empty())  // No control has been sent yet.
   {
+    ROS_INFO_ONCE("LinearFeedbackController::updateExtras(): compute pdc.");
+    pd_controller();
     for (std::size_t i = 0; i < sensor_js.name.size(); i++)
     {
-      const int i_int = static_cast<int>(i);
-      if (sensor_js.name[i].find("torso") != std::string::npos)
-      {
-        pd_desired_torque_(i) =
-            initial_torque_[i] -
-            p_torso_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
-            d_torso_gain_ * getActualJointVelocity(i_int);
-      }
-      else if (sensor_js.name[i].find("arm") != std::string::npos)
-      {
-        pd_desired_torque_(i) =
-            initial_torque_[i] -
-            p_arm_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
-            d_arm_gain_ * getActualJointVelocity(i_int);
-      }
-      else
-      {
-        pd_desired_torque_(i) =
-            initial_torque_[i] -
-            p_leg_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
-            d_leg_gain_ * getActualJointVelocity(i_int);
-      }
-      setDesiredJointState(sensor_js.name[i],
-                           initial_position_[i],  //
-                           0.0,                   // Velocity
-                           0.0,                   // Acceleration
-                           pd_desired_torque_(i));
+      // Here we need the hardware interface indexing.
+      setDesiredJointState(getControlledJointNames()[pin_to_hwi_[i]],
+                           initial_position_[pin_to_hwi_[i]],  //
+                           0.0,                                // Velocity
+                           0.0,                                // Acceleration
+                           pd_desired_torque_(pin_to_hwi_[i]));
     }
+    init_lfc_time_ = time;
   }
   else
   {
+    ROS_INFO_STREAM("LinearFeedbackController::updateExtras(): Don't do anything.");
     ROS_WARN("Skipping received state");
   }
   // define the active contacts used for the base estimation
@@ -279,12 +224,16 @@ bool LinearFeedbackController::parseMovingJointNames(
       ROS_WARN_STREAM("joint_name=" << joint_name << " does not belong to the model");
     }
   }
+  if (in_robot_has_free_flyer_)
+  {
+    moving_joint_ids.push_back(pinocchio_model_complete_.getJointId("root_joint"));
+  }
   // Sort them to the pinocchio order (increasing number) and remove duplicates.
   std::sort(moving_joint_ids.begin(), moving_joint_ids.end());
   moving_joint_ids.erase(unique(moving_joint_ids.begin(), moving_joint_ids.end()),
                          moving_joint_ids.end());
 
-  // Remap the moving joint names to the Pinocchio oder.
+  // Remap the moving joint names to the Pinocchio order.
   moving_joint_names.clear();
   for (std::size_t i = 0; i < moving_joint_ids.size(); ++i)
   {
@@ -304,8 +253,21 @@ bool LinearFeedbackController::parseMovingJointNames(
     }
   }
 
+  // remove the "root_joint" if it exists in the moving_joint_names, we needed
+  // it to create the above locked_joint_ids needed for the reduced model.
+  auto root_name =
+      std::remove(moving_joint_names.begin(), moving_joint_names.end(), "root_joint");
+  if (root_name != moving_joint_names.end())
+  {
+    moving_joint_names.erase(root_name, moving_joint_names.end());
+    auto root_id = std::remove(moving_joint_ids.begin(), moving_joint_ids.end(),
+                               pinocchio_model_complete_.getJointId("root_joint"));
+    moving_joint_ids.erase(root_id, moving_joint_ids.end());
+  }
+
+
   // Create the joint name joint id mapping of the hardware interface.
-  for (std::size_t i = 1; i < moving_joint_names.size(); ++i)
+  for (std::size_t i = 0; i < moving_joint_names.size(); ++i)
   {
     auto it = std::find(getControlledJointNames().begin(),
                         getControlledJointNames().end(), moving_joint_names[i]);
@@ -320,7 +282,104 @@ bool LinearFeedbackController::parseMovingJointNames(
     std::size_t it_dist = (size_t)std::distance(getControlledJointNames().begin(), it);
     pin_to_hwi_.emplace(std::make_pair(i, it_dist));
   }
+  // Double check what we just did
+  for (std::size_t i = 0; i < moving_joint_names.size(); ++i)
+  {
+    if (moving_joint_names[i] != getControlledJointNames()[pin_to_hwi_[i]])
+    {
+      ROS_ERROR_STREAM("LinearFeedbackController::parseMovingJointNames(): "
+                       << "The mapping from pinocchio to roscontrol is wrong. "
+                       << "moving_joint_names[i] != getControlledJointNames()[pin_to_hwi_[i]] => "
+                       << moving_joint_names[i]
+                       << " != " << getControlledJointNames()[pin_to_hwi_[i]]);
+      return false;
+    }
+  }
+
   return true;
+}
+
+void LinearFeedbackController::lf_controller()
+{
+  // Shortcuts for easier code writing.
+  const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
+      eigen_sensor_msg_.joint_state;
+  const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
+      eigen_control_msg_.initial_state.joint_state;
+  const linear_feedback_controller_msgs::Eigen::Sensor& ctrl_init =
+      eigen_control_msg_.initial_state;
+
+  // Reconstruct the state vector: x = [q, v]
+  if (in_robot_has_free_flyer_)
+  {
+    desired_configuration_.head<7>() = ctrl_init.base_pose;
+    desired_velocity_.head<6>() = ctrl_init.base_twist;
+    measured_configuration_.head<7>() = eigen_sensor_msg_.base_pose;
+    measured_velocity_.head<6>() = eigen_sensor_msg_.base_twist;
+  }
+  int nb_joint = ctrl_js.name.size();
+  desired_configuration_.tail(nb_joint) = ctrl_js.position;
+  desired_velocity_.tail(nb_joint) = ctrl_js.velocity;
+  measured_configuration_.tail(nb_joint) = sensor_js.position;
+  measured_velocity_.tail(nb_joint) = sensor_js.velocity;
+
+  // Compute the linear feedback controller desired torque.
+  pinocchio::difference(pinocchio_model_reduced_, measured_configuration_,
+                        desired_configuration_, diff_state_.head(pinocchio_model_reduced_.nv));
+  diff_state_.tail(pinocchio_model_reduced_.nv) = desired_velocity_ - measured_velocity_;
+  lf_desired_torque_ =
+      eigen_control_msg_.feedforward + eigen_control_msg_.feedback_gain * diff_state_;
+
+  // Define the support foot
+  /// @todo automatize this in the estimator?
+  desired_swing_ids_.clear();
+  desired_stance_ids_.clear();
+  if (ctrl_init.contacts[0].active)
+  {
+    desired_stance_ids_.push_back("left_sole_link");
+  }
+  else
+  {
+    desired_swing_ids_.push_back("left_sole_link");
+  }
+  if (ctrl_init.contacts[1].active)
+  {
+    desired_stance_ids_.push_back("right_sole_link");
+  }
+  else
+  {
+    desired_swing_ids_.push_back("right_sole_link");
+  }
+}
+
+void LinearFeedbackController::pd_controller()
+{
+  pd_desired_torque_.fill(0.0);
+  for (std::size_t i = 0; i < getControlledJointNames().size(); i++)
+  {
+    const int i_int = static_cast<int>(i);
+    if (getControlledJointNames()[i].find("torso") != std::string::npos)
+    {
+      pd_desired_torque_(i) =
+          initial_torque_[i] -
+          p_torso_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
+          d_torso_gain_ * getActualJointVelocity(i_int);
+    }
+    else if (getControlledJointNames()[i].find("arm") != std::string::npos)
+    {
+      pd_desired_torque_(i) =
+          initial_torque_[i] -
+          p_arm_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
+          d_arm_gain_ * getActualJointVelocity(i_int);
+    }
+    else
+    {
+      pd_desired_torque_(i) =
+          initial_torque_[i] -
+          p_leg_gain_ * (getActualJointPosition(i_int) - initial_position_[i]) -
+          d_leg_gain_ * getActualJointVelocity(i_int);
+    }
+  }
 }
 
 void LinearFeedbackController::controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg)
@@ -333,13 +392,23 @@ void LinearFeedbackController::controlSubscriberCallback(const linear_feedback_c
 }
 
 // Get the parameters of the node return false in case of failure.
-#define GET_ROS_PARAM(nh, name, var)                                                          \
-  if (!nh.hasParam(name))                                                                     \
-  {                                                                                           \
-    ROS_INFO_STREAM("LinearFeedbackController::parseRosParams(): Missing ROS arg: " << name); \
-    return false;                                                                             \
-  }                                                                                           \
-  nh.getParam(name, var);
+#define GET_ROS_PARAM(nh, name, var)                                                     \
+  {                                                                                      \
+    std::string name_searched = name;                                                    \
+    if (nh.searchParam(name, name_searched))                                             \
+    {                                                                                    \
+      nh.getParam(name_searched, var);                                                   \
+    }                                                                                    \
+    else                                                                                 \
+    {                                                                                    \
+      ROS_ERROR_STREAM("LinearFeedbackController::parseRosParams(): Missing ROS arg: "   \
+                       << name_searched);                                                \
+      return false;                                                                      \
+    }                                                                                    \
+    ROS_DEBUG_STREAM("LinearFeedbackController::parseRosParams(): " << name_searched     \
+                                                                    << ": " << var);     \
+  }
+
 
 bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
 {
@@ -348,6 +417,20 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
   GET_ROS_PARAM(node_handle, "robot_description_semantic", in_srdf_);
   GET_ROS_PARAM(node_handle, "moving_joint_names", in_moving_joint_names_);
   GET_ROS_PARAM(node_handle, "robot_has_free_flyer", in_robot_has_free_flyer_);
+  {
+    std::string name_searched = "robot_has_free_flyer";
+    if (node_handle.searchParam(name_searched, name_searched))
+    {
+      node_handle.getParam(name_searched, in_robot_has_free_flyer_);
+    }
+    else
+    {
+      in_robot_has_free_flyer_ = true;
+    }
+    ROS_DEBUG_STREAM("LinearFeedbackController::parseRosParams(): robot_has_free_flyer: "
+                     << in_robot_has_free_flyer_);
+  }
+  GET_ROS_PARAM(node_handle, "from_pd_to_lf_duration", from_pd_to_lf_duration_);
   size_t nbjoint = getControlledJointNames().size();
   in_torque_offsets_.resize(nbjoint, 0.0);
   for (size_t i = 0; i < nbjoint; ++i)
@@ -362,26 +445,29 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle)
 
 void LinearFeedbackController::filterInitialState()
 {
-  int nb_joint = static_cast<int>(getControlledJointNames().size());
-  int nb_samples = 0;
-  initial_position_.resize(nb_joint, 0.0);
-  initial_torque_.resize(nb_joint, 0.0);
+  std::size_t nb_joint = getControlledJointNames().size();
+  initial_position_.resize(nb_joint);
+  initial_position_.fill(0.0);
+  initial_position_filter_.setMaxSize(10);
+  initial_torque_.resize(nb_joint);
+  initial_torque_.fill(0.0);
+  initial_torque_filter_.setMaxSize(10);
+
   ros::Time start_time =
       ros::Time::now() - ros::Duration(0, 1000000);  // An epsilon time before now;
   while ((ros::Time::now() - start_time) < ros::Duration(1.0))
   {
-    for (int i = 0; i < nb_joint; ++i)
+    for (std::size_t i = 0; i < nb_joint; ++i)
     {
-      initial_torque_[i] += initial_position_[i] += getActualJointPosition(i);
+      initial_position_(i) = getActualJointPosition(i);
+      initial_torque_(i) = getJointMeasuredTorque(i)  - in_torque_offsets_[i];;
     }
-    ++nb_samples;
+    initial_position_filter_.acquire(initial_position_);
+    initial_torque_filter_.acquire(initial_torque_);
     ros::Duration(0.01).sleep();
   }
-  for (int i = 0; i < nb_joint; i++)
-  {
-    initial_torque_[i] /= static_cast<double>(nb_samples);
-    initial_position_[i] /= nb_samples;
-  }
+  initial_torque_ = initial_torque_filter_.getFilteredData();
+  initial_position_ = initial_position_filter_.getFilteredData();
 }
 
 void LinearFeedbackController::acquireSensorAndPublish()
@@ -399,7 +485,7 @@ void LinearFeedbackController::acquireSensorAndPublish()
   // Fill the joint state data, i.e. the position, velocity and torque.
   const auto& act_jp = getActualJointPositions();
   const auto& act_jv = getActualJointVelocities();
-  std::size_t nb_joint = getActualJointPositions().size();
+  std::size_t nb_joint = eigen_sensor_msg_.joint_state.position.size();
   for (std::size_t i = 0; i < nb_joint; ++i)
   {
     eigen_sensor_msg_.joint_state.position(i) = act_jp[pin_to_hwi_[i]];
