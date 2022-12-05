@@ -46,8 +46,10 @@ catkin_package(
 #
 set(${PROJECT_NAME}_HEADERS
     include/${PROJECT_NAME}/linear_feedback_controller.hpp)
-set(${PROJECT_NAME}_SOURCES src/linear_feedback_controller.cpp #
-                            src/averaging_filter.cpp #
+set(${PROJECT_NAME}_SOURCES
+    src/linear_feedback_controller.cpp #
+    src/averaging_filter.cpp #
+    src/min_jerk.cpp #
 )
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCES}
                                    ${${PROJECT_NAME}_HEADERS})
