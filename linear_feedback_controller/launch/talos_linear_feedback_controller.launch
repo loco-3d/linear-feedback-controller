@@ -7,7 +7,17 @@
           default = "false" />
      <arg name = "ns"
           default = "linear_feedback_controller" />
+     <arg name = "debug_log"
+          default = "false" />
+     <arg name = "default_params"
+          default = "false" />
   
+     <group if = "$(arg debug_log)">
+       <env name="ROSCONSOLE_CONFIG_FILE"
+        value="$(find linear_feedback_controller)/tests/rosconsole.conf"/>
+       <env name="CTEST_OUTPUT_ON_FAILURE" value="1" />
+     </group>
+
      <include file = "$(find linear_feedback_controller)/launch/talos_params.launch">
           <arg name = "simulation"
                value = "$(arg simulation)" />
@@ -15,8 +25,16 @@
                value = "$(arg ns)" />
      </include> 
 
-     <rosparam command = "load"
-               file = "$(find linear_feedback_controller)/config/talos_linear_feedback_controller_params.yaml" />
+     <group if = "$(arg default_params)">
+          <rosparam command = "load"
+                    file = "$(find linear_feedback_controller)/config/talos_linear_feedback_controller_params.yaml" ns="$(arg ns)"/>
+     </group>
+
+
+     <!-- It has been shown that the example-robot-data urdf works kinda better on the robot than the one loaded from PAL's package. -->
+     <param name="$(arg ns)/robot_description" textfile="$(find example-robot-data)/robots/talos_data/robots/talos_full_v2.urdf"/>
+     <!-- For our controller we use the srdf of the example robot data as it contain the half-sitting posture. -->
+     <param name="$(arg ns)/robot_description_semantic" textfile="$(find example-robot-data)/robots/talos_data/srdf/talos.srdf"/>
 
      <group if = "$(arg spawn)">
           <node name = "linear_feedback_controller_spawner"
