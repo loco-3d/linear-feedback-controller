@@ -21,23 +21,9 @@
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
 
 // local include
+#include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/averaging_filter.hpp"
 
-// #include <boost/algorithm/string.hpp>
-// #include <algorithm>
-// #include <pinocchio/parsers/urdf.hpp>
-// #include <pinocchio/parsers/srdf.hpp>
-// #include <pinocchio/algorithm/joint-configuration.hpp>
-// #include <tf/transform_broadcaster.h>
-// #include <tf2_msgs/TFMessage.h>
-// #include <pinocchio/algorithm/model.hpp>
-
-//
-// #include <realtime_tools/realtime_publisher.h>
-// #include <sensor_msgs/JointState.h>
-// #include <memmo_trajectory_controller/JointStateLPF.h>
-// #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
-// #include <nav_msgs/Odometry.h>
 
 namespace linear_feedback_controller
 {
@@ -72,12 +58,12 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /**
-   * @brief Construct a new LinearFeedbackController object.
+   * @brief Construct a new LinearFeedbackController.
    */
   LinearFeedbackController();
 
   /**
-   * @brief Destroy the Linear Feedback Controller object.
+   * @brief Destroy the Linear Feedback Controller.
    */
   ~LinearFeedbackController();
 
@@ -158,9 +144,20 @@ private:  // Private methods.
    */
   void acquireSensorAndPublish();
 
+  /** @brief Computes an ordinary pd controller that freezes the robot.
+   * it sets the pd_desired_torque_ internal variable.
+   */
+  void pd_controller();
+
+  /**
+   * @brief Computes the linear feedback control from the messages received
+   * by the rostopic. It sets the lf_desired_torque_ internal variable.
+   */
+  void lf_controller();
+
 public:  // Setters and getters
   /**
-   * @brief Get the moving joint names object.
+   * @brief Get the moving joint names.
    *
    * @return const std::vector<std::string>&
    */
@@ -170,7 +167,7 @@ public:  // Setters and getters
   }
 
   /**
-   * @brief Get the moving joint ids object.
+   * @brief Get the moving joint ids.
    *
    * @return const std::vector<long unsigned int>&
    */
@@ -180,7 +177,7 @@ public:  // Setters and getters
   }
 
   /**
-   * @brief Get the locked joint ids object.
+   * @brief Get the locked joint ids.
    *
    * @return const std::vector<long unsigned int>&
    */
@@ -209,6 +206,16 @@ public:  // Setters and getters
     return in_torque_offsets_;
   }
 
+  /**
+   * @brief Get the From PD To LF Duration.
+   * 
+   * @return const std::vector<double>& 
+   */
+  const double& getFromPDToLFDuration() const
+  {
+    return from_pd_to_lf_duration_;
+  }
+
 private:  // Members
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
@@ -218,9 +225,11 @@ private:  // Members
   std::vector<std::string> in_moving_joint_names_;
   /// @brief Are we using a robot that has a free-flyer?
   bool in_robot_has_free_flyer_;
+  /** @brief Duration in second for the switch between the initial pd controller
+   * to the linear feedback one. */
+  double from_pd_to_lf_duration_;
   /** @brief Joint torque offsets based on the state of the hardware.
-   *  They are used in the hardware interface indexing.
-   */
+   *  They are used in the hardware interface indexing. */
   std::vector<double> in_torque_offsets_;
 
   /// @brief Pinocchio (Rigid body dynamics robot model).
@@ -264,19 +273,29 @@ private:  // Members
   /// @brief Generalized velocity around which the controller is linearized.
   Eigen::VectorXd measured_velocity_;
 
-  /// @brief PD controller desired torque.torque.
+  /// @brief PD controller desired torque.
   Eigen::VectorXd pd_desired_torque_;
 
-  /// @brief Initial joint torque.
-  std::vector<double> initial_torque_;
+  /// @brief Linear feedback controller desired torque.
+  Eigen::VectorXd lf_desired_torque_;
 
-  /// @brief Initial joint position.
-  std::vector<double> initial_position_;
+  /// @brief Weighted desired torque between the PD and the LF controllers.
+  Eigen::VectorXd weighted_desired_torque_;
+
+  /// @brief Initial joint torque.
+  Eigen::VectorXd initial_torque_;
+
+  AveragingFilter<Eigen::VectorXd> initial_torque_filter_;
+
+  /// @brief Initial joint position, used to freeze the robot around this value.
+  Eigen::VectorXd initial_position_;
+
+  AveragingFilter<Eigen::VectorXd> initial_position_filter_;
 
   /**
    *  @brief Difference between the measured and the desired state,
    *  \$f x = [ q^T, \dot{q}^T ]^T \$f
-   * 
+   *
    */
   Eigen::VectorXd diff_state_;
 
@@ -315,53 +334,26 @@ private:  // Members
 
   /// @brief Leg D gain of the PD control of the joints when the robot is standing still.
   double d_leg_gain_;
+
+  /// @brief Min jerk for control switch.
+  MinJerk min_jerk_;
+
+  /// @brief Time from which we compute the linear feedback control.
+  ros::Time init_lfc_time_;
 };
+
+template <class T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+  os << "vector size: " << v.size() << "\n";
+  for (std::size_t i = 0; i < v.size(); ++i)
+  {
+    os << "[" << i << "] " << v[i] << "\n";
+  }
+  os << std::endl;
+  return os;
+}
 
 }  // namespace linear_feedback_controller
 
 #endif  // LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_HPP
-
-
-// std::timed_mutex mutex_;
-// std::vector<std::string> moving_joint_names_;
-// std::map<std::string, int> actual_state_map_;
-// Eigen::VectorXd desired_effort_;
-// Eigen::VectorXd desired_pos_;
-// Eigen::VectorXd desired_vel_;
-// Eigen::VectorXd actual_pos_;
-// Eigen::VectorXd actual_vel_;
-// Eigen::VectorXd actual_tau_;
-// Eigen::VectorXd desired_tau_;
-// Eigen::VectorXd diff_state_;
-// Eigen::MatrixXd riccati_gains_;
-// memmo_trajectory_controller::JointStateLPF desired_state_;
-// std::vector<double> initial_torque_;
-// std::vector<double> initial_position_;
-// std::vector<double> desired_torque_;
-// std::vector<double> measured_torque_;
-// std::vector<double> torque_offsets_;
-
-// ddynamic_reconfigure::DDynamicReconfigurePtr dd_reconfigure_;
-// double p_arm_gain_;
-// double d_arm_gain_;
-// double p_torso_gain_;
-// double d_torso_gain_;
-// double p_leg_gain_;
-// double d_leg_gain_;
-
-// boost::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::JointState>>
-// joint_states_pub_;
-// boost::shared_ptr<realtime_tools::RealtimePublisher<nav_msgs::Odometry>> base_state_pub_;
-// sensor_msgs::JointState actual_js_state_; nav_msgs::Odometry actual_base_state_;
-
-// pal_statistics::RegistrationsRAII registered_variables_;
-// pal_robot_tools::TimeProfilerPtr tp_;
-// int ms_mutex_;
-
-// Eigen::Vector3d base_linear_vel_;
-// Eigen::Vector3d base_angular_vel_;
-// Eigen::Quaterniond base_orientation_;
-// Eigen::Vector3d base_position_;
-// std::deque<std::vector<double>> v_measures_;
-// std::deque<std::vector<double>> tau_measures_;
-// double nb_measure_;

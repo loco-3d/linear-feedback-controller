@@ -68,6 +68,23 @@ class LinearFeedbackControllerTest : public ::testing::Test {
         "torso_1_joint",
         "torso_2_joint",
     };
+    // remove the root_joint which is an artifact of Pinocchio.
+    test_sorted_moving_joint_names_ = {
+        "leg_left_1_joint",
+        "leg_left_2_joint",
+        "leg_left_3_joint",
+        "leg_left_4_joint",
+        "leg_left_5_joint",
+        "leg_left_6_joint",
+        "leg_right_1_joint",
+        "leg_right_2_joint",
+        "leg_right_3_joint",
+        "leg_right_4_joint",
+        "leg_right_5_joint",
+        "leg_right_6_joint",
+        "torso_1_joint",
+        "torso_2_joint",
+    };
     mixed_moving_joint_names_ = {
         "leg_right_1_joint",
         "leg_right_2_joint",
@@ -120,7 +137,7 @@ class LinearFeedbackControllerTest : public ::testing::Test {
       "torso_2_joint", "torso_2_joint",
     };
     sorted_moving_joint_ids_ =
-      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+      { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     sorted_locked_joint_ids_ =
       { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 };
     // clang-format on
@@ -146,6 +163,7 @@ class LinearFeedbackControllerTest : public ::testing::Test {
     torque_offset_values_ = {
         0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
     };
+    from_pd_to_lf_duration_= 0.1;
 
     // Get the parameters of the node.
     nh_.setParam("robot_description", urdf_);
@@ -156,6 +174,7 @@ class LinearFeedbackControllerTest : public ::testing::Test {
     {
       nh_.setParam(torque_offset_names_[i], torque_offset_values_[i]);
     }
+    nh_.setParam("from_pd_to_lf_duration", from_pd_to_lf_duration_);
   }
 
   void TearDown() override {}
@@ -165,6 +184,7 @@ class LinearFeedbackControllerTest : public ::testing::Test {
   std::vector<long unsigned int> sorted_moving_joint_ids_;
   std::vector<long unsigned int> sorted_locked_joint_ids_;
   std::vector<std::string> sorted_moving_joint_names_;
+  std::vector<std::string> test_sorted_moving_joint_names_;
   std::vector<std::string> mixed_moving_joint_names_;
   std::vector<std::string> wrong_moving_joint_names_;
   std::vector<std::string> duplicate_moving_joint_names_;
@@ -172,6 +192,7 @@ class LinearFeedbackControllerTest : public ::testing::Test {
   std::vector<double> torque_offset_values_;
   bool robot_has_free_flyer_;
   ros::NodeHandle nh_;
+  double from_pd_to_lf_duration_;
 };
 class DISABLED_LinearFeedbackControllerTest : public LinearFeedbackControllerTest {};
 
@@ -187,29 +208,29 @@ TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointNamesSorted) {
   LinearFeedbackController obj;
   nh_.setParam("moving_joint_names", sorted_moving_joint_names_);
   obj.loadEtras(nh_);
-  ASSERT_EQ(obj.getMovingJointNames(), sorted_moving_joint_names_);
+  ASSERT_EQ(obj.getMovingJointNames(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointNamesMixed) {
   LinearFeedbackController obj;
   nh_.setParam("moving_joint_names", mixed_moving_joint_names_);
   obj.loadEtras(nh_);
-  ASSERT_EQ(obj.getMovingJointNames(), sorted_moving_joint_names_);
+  ASSERT_EQ(obj.getMovingJointNames(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointNamesWrong) {
   LinearFeedbackController obj;
   nh_.setParam("moving_joint_names", wrong_moving_joint_names_);
   obj.loadEtras(nh_);
-  sorted_moving_joint_names_.pop_back();
-  ASSERT_EQ(obj.getMovingJointNames(), sorted_moving_joint_names_);
+  test_sorted_moving_joint_names_.pop_back();
+  ASSERT_EQ(obj.getMovingJointNames(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointNamesDuplicate) {
   LinearFeedbackController obj;
   nh_.setParam("moving_joint_names", duplicate_moving_joint_names_);
   obj.loadEtras(nh_);
-  ASSERT_EQ(obj.getMovingJointNames(), sorted_moving_joint_names_);
+  ASSERT_EQ(obj.getMovingJointNames(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointIdsSorted) {
@@ -310,4 +331,11 @@ TEST_F(LinearFeedbackControllerTest, checkLoadEtras_LockedJointIdsDuplicate) {
     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
   }
   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
+}
+
+TEST_F(LinearFeedbackControllerTest, checkLoadEtras_getFromPDToLFDuration) {
+  LinearFeedbackController obj;
+  obj.loadEtras(nh_);
+
+  ASSERT_EQ(obj.getFromPDToLFDuration(), from_pd_to_lf_duration_);
 }
