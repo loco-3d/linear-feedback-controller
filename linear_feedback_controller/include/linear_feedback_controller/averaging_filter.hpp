@@ -5,6 +5,7 @@
 
 namespace linear_feedback_controller {
 
+template<class DataType> 
 class AveragingFilter {
  public:
   /**
@@ -22,7 +23,7 @@ class AveragingFilter {
    *
    * @param data
    */
-  void acquire(double data);
+  void acquire(DataType data);
 
   /**
    * @brief Set the buffer max size.
@@ -43,26 +44,28 @@ class AveragingFilter {
    *
    * @return int
    */
-  const std::deque<double>& getBuffer() const { return buffer_; }
+  const std::deque<DataType>& getBuffer() const { return buffer_; }
 
   /**
    * @brief Get the filtered data. In case the buffer is not initialize return
    * the last acquired data.
    *
-   * @return double
+   * @return DataType
    */
-  double getFilteredData();
+  DataType getFilteredData();
 
  private:
   /// @brief Inside buffer;
-  std::deque<double> buffer_;
+  std::deque<DataType> buffer_;
 
   /// @brief Maximum buffer size;
   std::size_t max_size_;
 
   /// @brief Last acquired data;
-  double last_data_;
+  DataType last_data_;
 };
 }  // namespace linear_feedback_controller
+
+#include "linear_feedback_controller/averaging_filter.hxx"
 
 #endif  // LINEAR_FEEDBACK_CONTROLLER_AVERAGING_FILTER_HPP
