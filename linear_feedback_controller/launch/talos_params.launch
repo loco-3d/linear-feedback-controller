@@ -54,7 +54,7 @@
     <rosparam command = "load"
               file = "$(find talos_pal_locomotion)/config/estimator/kinematic_estimator_params.yaml"
               ns = "$(arg ns)" />
-<!-- 
+
     <rosparam command = "load"
               file = "$(find talos_pal_locomotion)/config/estimator/imu_parameters.yaml"
               ns = "$(arg ns)" />
@@ -62,7 +62,7 @@
     <rosparam command = "load"
               file = "$(find talos_pal_locomotion)/config/sensors.yaml"
               ns = "$(arg ns)" />
-
+ 
     <include file = "$(eval find(arg('arm_left_local_joint_control_pkg')) + '/launch/' + arg('arm_left_control_type') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
@@ -288,14 +288,14 @@
              value = "arm_left_7_joint" />
     </include>
   
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
              value = "$(arg ns)" />
         <arg name = "joint_name"
              value = "gripper_left_joint" />
-    </include>
+    </include> -->
 
     <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
         <arg name = "controller_pkg_name"
@@ -324,15 +324,15 @@
              value = "arm_right_7_joint" />
     </include>
   
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
              value = "$(arg ns)" />
         <arg name = "joint_name"
              value = "gripper_right_joint" />
-    </include>
-
+    </include> -->
+    
     <group if = "$(arg simulation)">
         <include file = "$(eval find(arg('torso_local_joint_control_pkg')) + '/launch/' + arg('torso_control_type') + '.launch')">
             <arg name = "controller_pkg_name"
@@ -365,6 +365,6 @@
             <arg name = "joint_name_2"
                  value = "torso_2_joint" /> 
         </include> 
-    </group> -->
+    </group>
 
 </launch>
