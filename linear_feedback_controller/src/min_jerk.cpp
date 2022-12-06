@@ -15,7 +15,7 @@ MinJerk::MinJerk()
   , end_pos_(0.0)
   , end_speed_(0.0)
   , end_acc_(0.0)
-  , coeffs_({ 0.0, 0.0, 0.0, 0.0, 0.0 })
+  , coeffs_({{ 0.0, 0.0, 0.0, 0.0, 0.0 }})
 
 {
 }
