@@ -11,7 +11,7 @@
   <test test-name="LinearFeedbackController"
         pkg="linear_feedback_controller"
         type="test_linear_feedback_controller.py"
-        time-limit="100.0"
+        time-limit="9999999.0"
         required="true">
   </test>
 
