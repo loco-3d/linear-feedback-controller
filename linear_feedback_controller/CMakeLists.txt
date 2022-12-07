@@ -73,7 +73,7 @@ target_link_libraries(${PROJECT_NAME}_plugins PUBLIC ${PROJECT_NAME})
 #
 if(BUILD_TESTING)
   # Integration test of the roscontrol controller with simulation on Talos.
-  add_rostest(tests/test_linear_feedback_controller.test)
+  # add_rostest(tests/test_linear_feedback_controller.test)
 
   # Loading test, espaecially the parameters
   add_rostest_gtest(
