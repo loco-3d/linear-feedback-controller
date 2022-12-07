@@ -3,13 +3,11 @@
 
 #include <array>
 
-namespace linear_feedback_controller
-{
+namespace linear_feedback_controller {
 
 /// Polynomial used for X,Y and Theta trajectories.
-class MinJerk
-{
-public:
+class MinJerk {
+ public:
   /// @brief Construct a new Min Jerk object.
   MinJerk();
 
@@ -19,10 +17,11 @@ public:
   /// Set the parameters
   void setParameters(double end_time, double end_pos);
 
-  /// \brief Set parameters considering initial position, velocity, acceleration,
-  /// and final position, velocity and acceleration
-  void setParameters(double end_time, double start_pos, double start_speed, double start_acc,
-                     double end_pos, double end_speed, double end_acc);
+  /// \brief Set parameters considering initial position, velocity,
+  /// acceleration, and final position, velocity and acceleration
+  void setParameters(double end_time, double start_pos, double start_speed,
+                     double start_acc, double end_pos, double end_speed,
+                     double end_acc);
 
   /*! Compute the value. */
   double compute(double t);
@@ -42,7 +41,7 @@ public:
   /*! Set the coefficients. */
   void setCoefficients(const std::array<double, 5> &lCoefficients);
 
-private:
+ private:
   /// @brief Starting time of the min jerk trajectory
   double start_time_;
   /// @brief starting position.

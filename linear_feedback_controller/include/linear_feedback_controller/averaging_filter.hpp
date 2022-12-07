@@ -5,7 +5,7 @@
 
 namespace linear_feedback_controller {
 
-template<class DataType> 
+template <class DataType>
 class AveragingFilter {
  public:
   /**

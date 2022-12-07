@@ -84,19 +84,13 @@ class PDController(object):
             for i, name in enumerate(self.sensor.joint_state.name):
                 if "torso" in name:
                     self.feedback_gain[i, 6 + i] = self.p_torso_gain
-                    self.feedback_gain[
-                        i, 6 + nb_joints + 6 + i
-                    ] = self.d_torso_gain
+                    self.feedback_gain[i, 6 + nb_joints + 6 + i] = self.d_torso_gain
                 elif "arm" in name:
                     self.feedback_gain[i, 6 + i] = self.p_arm_gain
-                    self.feedback_gain[
-                        i, 6 + nb_joints + 6 + i
-                    ] = self.d_arm_gain
+                    self.feedback_gain[i, 6 + nb_joints + 6 + i] = self.d_arm_gain
                 else:
                     self.feedback_gain[i, 6 + i] = self.p_leg_gain
-                    self.feedback_gain[
-                        i, 6 + nb_joints + 6 + i
-                    ] = self.d_leg_gain
+                    self.feedback_gain[i, 6 + nb_joints + 6 + i] = self.d_leg_gain
         return self.feedback_gain
 
     def run(self):
@@ -108,12 +102,8 @@ class PDController(object):
             self.sensor_mutex.acquire()
             self.sensor = deepcopy(self.sensor_copy)
             self.sensor_mutex.release()
-            self.control.feedback_gain = numpy_to_multiarray(
-                self.build_feedback_gain()
-            )
-            self.control.feedforward = numpy_to_multiarray(
-                np.array(self.ijs.effort)
-            )
+            self.control.feedback_gain = numpy_to_multiarray(self.build_feedback_gain())
+            self.control.feedforward = numpy_to_multiarray(np.array(self.ijs.effort))
             self.control.initial_state = deepcopy(self.sensor)
 
             # create squatting motion

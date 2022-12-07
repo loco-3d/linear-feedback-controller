@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include "linear_feedback_controller_msgs/Sensor.h"
+
 #include "linear_feedback_controller_msgs/Control.h"
+#include "linear_feedback_controller_msgs/Sensor.h"
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 namespace lfc_msgs = linear_feedback_controller_msgs;
@@ -11,7 +12,8 @@ class LinearFeedbackControllerMsgsTest : public ::testing::Test {
 
   void TearDown() override {}
 };
-class DISABLED_LinearFeedbackControllerMsgsTest : public LinearFeedbackControllerMsgsTest {};
+class DISABLED_LinearFeedbackControllerMsgsTest
+    : public LinearFeedbackControllerMsgsTest {};
 
 TEST_F(LinearFeedbackControllerMsgsTest, checkEigenConstructors) {
   lfc_msgs::Eigen::Sensor s;
@@ -40,9 +42,12 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenJointStateConversion) {
   lfc_msgs::Eigen::JointState eigen_joint_state_test;
 
   eigen_joint_state.name = {"1", "2", "3", "4", "5", "6"};
-  eigen_joint_state.position = Eigen::VectorXd::Random(eigen_joint_state.name.size());
-  eigen_joint_state.velocity = Eigen::VectorXd::Random(eigen_joint_state.name.size());
-  eigen_joint_state.effort = Eigen::VectorXd::Random(eigen_joint_state.name.size());
+  eigen_joint_state.position =
+      Eigen::VectorXd::Random(eigen_joint_state.name.size());
+  eigen_joint_state.velocity =
+      Eigen::VectorXd::Random(eigen_joint_state.name.size());
+  eigen_joint_state.effort =
+      Eigen::VectorXd::Random(eigen_joint_state.name.size());
 
   lfc_msgs::jointStateEigenToMsg(eigen_joint_state, ros_joint_state);
   lfc_msgs::jointStateMsgToEigen(ros_joint_state, eigen_joint_state_test);
@@ -92,21 +97,29 @@ TEST_F(LinearFeedbackControllerMsgsTest, checkRosEigenControlConversion) {
   e.initial_state.base_pose.tail<4>() = q.coeffs();
   e.initial_state.base_twist = Eigen::Matrix<double, 6, 1>::Random();
   e.initial_state.joint_state.name = {"1", "2", "3", "4", "5", "6"};
-  e.initial_state.joint_state.position = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
-  e.initial_state.joint_state.velocity = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
-  e.initial_state.joint_state.effort = Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.initial_state.joint_state.position =
+      Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.initial_state.joint_state.velocity =
+      Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
+  e.initial_state.joint_state.effort =
+      Eigen::VectorXd::Random(e.initial_state.joint_state.name.size());
   e.feedback_gain = Eigen::MatrixXd::Random(8, 4);
   e.feedforward = Eigen::VectorXd::Random(8);
 
   lfc_msgs::controlEigenToMsg(e, m);
   lfc_msgs::controlMsgToEigen(m, etest);
 
-  ASSERT_TRUE(e.initial_state.base_pose.isApprox(etest.initial_state.base_pose));
+  ASSERT_TRUE(
+      e.initial_state.base_pose.isApprox(etest.initial_state.base_pose));
   ASSERT_EQ(e.initial_state.base_twist, etest.initial_state.base_twist);
-  ASSERT_EQ(e.initial_state.joint_state.name, etest.initial_state.joint_state.name);
-  ASSERT_EQ(e.initial_state.joint_state.position, etest.initial_state.joint_state.position);
-  ASSERT_EQ(e.initial_state.joint_state.velocity, etest.initial_state.joint_state.velocity);
-  ASSERT_EQ(e.initial_state.joint_state.effort, etest.initial_state.joint_state.effort);
+  ASSERT_EQ(e.initial_state.joint_state.name,
+            etest.initial_state.joint_state.name);
+  ASSERT_EQ(e.initial_state.joint_state.position,
+            etest.initial_state.joint_state.position);
+  ASSERT_EQ(e.initial_state.joint_state.velocity,
+            etest.initial_state.joint_state.velocity);
+  ASSERT_EQ(e.initial_state.joint_state.effort,
+            etest.initial_state.joint_state.effort);
   ASSERT_EQ(e.feedback_gain, etest.feedback_gain);
   ASSERT_EQ(e.feedforward, etest.feedforward);
 }

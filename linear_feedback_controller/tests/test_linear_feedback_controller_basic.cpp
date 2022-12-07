@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
-#include <fstream>
-#include <sstream>
-#include <example-robot-data/path.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <example-robot-data/path.hpp>
+#include <fstream>
+#include <sstream>
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
@@ -13,21 +14,18 @@ using namespace linear_feedback_controller;
 
 class LinearFeedbackControllerTest : public ::testing::Test {
  protected:
+  bool dirExists(const char *path) {
+    struct stat info;
 
-  bool dirExists(const char *path)
-  {
-      struct stat info;
-
-      if(stat( path, &info ) != 0)
-          return false;
-      else if(info.st_mode & S_IFDIR)
-          return true;
-      else
-          return false;
+    if (stat(path, &info) != 0)
+      return false;
+    else if (info.st_mode & S_IFDIR)
+      return true;
+    else
+      return false;
   }
-  
-  std::string readFile(std::string filename)
-  {
+
+  std::string readFile(std::string filename) {
     std::ifstream fbin = std::ifstream(filename);
     if (!fbin) {
       throw std::runtime_error("File " + filename + " is not found.");
@@ -38,11 +36,9 @@ class LinearFeedbackControllerTest : public ::testing::Test {
     return out;
   }
 
-  void SetUp() override
-  {
+  void SetUp() override {
     std::string data_dir = EXAMPLE_ROBOT_DATA_MODEL_DIR;
-    if (!dirExists(data_dir.c_str()))
-    {
+    if (!dirExists(data_dir.c_str())) {
       data_dir = "/opt/ros/melodic/share/example-robot-data/robots";
     }
     ASSERT_TRUE(dirExists(data_dir.c_str()));
@@ -161,17 +157,17 @@ class LinearFeedbackControllerTest : public ::testing::Test {
         "joints/torso_2_joint/actuator_params/torque_sensor_offset",
     };
     torque_offset_values_ = {
-        0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
+        0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,
+        0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
     };
-    from_pd_to_lf_duration_= 0.1;
+    from_pd_to_lf_duration_ = 0.1;
 
     // Get the parameters of the node.
     nh_.setParam("robot_description", urdf_);
     nh_.setParam("robot_description_semantic", srdf_);
     nh_.setParam("moving_joint_names", sorted_moving_joint_names_);
     nh_.setParam("robot_has_free_flyer", robot_has_free_flyer_);
-    for (std::size_t i = 0 ; i < torque_offset_names_.size() ; ++i)
-    {
+    for (std::size_t i = 0; i < torque_offset_names_.size(); ++i) {
       nh_.setParam(torque_offset_names_[i], torque_offset_values_[i]);
     }
     nh_.setParam("from_pd_to_lf_duration", from_pd_to_lf_duration_);
@@ -194,14 +190,17 @@ class LinearFeedbackControllerTest : public ::testing::Test {
   ros::NodeHandle nh_;
   double from_pd_to_lf_duration_;
 };
-class DISABLED_LinearFeedbackControllerTest : public LinearFeedbackControllerTest {};
+class DISABLED_LinearFeedbackControllerTest
+    : public LinearFeedbackControllerTest {};
 
-TEST_F(LinearFeedbackControllerTest, checkConstructor) { LinearFeedbackController obj; }
+TEST_F(LinearFeedbackControllerTest, checkConstructor) {
+  LinearFeedbackController obj;
+}
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_RobotModel) {
   LinearFeedbackController obj;
   bool ret = obj.loadEtras(nh_);
-  ASSERT_FALSE(ret); // No hardware interface exists yet here...
+  ASSERT_FALSE(ret);  // No hardware interface exists yet here...
 }
 
 TEST_F(LinearFeedbackControllerTest, checkLoadEtras_MovingJointNamesSorted) {
@@ -317,7 +316,8 @@ TEST_F(LinearFeedbackControllerTest, checkLoadEtras_LockedJointIdsWrong) {
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
   }
-  sorted_locked_joint_ids_.insert(sorted_locked_joint_ids_.begin(), sorted_moving_joint_ids_.back());
+  sorted_locked_joint_ids_.insert(sorted_locked_joint_ids_.begin(),
+                                  sorted_moving_joint_ids_.back());
   ASSERT_EQ(obj.getLockedJointIds(), sorted_locked_joint_ids_);
 }
 

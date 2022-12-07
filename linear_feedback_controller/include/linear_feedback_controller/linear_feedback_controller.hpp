@@ -9,24 +9,23 @@
 #include <pinocchio/multibody/model.hpp>
 
 // ROS C++ api
-#include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
+#include <ros/ros.h>
 
 // ROS Messages.
-#include <linear_feedback_controller_msgs/Sensor.h>
 #include <linear_feedback_controller_msgs/Control.h>
+#include <linear_feedback_controller_msgs/Sensor.h>
+
 #include <linear_feedback_controller_msgs/eigen_conversions.hpp>
 
 // PAL roscontrol controller containing their estimator.
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
 
 // local include
-#include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/averaging_filter.hpp"
+#include "linear_feedback_controller/min_jerk.hpp"
 
-
-namespace linear_feedback_controller
-{
+namespace linear_feedback_controller {
 
 /**
  * @brief This class has for purpose to connect Whole Body Model Predictive
@@ -47,14 +46,14 @@ namespace linear_feedback_controller
  * respectively the desired and actual state of the controller, and finally
  * \f$ \tau_0 \f$ the feed-forward term.
  *
- * This class inherits from the pal_base_ros_controller::BaseRobotWithEsimatorController
- * class which is a PAL-ROBOTICS class that pre-instantiate a base estimator.
- * Hence base data which are available in this controller come from this
- * estimator.
+ * This class inherits from the
+ * pal_base_ros_controller::BaseRobotWithEsimatorController class which is a
+ * PAL-ROBOTICS class that pre-instantiate a base estimator. Hence base data
+ * which are available in this controller come from this estimator.
  */
-class LinearFeedbackController : public pal_base_ros_controller::BaseRobotWithEsimatorController
-{
-public:
+class LinearFeedbackController
+    : public pal_base_ros_controller::BaseRobotWithEsimatorController {
+ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /**
@@ -84,7 +83,8 @@ public:
    * @param time current time.
    * @param period roscontrol period, on Talos 2kHz.
    */
-  void updateExtras(const ros::Time& time, const ros::Duration& period) override;
+  void updateExtras(const ros::Time& time,
+                    const ros::Duration& period) override;
 
   /**
    * @brief Starting the controller, meaning starting to compute \f$ \tau \f$.
@@ -100,7 +100,7 @@ public:
    */
   void stoppingExtra(const ros::Time& time) override;
 
-private:  // Private methods.
+ private:  // Private methods.
   /**
    * @brief Parse the joint moving names given by the user and build the
    * rigid body models accordingly.
@@ -110,16 +110,18 @@ private:  // Private methods.
    * @param moving_joint_ids
    * @param locked_joint_ids
    */
-  bool parseMovingJointNames(const std::vector<std::string>& in_moving_joint_names,
-                             std::vector<std::string>& moving_joint_names,
-                             std::vector<long unsigned int>& moving_joint_ids,
-                             std::vector<long unsigned int>& locked_joint_ids);
+  bool parseMovingJointNames(
+      const std::vector<std::string>& in_moving_joint_names,
+      std::vector<std::string>& moving_joint_names,
+      std::vector<long unsigned int>& moving_joint_ids,
+      std::vector<long unsigned int>& locked_joint_ids);
   /**
    * @brief Acquire the control from the external controller.
    *
    * @param msg
    */
-  void controlSubscriberCallback(const linear_feedback_controller_msgs::Control& msg);
+  void controlSubscriberCallback(
+      const linear_feedback_controller_msgs::Control& msg);
 
   /**
    * @brief Parse the ROS parameters.
@@ -155,14 +157,13 @@ private:  // Private methods.
    */
   void lf_controller();
 
-public:  // Setters and getters
+ public:  // Setters and getters
   /**
    * @brief Get the moving joint names.
    *
    * @return const std::vector<std::string>&
    */
-  const std::vector<std::string>& getMovingJointNames() const
-  {
+  const std::vector<std::string>& getMovingJointNames() const {
     return moving_joint_names_;
   }
 
@@ -171,8 +172,7 @@ public:  // Setters and getters
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<long unsigned int>& getMovingJointIds() const
-  {
+  const std::vector<long unsigned int>& getMovingJointIds() const {
     return moving_joint_ids_;
   }
 
@@ -181,8 +181,7 @@ public:  // Setters and getters
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<long unsigned int>& getLockedJointIds() const
-  {
+  const std::vector<long unsigned int>& getLockedJointIds() const {
     return locked_joint_ids_;
   }
 
@@ -191,32 +190,27 @@ public:  // Setters and getters
    *
    * @return const std::string&
    */
-  const std::string& getUrdf()
-  {
-    return in_urdf_;
-  }
+  const std::string& getUrdf() { return in_urdf_; }
 
   /**
    * @brief Get the torque offset.
    *
    * @return const std::vector<long unsigned int>&
    */
-  const std::vector<double>& getTorqueOffsets() const
-  {
+  const std::vector<double>& getTorqueOffsets() const {
     return in_torque_offsets_;
   }
 
   /**
    * @brief Get the From PD To LF Duration.
-   * 
-   * @return const std::vector<double>& 
+   *
+   * @return const std::vector<double>&
    */
-  const double& getFromPDToLFDuration() const
-  {
+  const double& getFromPDToLFDuration() const {
     return from_pd_to_lf_duration_;
   }
 
-private:  // Members
+ private:  // Members
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
   /// @brief String containing the extras of the model of the robot.
@@ -249,7 +243,9 @@ private:  // Members
   Eigen::VectorXd q_default_complete_;
 
   /// @brief Actual robot state publisher.
-  std::shared_ptr<realtime_tools::RealtimePublisher<linear_feedback_controller_msgs::Sensor> > sensor_publisher_;
+  std::shared_ptr<realtime_tools::RealtimePublisher<
+      linear_feedback_controller_msgs::Sensor> >
+      sensor_publisher_;
 
   /// @brief  ROS sensor message data.
   linear_feedback_controller_msgs::Sensor ros_sensor_msg_;
@@ -311,25 +307,32 @@ private:  // Members
   /// @brief List of end-effector in contact, hence not swinging.
   std::vector<std::string> desired_stance_ids_;
 
-  // /// @brief Allow to reconfigure online the PD gains used during the initialization.
-  // ddynamic_reconfigure::DDynamicReconfigurePtr dd_reconfigure_;
+  // /// @brief Allow to reconfigure online the PD gains used during the
+  // initialization. ddynamic_reconfigure::DDynamicReconfigurePtr
+  // dd_reconfigure_;
 
-  /// @brief Arm P gain of the PD control of the joints when the robot is standing still.
+  /// @brief Arm P gain of the PD control of the joints when the robot is
+  /// standing still.
   double p_arm_gain_;
 
-  /// @brief Arm D gain of the PD control of the joints when the robot is standing still.
+  /// @brief Arm D gain of the PD control of the joints when the robot is
+  /// standing still.
   double d_arm_gain_;
 
-  /// @brief Torso P gain of the PD control of the joints when the robot is standing still.
+  /// @brief Torso P gain of the PD control of the joints when the robot is
+  /// standing still.
   double p_torso_gain_;
 
-  /// @brief Torso D gain of the PD control of the joints when the robot is standing still.
+  /// @brief Torso D gain of the PD control of the joints when the robot is
+  /// standing still.
   double d_torso_gain_;
 
-  /// @brief Leg P gain of the PD control of the joints when the robot is standing still.
+  /// @brief Leg P gain of the PD control of the joints when the robot is
+  /// standing still.
   double p_leg_gain_;
 
-  /// @brief Leg D gain of the PD control of the joints when the robot is standing still.
+  /// @brief Leg D gain of the PD control of the joints when the robot is
+  /// standing still.
   double d_leg_gain_;
 
   /// @brief Min jerk for control switch.
@@ -340,11 +343,9 @@ private:  // Members
 };
 
 template <class T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-{
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
   os << "vector size: " << v.size() << "\n";
-  for (std::size_t i = 0; i < v.size(); ++i)
-  {
+  for (std::size_t i = 0; i < v.size(); ++i) {
     os << "[" << i << "] " << v[i] << "\n";
   }
   os << std::endl;
