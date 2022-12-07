@@ -11,7 +11,7 @@
           default = "false" />
      <arg name = "default_params"
           default = "false" />
-  
+
      <group if = "$(arg debug_log)">
        <env name="ROSCONSOLE_CONFIG_FILE"
         value="$(find linear_feedback_controller)/tests/rosconsole.conf"/>
@@ -23,7 +23,7 @@
                value = "$(arg simulation)" />
           <arg name = "ns"
                value = "$(arg ns)" />
-     </include> 
+     </include>
 
      <group if = "$(arg default_params)">
           <rosparam command = "load"
@@ -43,5 +43,5 @@
                 output = "screen"
                 args = "linear_feedback_controller" />
      </group>
-        
+
 </launch>

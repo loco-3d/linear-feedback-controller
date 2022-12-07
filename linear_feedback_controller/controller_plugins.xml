@@ -7,5 +7,5 @@
       Linear feedback controller with ROS topic based feedback loop.
     </description>
   </class>
-  
+
 </library>

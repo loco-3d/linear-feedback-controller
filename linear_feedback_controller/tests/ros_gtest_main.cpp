@@ -12,7 +12,6 @@
  */
 
 #include <gtest/gtest.h>
-
 #include <ros/ros.h>
 
 int main(int argc, char **argv) {
@@ -21,7 +20,7 @@ int main(int argc, char **argv) {
 
   ros::NodeHandle nh;
   // Start the spinner here to be able to use callbacks.
-  ros::AsyncSpinner spinner(4); // Use 4 threads
+  ros::AsyncSpinner spinner(4);  // Use 4 threads
   spinner.start();
 
   ::testing::InitGoogleTest(&argc, argv);
