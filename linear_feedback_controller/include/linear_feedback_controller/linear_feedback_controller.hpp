@@ -279,9 +279,6 @@ private:  // Members
   /// @brief Linear feedback controller desired torque.
   Eigen::VectorXd lf_desired_torque_;
 
-  /// @brief Weighted desired torque between the PD and the LF controllers.
-  Eigen::VectorXd weighted_desired_torque_;
-
   /// @brief Initial joint torque.
   Eigen::VectorXd initial_torque_;
 

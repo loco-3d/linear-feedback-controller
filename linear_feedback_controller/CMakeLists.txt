@@ -94,6 +94,9 @@ endif()
 #
 # Installation
 #
+install(PROGRAMS src/pd_controller.py
+        DESTINATION lib/${PROJECT_NAME}
+        RENAME pd_controller)
 install(FILES package.xml controller_plugins.xml
         DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})

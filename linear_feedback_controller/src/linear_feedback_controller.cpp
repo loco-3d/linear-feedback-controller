@@ -148,16 +148,16 @@ void LinearFeedbackController::updateExtras(const ros::Time& time, const ros::Du
     pd_controller();
     lf_controller();
 
-    double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
-    weighted_desired_torque_ = lf_desired_torque_ * (1 - weight) + weight * pd_desired_torque_;
-
     for (std::size_t i = 0; i < ctrl_js.name.size(); ++i)
     {
+      double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
+      double weighted_desired_torque = lf_desired_torque_(i) * (1 - weight) +
+                                       weight * pd_desired_torque_(pin_to_hwi_[i]);
       setDesiredJointState(ctrl_js.name[i],      //
                            ctrl_js.position[i],  //
                            ctrl_js.velocity[i],  //
                            0.0,                  // Acceleration.
-                           weighted_desired_torque_(i));
+                           weighted_desired_torque);
     }
   }
   else if (ctrl_js.name.empty())  // No control has been sent yet.
@@ -188,6 +188,8 @@ void LinearFeedbackController::updateExtras(const ros::Time& time, const ros::Du
 
 void LinearFeedbackController::startingExtras(const ros::Time& /*time*/)
 {
+  // Filter the initial measured joint position and torque and save it.
+  // filterInitialState();
 }
 
 void LinearFeedbackController::stoppingExtra(const ros::Time& /*time*/)
@@ -460,7 +462,8 @@ void LinearFeedbackController::filterInitialState()
     for (std::size_t i = 0; i < nb_joint; ++i)
     {
       initial_position_(i) = getActualJointPosition(i);
-      initial_torque_(i) = getJointMeasuredTorque(i)  - in_torque_offsets_[i];;
+      initial_torque_(i) = getJointMeasuredTorque(i) - in_torque_offsets_[i];
+      ;
     }
     initial_position_filter_.acquire(initial_position_);
     initial_torque_filter_.acquire(initial_torque_);
