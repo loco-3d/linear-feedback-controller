@@ -75,20 +75,20 @@ if(BUILD_TESTING)
   # Integration test of the roscontrol controller with simulation on Talos.
   add_rostest(tests/test_linear_feedback_controller.test)
 
-  # # Loading test, espaecially the parameters
-  # add_rostest_gtest(
-  #   test_linear_feedback_controller_basic
-  #   tests/test_linear_feedback_controller_basic.test
-  #   tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
-  # target_link_libraries(test_linear_feedback_controller_basic ${PROJECT_NAME}
-  #                       example-robot-data::example-robot-data)
-  # target_compile_definitions(
-  #   test_linear_feedback_controller_basic
-  #   PRIVATE TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
+  # Loading test, espaecially the parameters
+  add_rostest_gtest(
+    test_linear_feedback_controller_basic
+    tests/test_linear_feedback_controller_basic.test
+    tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
+  target_link_libraries(test_linear_feedback_controller_basic ${PROJECT_NAME}
+                        example-robot-data::example-robot-data)
+  target_compile_definitions(
+    test_linear_feedback_controller_basic
+    PRIVATE TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
 
-  # # Test the Averaging filter class.
-  # catkin_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
-  # target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
+  # Test the Averaging filter class.
+  catkin_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
+  target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
 endif()
 
 #

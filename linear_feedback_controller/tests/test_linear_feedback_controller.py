@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-PKG = "linear_feedback_controller"
 
 # standard import
 import sys
 import numpy as np
-
-np.set_printoptions(threshold=sys.maxsize)
 import subprocess
 import time
 import unittest
@@ -16,7 +13,11 @@ import rospy
 from sensor_msgs.msg import JointState
 from linear_feedback_controller_msgs.msg import Sensor
 
-# sys.stderr.write
+
+np.set_printoptions(threshold=sys.maxsize)
+PKG = "linear_feedback_controller"
+
+
 class CheckInitPause(object):
     def __init__(self):
         self.default_joint_position = np.array(
@@ -98,11 +99,16 @@ class TestLinearFeedbackController(unittest.TestCase):
         )
 
     @classmethod
+    def run_pd_controller(cls):
+        cls.pdc_process = subprocess.Popen(["rosrun", PKG, "pd_controller"])
+
+    @classmethod
     def setUpClass(cls):
         rospy.init_node("LinearFeedbackController")
         time.sleep(5)
         cls.start_and_stop_default_controller()
         cls.load_and_start_linear_feedback_controller()
+        cls.run_pd_controller()
 
     def setUp(self):
         pass
@@ -112,6 +118,8 @@ class TestLinearFeedbackController(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.pdc_process.terminate()
+        cls.pdc_process.wait()
         cls.lfc_process.terminate()
         cls.lfc_process.wait()
 
@@ -139,7 +147,6 @@ class TestLinearFeedbackController(unittest.TestCase):
             ],
         )
 
-    ## test 1 == 1
     def test_moving_joint_names_from_controller(
         self,
     ):
