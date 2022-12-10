@@ -1,0 +1,65 @@
+
+#
+# roscontrol controller parameters
+# These are for the base class: BaseRobotWithEsimatorControllerParameters
+#
+type: linear_feedback_controller::LinearFeedbackController
+
+dt: 0.0005 # 2kHz, frequency of the linear_feedback_controller on Talos.
+controller_dt: 0.0005
+estimator_dt: 0.001
+
+# This parameter is ignored, then why keep it here?
+starting_base_position: [0., 0., 1.2]
+
+estimated_angular_velocity_scaling_gain: 1.0
+estimated_linear_velocity_scaling_gain: 1.0
+joint_velocity_scaling_gain: 1.0
+global_torque_gain: 1.0
+spawn_controller_thread: true
+spawn_estimator_thread: true
+imu_frame_name: imu_link
+imu_name: base_imu
+estimator_parameters:
+  robot_model_chains: [gripper_left_base_link, gripper_right_base_link, left_sole_link, right_sole_link, rgbd_rgb_frame, imu_link]
+
+# Required hardware sensors
+imu:
+  base_imu:
+    frame: imu_link
+
+force_torque:
+  left_ankle_ft:
+    frame: left_sole_link
+    report: left_sole_link
+  right_ankle_ft:
+    frame: right_sole_link
+    report: right_sole_link
+
+contact_estimator: ""
+contact_monitor: true
+
+#
+# These are specific to the LinearFeedbackController application.
+#
+robot_has_free_flyer: true
+moving_joint_names: ["leg_right_1_joint",
+                      "leg_right_2_joint",
+                      "leg_right_3_joint",
+                      "leg_right_4_joint",
+                      "leg_right_5_joint",
+                      "leg_right_6_joint",
+                      "torso_1_joint",
+                      "torso_2_joint",
+                      "leg_left_1_joint",
+                      "leg_left_2_joint",
+                      "leg_left_3_joint",
+                      "leg_left_4_joint",
+                      "leg_left_5_joint",
+                      "leg_left_6_joint",
+                      "root_joint",
+                    ]
+from_pd_to_lf_duration: 0.1 # duration in sec.
+lower_force_threshold: 10 # Newton
+upper_force_threshold: 150 # Newton
+threshold_contact_counter: 15 # iteration
