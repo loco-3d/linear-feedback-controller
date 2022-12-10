@@ -86,6 +86,12 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   eigen_sensor_msg_.joint_state.effort.resize(moving_joint_names_.size());
   eigen_sensor_msg_.joint_state.effort.fill(0.0);
   eigen_sensor_msg_.contacts.resize(2);
+  contact_detectors_.resize(2);
+  for (auto ct : contact_detectors_) {
+    ct.setLowerThreshold(30);
+    ct.setUpperThreshold(150);
+    ct.setThresholdContactCounter(10);
+  }
   pd_desired_torque_.resize(getControlledJointNames().size());
   pd_desired_torque_.fill(0.0);
   lf_desired_torque_.resize(moving_joint_names_.size());
@@ -384,6 +390,12 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle) {
   GET_ROS_PARAM(node_handle, "robot_description_semantic", in_srdf_);
   GET_ROS_PARAM(node_handle, "moving_joint_names", in_moving_joint_names_);
   GET_ROS_PARAM(node_handle, "robot_has_free_flyer", in_robot_has_free_flyer_);
+  GET_ROS_PARAM(node_handle, "lower_force_threshold",
+                in_lower_force_threshold_);
+  GET_ROS_PARAM(node_handle, "upper_force_threshold",
+                in_upper_force_threshold_);
+  GET_ROS_PARAM(node_handle, "threshold_contact_counter",
+                in_threshold_contact_counter_);
   {
     std::string name_searched = "robot_has_free_flyer";
     if (node_handle.searchParam(name_searched, name_searched)) {
@@ -466,14 +478,10 @@ void LinearFeedbackController::acquireSensorAndPublish() {
       ft_sensors = getForceTorqueSensorDefinitions();
   assert(ft_sensors.size() >= 2 && "There must be at least 2 force sensor.");
   for (std::size_t i = 0; i < 2; ++i) {
-    /// @todo verify that this is the good order, left then right...
     eigen_sensor_msg_.contacts[i].wrench.head<3>() = ft_sensors[i]->force;
     eigen_sensor_msg_.contacts[i].wrench.tail<3>() = ft_sensors[i]->torque;
-    if (eigen_sensor_msg_.contacts[i].wrench(2) > 10) {
-      eigen_sensor_msg_.contacts[i].active = true;
-    } else {
-      eigen_sensor_msg_.contacts[i].active = false;
-    }
+    eigen_sensor_msg_.contacts[i].active = contact_detectors_[i].detectContact(
+        eigen_sensor_msg_.contacts[i].wrench);
   }
 
   // Publish the message to the ROS topic.

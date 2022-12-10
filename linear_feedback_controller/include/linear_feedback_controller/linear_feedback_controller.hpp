@@ -23,6 +23,7 @@
 
 // local include
 #include "linear_feedback_controller/averaging_filter.hpp"
+#include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
 
 namespace linear_feedback_controller {
@@ -225,6 +226,13 @@ class LinearFeedbackController
   /** @brief Joint torque offsets based on the state of the hardware.
    *  They are used in the hardware interface indexing. */
   std::vector<double> in_torque_offsets_;
+  /// @brief Force threshold to go down to detect contact breaking.
+  double in_lower_force_threshold_;
+  /// @brief Force threshold to pass over to detect contact activating.
+  double in_upper_force_threshold_;
+  /// @brief Number of iteration minimum during which the thresholds are crossed
+  /// before (de)activation of the contact.
+  int in_threshold_contact_counter_;
 
   /// @brief Pinocchio (Rigid body dynamics robot model).
   pinocchio::Model pinocchio_model_complete_;
@@ -340,6 +348,8 @@ class LinearFeedbackController
 
   /// @brief Time from which we compute the linear feedback control.
   ros::Time init_lfc_time_;
+
+  std::vector<ContactDetector> contact_detectors_;
 };
 
 template <class T>

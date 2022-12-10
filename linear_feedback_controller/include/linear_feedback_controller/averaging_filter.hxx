@@ -20,6 +20,7 @@ template <>
 AveragingFilter<Eigen::VectorXd>::AveragingFilter() {
   max_size_ = 0;
   last_data_ = Eigen::VectorXd::Zero(0);
+  buffer_.clear();
 }
 
 template <class DataType>

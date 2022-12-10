@@ -1,6 +1,5 @@
 SHELL := /bin/bash
-YOUR_WS := /home/mnaveau/devel/workspace_wbmpc
-
+YOUR_WS := $(PWD)/../..
 
 ## Run the docker
 docker_pull:
@@ -10,7 +9,7 @@ docker_run:
 	sudo chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
 	sudo chmod -R g+rwX  $(YOUR_WS)
 	xhost +local:
-	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(YOUR_WS)/src/linear_feedback_controller/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
+	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(PWD)/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
 
 docker_pull_and_run:
 	make docker_pull
@@ -24,12 +23,15 @@ docker_connect:
 reset:
 	reset
 
+.PHONY: build
 build:
 	catkin build linear_feedback_controller
 
+.PHONY: simu
 simu:
 	make reset
 	make build
+	source install/setup.bash
 	roslaunch talos_pal_physics_simulator talos_pal_physics_simulator_with_actuators.launch robot:=full_v2
 
 default_ctrl:

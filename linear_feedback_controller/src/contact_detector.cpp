@@ -17,9 +17,9 @@ bool ContactDetector::detectContact(Eigen::Matrix<double, 6, 1> wrench) {
   // Compute state of contact
   bool force_above_threshold(wrench.head<3>().norm() >= upper_threshold_);
   bool force_below_threshold(wrench.head<3>().norm() <= lower_threshold_);
-  ContactState res;
+  ContactState res = contact_state_;
 
-  switch (contactState_) {
+  switch (contact_state_) {
     case NO_CONTACT:
       if (force_above_threshold) {
         // first detection, switch to next state and increase counter
@@ -75,7 +75,7 @@ bool ContactDetector::detectContact(Eigen::Matrix<double, 6, 1> wrench) {
       break;
   };
 
-  contactState_ = res;
+  contact_state_ = res;
   if (contact_state_ == ACTIVE_CONTACT || contact_state_ == RELEASING_CONTACT) {
     return true;
   } else {
