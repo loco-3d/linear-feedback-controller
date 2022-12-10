@@ -129,7 +129,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
   const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
       eigen_control_msg_.initial_state.joint_state;
 
-  acquireSensorAndPublish();
+  acquireSensorAndPublish(time);
 
   // Lock the mutex here to not have conflict with the subscriber callback.
   std::unique_lock<std::timed_mutex> lock(mutex_, std::try_to_lock);
@@ -447,7 +447,7 @@ void LinearFeedbackController::filterInitialState() {
   initial_position_ = initial_position_filter_.getFilteredData();
 }
 
-void LinearFeedbackController::acquireSensorAndPublish() {
+void LinearFeedbackController::acquireSensorAndPublish(const ros::Time& time) {
   /// @todo Filter the data here?
 
   // Fill in the base data.
@@ -487,6 +487,7 @@ void LinearFeedbackController::acquireSensorAndPublish() {
   // Publish the message to the ROS topic.
   linear_feedback_controller_msgs::sensorEigenToMsg(eigen_sensor_msg_,
                                                     ros_sensor_msg_);
+  ros_sensor_msg_.header.stamp = time;
   if (sensor_publisher_->trylock()) {
     sensor_publisher_->msg_ = ros_sensor_msg_;
     sensor_publisher_->unlockAndPublish();
