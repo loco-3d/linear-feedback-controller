@@ -60,3 +60,6 @@ moving_joint_names: ["leg_right_1_joint",
                       "root_joint",
                     ]
 from_pd_to_lf_duration: 0.1 # duration in sec.
+lower_force_threshold: 10 # Newton
+upper_force_threshold: 150 # Newton
+threshold_contact_counter: 15 # iteration
