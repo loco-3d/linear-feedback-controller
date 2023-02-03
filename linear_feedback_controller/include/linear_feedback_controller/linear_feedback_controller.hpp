@@ -145,7 +145,8 @@ class LinearFeedbackController
    * We use a map pin_to_hwi_ in order to map the data from the hardware
    * interface indexing to the pinnochio one.
    */
-  void acquireSensorAndPublish(const ros::Time& time);
+  void acquireSensorAndPublish(const ros::Time& time,
+                               const ros::Duration& period);
 
   /** @brief Computes an ordinary pd controller that freezes the robot.
    * it sets the pd_desired_torque_ internal variable.

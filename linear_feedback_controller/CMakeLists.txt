@@ -17,7 +17,6 @@ project(linear_feedback_controller LANGUAGES CXX)
 #
 if(BUILD_TESTING)
   find_package(rostest REQUIRED)
-  find_package(example-robot-data REQUIRED)
 endif()
 
 #
@@ -25,6 +24,7 @@ endif()
 #
 find_package(Eigen3 REQUIRED)
 find_package(pinocchio REQUIRED)
+find_package(example-robot-data REQUIRED)
 set(MY_CATKIN_COMPONENTS
     roscpp realtime_tools pal_base_ros_controller
     linear_feedback_controller_msgs pluginlib controller_interface)
