@@ -122,14 +122,14 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
 }
 
 void LinearFeedbackController::updateExtras(const ros::Time& time,
-                                            const ros::Duration& /*period*/) {
+                                            const ros::Duration& period) {
   // Shortcuts for easier code writing.
   const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
       eigen_sensor_msg_.joint_state;
   const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
       eigen_control_msg_.initial_state.joint_state;
 
-  acquireSensorAndPublish(time);
+  acquireSensorAndPublish(time, period);
 
   // Lock the mutex here to not have conflict with the subscriber callback.
   std::unique_lock<std::timed_mutex> lock(mutex_, std::try_to_lock);
@@ -447,7 +447,8 @@ void LinearFeedbackController::filterInitialState() {
   initial_position_ = initial_position_filter_.getFilteredData();
 }
 
-void LinearFeedbackController::acquireSensorAndPublish(const ros::Time& time) {
+void LinearFeedbackController::acquireSensorAndPublish(
+    const ros::Time& time, const ros::Duration& period) {
   /// @todo Filter the data here?
 
   // Fill in the base data.
@@ -488,14 +489,29 @@ void LinearFeedbackController::acquireSensorAndPublish(const ros::Time& time) {
   linear_feedback_controller_msgs::sensorEigenToMsg(eigen_sensor_msg_,
                                                     ros_sensor_msg_);
   ros_sensor_msg_.header.stamp = time;
-  if (sensor_publisher_->trylock()) {
-    sensor_publisher_->msg_ = ros_sensor_msg_;
-    sensor_publisher_->unlockAndPublish();
-  } else {
+
+  bool locked = false;
+  const std::size_t nb_trials = 500;
+  std::size_t trial_counter = 0;
+  while (!locked && trial_counter < nb_trials &&
+         (ros::Time::now() - time).toSec() < 0.1 * period.toSec()) {
+    if (sensor_publisher_->trylock()) {
+      sensor_publisher_->msg_ = ros_sensor_msg_;
+      sensor_publisher_->unlockAndPublish();
+      locked = true;
+      break;
+    }
+    ++trial_counter;
+  }
+  if (trial_counter > 0) {
+    ROS_WARN_STREAM("LinearFeedbackController::updateExtras(): "
+                    << "Tried to lock the publisher mutex, " << trial_counter
+                    << " times.");
+  }
+  if (!locked) {
     ROS_ERROR_STREAM("LinearFeedbackController::updateExtras(): "
                      << "Cannot lock the publisher, "
                      << "the sensor message is not sent.");
   }
 }
-
 }  // namespace linear_feedback_controller
