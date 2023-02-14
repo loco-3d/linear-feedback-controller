@@ -171,6 +171,9 @@ class LinearFeedbackControllerTest : public ::testing::Test {
       nh_.setParam(torque_offset_names_[i], torque_offset_values_[i]);
     }
     nh_.setParam("from_pd_to_lf_duration", from_pd_to_lf_duration_);
+    nh_.setParam("lower_force_threshold", 10);
+    nh_.setParam("upper_force_threshold", 150);
+    nh_.setParam("threshold_contact_counter", 15);
   }
 
   void TearDown() override {}

@@ -36,10 +36,10 @@ class MinJerk {
   double computeJerk(double t);
 
   /*! Get the coefficients. */
-  void getCoefficients(std::array<double, 5> &coeffs) const;
+  void getCoefficients(std::array<double, 6> &coeffs) const;
 
   /*! Set the coefficients. */
-  void setCoefficients(const std::array<double, 5> &lCoefficients);
+  void setCoefficients(const std::array<double, 6> &lCoefficients);
 
  private:
   /// @brief Starting time of the min jerk trajectory
@@ -59,7 +59,7 @@ class MinJerk {
   /// @brief Ending second derivative.
   double end_acc_;
   /// Vector of coefficients.
-  std::array<double, 5> coeffs_;
+  std::array<double, 6> coeffs_;
 };
 
 }  // namespace linear_feedback_controller

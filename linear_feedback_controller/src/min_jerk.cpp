@@ -2,6 +2,7 @@
 
 #include "linear_feedback_controller/min_jerk.hpp"
 
+#include <cmath>
 #include <iostream>
 
 namespace linear_feedback_controller {
@@ -15,7 +16,7 @@ MinJerk::MinJerk()
       end_pos_(0.0),
       end_speed_(0.0),
       end_acc_(0.0),
-      coeffs_({{0.0, 0.0, 0.0, 0.0, 0.0}})
+      coeffs_({{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}})
 
 {}
 
@@ -29,7 +30,7 @@ double MinJerk::compute(double t) {
   } else {
     double r = 0.0;
     double pt = 1.0;
-    for (std::size_t i = 0; i < coeffs_.size(); i++) {
+    for (std::size_t i = 0; i < coeffs_.size(); ++i) {
       r += coeffs_[i] * pt;
       pt *= t;
     }
@@ -44,7 +45,7 @@ double MinJerk::computeDerivative(double t) {
     return start_speed_;
   } else {
     double r = 0, pt = 1;
-    for (std::size_t i = 1; i < coeffs_.size(); i++) {
+    for (std::size_t i = 1; i < coeffs_.size(); ++i) {
       r += i * coeffs_[i] * pt;
       pt *= t;
     }
@@ -59,7 +60,7 @@ double MinJerk::computeSecDerivative(double t) {
     return start_acc_;
   } else {
     double r = 0, pt = 1;
-    for (std::size_t i = 2; i < coeffs_.size(); i++) {
+    for (std::size_t i = 2; i < coeffs_.size(); ++i) {
       r += i * (i - 1) * coeffs_[i] * pt;
       pt *= t;
     }
@@ -74,7 +75,7 @@ double MinJerk::computeJerk(double t) {
     return computeJerk(start_time_);
   } else {
     double r = 0, pt = 1;
-    for (std::size_t i = 3; i < coeffs_.size(); i++) {
+    for (std::size_t i = 3; i < coeffs_.size(); ++i) {
       r += i * (i - 1) * (i - 2) * coeffs_[i] * pt;
       pt *= t;
     }
@@ -82,11 +83,11 @@ double MinJerk::computeJerk(double t) {
   }
 }
 
-void MinJerk::getCoefficients(std::array<double, 5> &coeffs) const {
+void MinJerk::getCoefficients(std::array<double, 6> &coeffs) const {
   coeffs = coeffs_;
 }
 
-void MinJerk::setCoefficients(const std::array<double, 5> &lCoefficients) {
+void MinJerk::setCoefficients(const std::array<double, 6> &lCoefficients) {
   coeffs_ = lCoefficients;
 }
 
@@ -120,24 +121,19 @@ void MinJerk::setParameters(double end_time, double start_pos,
     coeffs_[5] = 0.0;
   } else {
     coeffs_[3] =
-        -(1.5 * start_acc_ * end_time_ * end_time_ -
-          0.5 * end_acc_ * end_time_ * end_time_ +
-          6.0 * start_speed * end_time_ + 4.0 * end_speed_ * end_time_ +
-          10.0 * start_pos_ - 10.0 * end_pos_) /
-        tmp;
-    tmp = tmp * end_time_;
+        -(end_time_ * (12 * start_speed_ + 8 * end_speed_) + 20 * start_pos_ +
+          std::pow(end_time_, 2) * (3 * start_acc_ - end_acc_) -
+          20 * end_pos_) /
+        (2 * std::pow(end_time_, 3));
     coeffs_[4] =
-        (1.5 * start_acc_ * end_time_ * end_time_ -
-         end_acc_ * end_time_ * end_time_ + 8.0 * start_speed * end_time_ +
-         7.0 * end_speed_ * end_time_ + 15.0 * start_pos_ - 15.0 * end_pos_) /
-        tmp;
-    tmp = tmp * end_time_;
+        (end_time_ * (16 * start_speed_ + 14 * end_speed_) + 30 * start_pos_ +
+         std::pow(end_time_, 2) * (3 * start_acc_ - 2 * end_acc_) -
+         30 * end_pos_) /
+        (2 * std::pow(end_time_, 4));
     coeffs_[5] =
-        -(0.5 * start_acc_ * end_time_ * end_time_ -
-          0.5 * end_acc_ * end_time_ * end_time_ +
-          3.0 * start_speed * end_time_ + 3.0 * end_speed_ * end_time_ +
-          6.0 * start_pos_ - 6.0 * end_pos_) /
-        tmp;
+        -(end_time_ * (6 * start_speed_ + 6 * end_speed_) + 12 * start_pos_ +
+          std::pow(end_time_, 2) * (start_acc_ - end_acc_) - 12 * end_pos_) /
+        (2 * std::pow(end_time_, 5));
   }
 }
 
