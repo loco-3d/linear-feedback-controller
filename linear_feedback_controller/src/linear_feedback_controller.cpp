@@ -145,11 +145,18 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
     pd_controller();
     lf_controller();
 
+    // double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
+    double weight = ((time - init_lfc_time_).toSec()) / from_pd_to_lf_duration_;
+    if (weight < 0.0) {
+      weight = 0.0;
+    } else if (weight > 1.0) {
+      weight = 1.0;
+    }
+
     for (std::size_t i = 0; i < ctrl_js.name.size(); ++i) {
-      double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
       double weighted_desired_torque =
-          lf_desired_torque_(i) * (1 - weight) +
-          weight * pd_desired_torque_(pin_to_hwi_[i]);
+          weight * lf_desired_torque_(i) +
+          (1 - weight) * pd_desired_torque_(pin_to_hwi_[i]);
       setDesiredJointState(ctrl_js.name[i],      //
                            ctrl_js.position[i],  //
                            ctrl_js.velocity[i],  //
@@ -504,12 +511,12 @@ void LinearFeedbackController::acquireSensorAndPublish(
     ++trial_counter;
   }
   if (trial_counter > 0) {
-    ROS_WARN_STREAM("LinearFeedbackController::updateExtras(): "
-                    << "Tried to lock the publisher mutex, " << trial_counter
-                    << " times.");
+    ROS_DEBUG_STREAM("LinearFeedbackController::updateExtras(): "
+                     << "Tried to lock the publisher mutex, " << trial_counter
+                     << " times.");
   }
   if (!locked) {
-    ROS_ERROR_STREAM("LinearFeedbackController::updateExtras(): "
+    ROS_DEBUG_STREAM("LinearFeedbackController::updateExtras(): "
                      << "Cannot lock the publisher, "
                      << "the sensor message is not sent.");
   }

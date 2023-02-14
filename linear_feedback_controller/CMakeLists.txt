@@ -91,6 +91,9 @@ if(BUILD_TESTING)
   # Test the Averaging filter class.
   catkin_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
   target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
+
+  catkin_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
+  target_link_libraries(test_min_jerk gtest gtest_main ${PROJECT_NAME})
 endif()
 
 #
