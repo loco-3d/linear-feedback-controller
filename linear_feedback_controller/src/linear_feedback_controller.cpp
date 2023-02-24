@@ -500,8 +500,8 @@ void LinearFeedbackController::acquireSensorAndPublish(
   bool locked = false;
   const std::size_t nb_trials = 500;
   std::size_t trial_counter = 0;
-  while (!locked && trial_counter < nb_trials &&
-         (ros::Time::now() - time).toSec() < 0.1 * period.toSec()) {
+  while (!locked && trial_counter < nb_trials /*&&
+         (ros::Time::now() - time).toSec() < 0.1 * period.toSec()*/) {
     if (sensor_publisher_->trylock()) {
       sensor_publisher_->msg_ = ros_sensor_msg_;
       sensor_publisher_->unlockAndPublish();
