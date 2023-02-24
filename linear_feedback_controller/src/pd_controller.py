@@ -102,6 +102,7 @@ class PDController(object):
             self.sensor_mutex.acquire()
             self.sensor = deepcopy(self.sensor_copy)
             self.sensor_mutex.release()
+            self.control.header.stamp = rospy.Time.now()
             self.control.feedback_gain = numpy_to_multiarray(self.build_feedback_gain())
             self.control.feedforward = numpy_to_multiarray(np.array(self.ijs.effort))
             self.control.initial_state = deepcopy(self.sensor)
@@ -110,18 +111,20 @@ class PDController(object):
             omega = 2 * pi * (1.0 / 60.0)  # 2 * pi * f
             a = 0.1
             mvt = a * sin(omega * t)
+            opp = -0.5 * mvt
+
             self.control.initial_state.joint_state.position = [
                 self.ijs.position[0],  # leg_left_1_joint
                 self.ijs.position[1],  # leg_left_2_joint
-                self.ijs.position[2] - mvt,  # leg_left_3_joint
-                self.ijs.position[3] + 2 * mvt,  # leg_left_4_joint
-                self.ijs.position[4] - mvt,  # leg_left_5_joint
-                self.ijs.position[5],  # leg_left_6_joint"
+                self.ijs.position[2] + opp,  # leg_left_3_joint
+                self.ijs.position[3] + mvt,  # leg_left_4_joint
+                self.ijs.position[4] + opp,  # leg_left_5_joint
+                self.ijs.position[5],  # leg_left_6_joint
                 self.ijs.position[6],  # leg_right_1_joint
                 self.ijs.position[7],  # leg_right_2_joint
-                self.ijs.position[8] - mvt,  # leg_right_3_joint
-                self.ijs.position[9] + 2 * mvt,  # leg_right_4_joint
-                self.ijs.position[10] - mvt,  # leg_right_5_joint
+                self.ijs.position[8] + opp,  # leg_right_3_joint
+                self.ijs.position[9] + mvt,  # leg_right_4_joint
+                self.ijs.position[10] + opp,  # leg_right_5_joint
                 self.ijs.position[11],  # leg_right_6_joint
                 self.ijs.position[12],  # torso_1_joint
                 self.ijs.position[13],  # torso_2_joint
