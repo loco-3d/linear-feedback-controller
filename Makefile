@@ -43,3 +43,6 @@ lf_ctrl:
 pd_ctrl:
 	catkin build linear_feedback_controller
 	source install/setup.bash && rosrun linear_feedback_controller pd_controller
+
+bag:
+	source install/setup.bash && rosbag record -o src/lfc /linear_feedback_controller/sensor_state /linear_feedback_controller/desired_control
