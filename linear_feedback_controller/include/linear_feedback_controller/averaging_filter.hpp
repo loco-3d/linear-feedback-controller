@@ -40,7 +40,7 @@ class AveragingFilter {
   const std::size_t& getMaxSize() const { return max_size_; }
 
   /**
-   * @brief Get the buffer max size.
+   * @brief Get the buffer.
    *
    * @return int
    */
