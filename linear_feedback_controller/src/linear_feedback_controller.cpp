@@ -1,12 +1,3 @@
-/*
- * Copyright 2020 PAL Robotics SL. All Rights Reserved
- *
- * Unauthorized copying of this file, via any medium is strictly prohibited,
- * unless it was supplied under the terms of a license agreement or
- * nondisclosure agreement with PAL Robotics SL. In this case it may not be
- * copied or disclosed except in accordance with the terms of that agreement.
- */
-
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 #include <algorithm>
@@ -142,8 +133,8 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
     ROS_INFO_ONCE("LinearFeedbackController::updateExtras(): compute lfc.");
     // compute the freeze robot action and create a smooth transition between
     // the 2 controllers
-    pd_controller();
-    lf_controller();
+    pdController();
+    lfController();
 
     // double weight = min_jerk_.compute((init_lfc_time_ - time).toSec());
     double weight = ((time - init_lfc_time_).toSec()) / from_pd_to_lf_duration_;
@@ -166,7 +157,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
   } else if (ctrl_js.name.empty())  // No control has been sent yet.
   {
     ROS_INFO_ONCE("LinearFeedbackController::updateExtras(): compute pdc.");
-    pd_controller();
+    pdController();
     for (std::size_t i = 0; i < sensor_js.name.size(); i++) {
       // Here we need the hardware interface indexing.
       setDesiredJointState(getControlledJointNames()[pin_to_hwi_[i]],
@@ -297,7 +288,7 @@ bool LinearFeedbackController::parseMovingJointNames(
   return true;
 }
 
-void LinearFeedbackController::lf_controller() {
+void LinearFeedbackController::lfController() {
   // Shortcuts for easier code writing.
   const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
       eigen_sensor_msg_.joint_state;
@@ -344,7 +335,7 @@ void LinearFeedbackController::lf_controller() {
   }
 }
 
-void LinearFeedbackController::pd_controller() {
+void LinearFeedbackController::pdController() {
   pd_desired_torque_.fill(0.0);
   for (std::size_t i = 0; i < getControlledJointNames().size(); i++) {
     const int i_int = static_cast<int>(i);

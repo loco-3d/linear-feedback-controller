@@ -1,5 +1,3 @@
-/* MinJerks object for trajectories. */
-
 #include "linear_feedback_controller/min_jerk.hpp"
 
 #include <cmath>

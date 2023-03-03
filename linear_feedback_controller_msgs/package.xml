@@ -8,7 +8,7 @@
   <maintainer email="guilhem.saurel@laas.fr">Guilhem Saurel</maintainer>
   <author>Maximilien Naveau</author>
 
-  <license>BSD</license>
+  <license>BSD-2</license>
   <url>https://github.com/loco-3d/ros-wbmpc</url>
 
   <buildtool_depend>catkin</buildtool_depend>
