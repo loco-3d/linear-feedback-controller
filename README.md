@@ -50,7 +50,65 @@ Please check the [README.md](./linear_feedback_controller_msgs/README.md) of the
 
 For this example you need to have access to the dockers in https://gitlab.laas.fr/gsaurel/docker-pal/.
 
-### Build the repository
+### Build the repository using ROS and docker.
+
+First of all build or pull the docker from https://gitlab.laas.fr/gsaurel/docker-pal/
+using the branch `gsaurel`.
+
+```
+docker pull gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
+```
+
+Then run the docker and mount (`-v` docker option) the `src` and `build` folder
+of your workspace in order to get some cache between to run of the container:
+
+```
+sudo chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
+	sudo chmod -R g+rwX  $(YOUR_WS)
+	xhost +local:
+	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(PWD)/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
+```
+
+If you need another terminal to connect to the last docker container ran you can use:
+```
+docker exec --workdir=/ws -u user -it `docker ps --latest --quiet` bash
+```
+
+Once connected to docker with multiple terminal (5) please run in order:
+
+- Terminal 1: Start the simulation:
+```
+reset && catkin build linear_feedback_controller && source install/setup.bash && roslaunch talos_pal_physics_simulator talos_pal_physics_simulator_with_actuators.launch robot:=full_v2
+```
+
+- Terminal 2: Spawn the default controller:
+```
+reset && source install/setup.bash && roslaunch talos_controller_configuration default_controllers.launch
+```
+in the same terminal, once the robot is in the default pose, kill (`ctrl+C`) the roslaunch
+
+- Terminal 3: Spawn the linear feedback controller:
+```
+reset && source install/setup.bash && roslaunch linear_feedback_controller talos_linear_feedback_controller.launch simulation:=true default_params:=true
+```
+
+- Terminal 4: For recording logs you can use `rosbag`:
+```
+reset && source install/setup.bash && rosbag record -o src/lfc /linear_feedback_controller/sensor_state /linear_feedback_controller/desired_control
+```
+
+- Terminal 5: For starting a very simple PD controller via Feedback gains run:
+```
+reset && source install/setup.bash && rosrun linear_feedback_controller pd_controller
+```
+
+The next paragraph is the same procedure except one can use the Makefile that is
+in the root of this repos to do so.
+
+### Build the repository using make
+
+There is also [Makefile](Makefile) to ease the usage of docker and ROS instructions
+in order to execute the demo.
 
 - Create the workspace and clone the repository
 ```
@@ -71,7 +129,7 @@ make build
 make simu
 ```
 
-- Run the default controller and kill it when the robot is in haflsitting terminal(2)
+- Run the default controller and kill it when the robot is in half-sitting terminal(2)
 ```
 make default_ctrl
 ```
@@ -85,3 +143,16 @@ make lf_ctrl
 ```
 make pd_ctrl
 ```
+
+### Copyrights and License
+
+See the BSD-2 LICENSE file.
+For the main authors see the github repository for the main recent contributors.
+
+Here is the list of the historical main authors:
+- Côme Perrot
+- Maximilien Naveau
+
+Main maintainers
+- Guilhem Saurel (gsaurel@laas.fr)
+- Maximilien Naveau (maximilien.naveau@gmail.com)

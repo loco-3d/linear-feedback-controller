@@ -151,13 +151,13 @@ class LinearFeedbackController
   /** @brief Computes an ordinary pd controller that freezes the robot.
    * it sets the pd_desired_torque_ internal variable.
    */
-  void pd_controller();
+  void pdController();
 
   /**
    * @brief Computes the linear feedback control from the messages received
    * by the rostopic. It sets the lf_desired_torque_ internal variable.
    */
-  void lf_controller();
+  void lfController();
 
  public:  // Setters and getters
   /**

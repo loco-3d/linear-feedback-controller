@@ -1,11 +1,11 @@
+#ifndef LINEAR_FEEDBACK_CONTROLLER_AVERAGING_FILTER_HXX
+#define LINEAR_FEEDBACK_CONTROLLER_AVERAGING_FILTER_HXX
+
 #include <Eigen/Core>
 #include <numeric>
 #include <vector>
 
 #include "linear_feedback_controller/averaging_filter.hpp"
-
-#ifndef LINEAR_FEEDBACK_CONTROLLER_AVERAGING_FILTER_HXX
-#define LINEAR_FEEDBACK_CONTROLLER_AVERAGING_FILTER_HXX
 
 namespace linear_feedback_controller {
 
