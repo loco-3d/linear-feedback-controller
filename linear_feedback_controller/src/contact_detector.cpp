@@ -1,5 +1,3 @@
-/* ContactDetectors object for trajectories. */
-
 #include "linear_feedback_controller/contact_detector.hpp"
 
 namespace linear_feedback_controller {
