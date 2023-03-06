@@ -8,6 +8,8 @@ This repository contains two packages:
 
 These two package are under the license [BSD-2 license](./LICENSE).
 
+The current versions of this 2 package can be found in their respective `package.xml` file.
+
 Follows a quick description of these package.
 
 ## The linear_feedback_controller
