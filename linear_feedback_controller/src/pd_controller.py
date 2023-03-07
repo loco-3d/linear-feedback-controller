@@ -33,7 +33,7 @@ def numpy_to_multiarray(np_array):
     return multiarray
 
 
-class PDController(object):
+class PDController:
     def __init__(self):
         self.ctrl_pub = rospy.Publisher(
             "/linear_feedback_controller/desired_control",
