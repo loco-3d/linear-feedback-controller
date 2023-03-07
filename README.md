@@ -65,8 +65,8 @@ Then run the docker and mount (`-v` docker option) the `src` and `build` folder
 of your workspace in order to get some cache between to run of the container:
 
 ```
-sudo chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
-	sudo chmod -R g+rwX  $(YOUR_WS)
+	chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
+	chmod -R g+rwX  $(YOUR_WS)    # you might need sudo if you get errors here
 	xhost +local:
 	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(PWD)/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
 ```

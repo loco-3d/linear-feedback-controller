@@ -6,14 +6,12 @@ docker_pull:
 	docker pull gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
 
 docker_run:
-	sudo chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
-	sudo chmod -R g+rwX  $(YOUR_WS)
+	chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
+	chmod -R g+rwX  $(YOUR_WS)    # you might need sudo if you get errors here
 	xhost +local:
 	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(PWD)/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
 
-docker_pull_and_run:
-	make docker_pull
-	make docker_run
+docker_pull_and_run: docker_pull docker_run
 
 docker_connect:
 	docker exec --workdir=/ws -u user -it `docker ps --latest --quiet` bash
@@ -28,9 +26,7 @@ build:
 	catkin build linear_feedback_controller
 
 .PHONY: simu
-simu:
-	make reset
-	make build
+simu: reset build
 	source install/setup.bash
 	roslaunch talos_pal_physics_simulator talos_pal_physics_simulator_with_actuators.launch robot:=full_v2
 
