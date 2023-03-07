@@ -9,7 +9,7 @@
   <author>Maximilien Naveau</author>
 
   <license>BSD-2</license>
-  <url>https://github.com/loco-3d/ros-wbmpc</url>
+  <url>https://github.com/loco-3d/linear_feedback_controller_msgs</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
