@@ -58,6 +58,9 @@ class AveragingFilter {
   /// @brief Inside buffer;
   std::deque<DataType> buffer_;
 
+  /// @brief Sum of the buffer data.
+  DataType sum_buffer_;
+
   /// @brief Maximum buffer size;
   std::size_t max_size_;
 

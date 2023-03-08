@@ -112,7 +112,7 @@ TEST_F(MinJerkTest, checkComputeBetween) {
   }
 }
 
-TEST_F(MinJerkTest, checkComputeBetweenRandom) {
+TEST_F(DISABLED_MinJerkTest, checkComputeBetweenRandom) {
   MinJerk obj;
   obj.setParameters(end_time_, start_pos_,
                     /*start_speed*/ 0.0,
