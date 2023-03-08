@@ -51,6 +51,8 @@ Please check the [README.md](./linear_feedback_controller_msgs/README.md) of the
 ### Requirements
 
 For this example you need to have access to the dockers in https://gitlab.laas.fr/gsaurel/docker-pal/.
+This is a private repository so one need to be part of the LAAS-CNRS french laboratory.
+Further development will provide a new public image in order to use this code in simulation.
 
 ### Build the repository using ROS and docker.
 
