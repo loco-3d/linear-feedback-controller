@@ -13,6 +13,7 @@ template <class DataType>
 AveragingFilter<DataType>::AveragingFilter() {
   max_size_ = 0;
   last_data_ = 0.0;
+  sum_buffer_ = 0.0;
   buffer_.clear();
 }
 
@@ -27,7 +28,9 @@ template <class DataType>
 void AveragingFilter<DataType>::acquire(DataType data) {
   last_data_ = data;
   buffer_.push_back(data);
+  sum_buffer_ += last_data_;
   if (buffer_.size() > max_size_) {
+    sum_buffer_ -= buffer_.front();
     buffer_.pop_front();
   }
 }
@@ -38,9 +41,7 @@ DataType AveragingFilter<DataType>::getFilteredData() {
     return last_data_;
   }
   auto const count = static_cast<double>(buffer_.size());
-  auto const sum =
-      std::accumulate(buffer_.begin() + 1, buffer_.end(), *buffer_.begin());
-  return sum / count;
+  return sum_buffer_ / count;
 }
 }  // namespace linear_feedback_controller
 
