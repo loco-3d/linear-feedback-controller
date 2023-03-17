@@ -446,7 +446,7 @@ void LinearFeedbackController::filterInitialState() {
 }
 
 void LinearFeedbackController::acquireSensorAndPublish(
-    const ros::Time& time, const ros::Duration& period) {
+    const ros::Time& time, const ros::Duration& /*period*/) {
   /// @todo Filter the data here?
 
   // Fill in the base data.
