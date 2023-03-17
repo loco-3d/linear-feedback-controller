@@ -49,15 +49,17 @@ void matrixEigenToMsg(const ::Eigen::MatrixBase<Derived>& e,
 template <class Derived>
 void matrixMsgToEigen(const std_msgs::Float64MultiArray& m,
                       ::Eigen::MatrixBase<Derived>& e) {
-  assert(m.layout.dim.size() == 2);
-  // resize the eigen object.
-  e = ::Eigen::MatrixBase<Derived>::Zero(m.layout.dim[0].size,
-                                         m.layout.dim[1].stride);
+  assert(m.layout.dim.size() == 2 && "The ROS message must be a 2D matrix.");
+
   // verify the input object.
-  assert(m.layout.dim[0].stride == e.size());
-  assert(m.layout.dim[0].size == e.rows());
-  assert(m.layout.dim[1].stride == e.cols());
-  assert(m.layout.dim[1].size == e.cols());
+  assert(m.layout.dim[0].stride == e.size() &&
+         "Input and output size do not match.");
+  assert(m.layout.dim[0].size == e.rows() &&
+         "Input and output size do not match.");
+  assert(m.layout.dim[1].stride == e.cols() &&
+         "Input and output size do not match.");
+  assert(m.layout.dim[1].size == e.cols() &&
+         "Input and output size do not match.");
 
   int ii = 0;
   for (int i = 0; i < e.rows(); ++i) {
