@@ -2,17 +2,6 @@
 
 # linear feedback controller
 
-## linear_feedback_controller
-
-ros controller based on the pal_base_ros_controller package.
-
-### Test
-
-- start docker
-- `catkin config -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DCATKIN_ENABLE_TESTING=ON --install`
-- `reset && catkin build linear_feedback_controller && catkin run_tests --verbose linear_feedback_controller`
-
-
 This repository is aimed to be used with its public API the
 [linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs).
 
@@ -47,14 +36,14 @@ Please check the [README.md](./linear_feedback_controller/README.md) of the pack
 
 ## The linear_feedback_controller_msgs
 
-This package contains the external user interface to the linear_feedback_controller
+[This package](https://github.com/loco-3d/linear-feedback-controller-msgs) contains the external user interface to the linear_feedback_controller
 package. It describes the sensor data exchanged in the previously cited RosTopics.
 
 And in particular it offers a very simple ROS/[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 conversion. This is made to facilitate further computations with the Sensor
 data. And ease to fill in the Control message.
 
-Please check the [README.md](./linear_feedback_controller_msgs/README.md) of the package for more details.
+Please check the [README.md](https://github.com/loco-3d/linear-feedback-controller-msgs/blob/main/README.md) of the package for more details.
 
 ## Example of usage
 
