@@ -430,7 +430,6 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle) {
 
 void LinearFeedbackController::filterInitialState() {
   std::size_t nb_joint = getControlledJointNames().size();
-  ROS_WARN_STREAM("getControlledJointNames().size() = " << nb_joint);
   initial_position_.setZero(nb_joint);
   initial_position_filter_.setMaxSize(10);
   initial_torque_.setZero(nb_joint);
