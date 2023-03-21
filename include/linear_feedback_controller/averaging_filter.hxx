@@ -28,7 +28,11 @@ template <class DataType>
 void AveragingFilter<DataType>::acquire(DataType data) {
   last_data_ = data;
   buffer_.push_back(data);
-  sum_buffer_ += last_data_;
+  if (buffer_.size() == 1) {
+    sum_buffer_ = last_data_;
+  } else {
+    sum_buffer_ += last_data_;
+  }
   if (buffer_.size() > max_size_) {
     sum_buffer_ -= buffer_.front();
     buffer_.pop_front();

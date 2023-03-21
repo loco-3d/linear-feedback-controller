@@ -70,13 +70,22 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   ros_sensor_msg_.joint_state.velocity.resize(moving_joint_names_.size(), 0.0);
   ros_sensor_msg_.joint_state.effort.resize(moving_joint_names_.size(), 0.0);
   eigen_sensor_msg_.joint_state.name = moving_joint_names_;
-  eigen_sensor_msg_.joint_state.position.resize(moving_joint_names_.size());
-  eigen_sensor_msg_.joint_state.position.fill(0.0);
-  eigen_sensor_msg_.joint_state.velocity.resize(moving_joint_names_.size());
-  eigen_sensor_msg_.joint_state.velocity.fill(0.0);
-  eigen_sensor_msg_.joint_state.effort.resize(moving_joint_names_.size());
-  eigen_sensor_msg_.joint_state.effort.fill(0.0);
+  eigen_sensor_msg_.joint_state.position.setZero(moving_joint_names_.size());
+  eigen_sensor_msg_.joint_state.velocity.setZero(moving_joint_names_.size());
+  eigen_sensor_msg_.joint_state.effort.setZero(moving_joint_names_.size());
   eigen_sensor_msg_.contacts.resize(2);
+  eigen_control_msg_.initial_state.joint_state.position.setZero(
+      moving_joint_names_.size());
+  eigen_control_msg_.initial_state.joint_state.velocity.setZero(
+      moving_joint_names_.size());
+  eigen_control_msg_.initial_state.joint_state.effort.setZero(
+      moving_joint_names_.size());
+  eigen_control_msg_.initial_state.contacts.resize(2);
+  eigen_control_msg_.feedback_gain.setZero(moving_joint_names_.size(),
+                                           2 * pinocchio_model_reduced_.nv);
+  eigen_control_msg_.feedforward.setZero(moving_joint_names_.size(),
+                                         2 * pinocchio_model_reduced_.nv);
+
   contact_detectors_.resize(2);
   for (auto ct : contact_detectors_) {
     ct.setLowerThreshold(30);
@@ -421,11 +430,9 @@ bool LinearFeedbackController::parseRosParams(ros::NodeHandle& node_handle) {
 
 void LinearFeedbackController::filterInitialState() {
   std::size_t nb_joint = getControlledJointNames().size();
-  initial_position_.resize(nb_joint);
-  initial_position_.fill(0.0);
+  initial_position_.setZero(nb_joint);
   initial_position_filter_.setMaxSize(10);
-  initial_torque_.resize(nb_joint);
-  initial_torque_.fill(0.0);
+  initial_torque_.setZero(nb_joint);
   initial_torque_filter_.setMaxSize(10);
 
   ros::Time start_time =
@@ -435,7 +442,6 @@ void LinearFeedbackController::filterInitialState() {
     for (std::size_t i = 0; i < nb_joint; ++i) {
       initial_position_(i) = getActualJointPosition(i);
       initial_torque_(i) = getJointMeasuredTorque(i) - in_torque_offsets_[i];
-      ;
     }
     initial_position_filter_.acquire(initial_position_);
     initial_torque_filter_.acquire(initial_torque_);
