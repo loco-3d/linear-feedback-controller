@@ -2,9 +2,8 @@
 
 # linear feedback controller
 
-This repository contains two packages:
-- the [linear_feedback_controller](./linear_feedback_controller/README.md)
-- the [linear_feedback_controller_msgs](./linear_feedback_controller_msgs/README.md)
+This repository is aimed to be used with its public API the
+[linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs).
 
 These two package are under the license [BSD-2 license](./LICENSE).
 
@@ -37,14 +36,14 @@ Please check the [README.md](./linear_feedback_controller/README.md) of the pack
 
 ## The linear_feedback_controller_msgs
 
-This package contains the external user interface to the linear_feedback_controller
+[This package](https://github.com/loco-3d/linear-feedback-controller-msgs) contains the external user interface to the linear_feedback_controller
 package. It describes the sensor data exchanged in the previously cited RosTopics.
 
 And in particular it offers a very simple ROS/[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 conversion. This is made to facilitate further computations with the Sensor
 data. And ease to fill in the Control message.
 
-Please check the [README.md](./linear_feedback_controller_msgs/README.md) of the package for more details.
+Please check the [README.md](https://github.com/loco-3d/linear-feedback-controller-msgs/blob/main/README.md) of the package for more details.
 
 ## Example of usage
 
@@ -133,8 +132,9 @@ make build
 make simu
 ```
 
-- Run the default controller and kill it when the robot is in half-sitting terminal(2)
+- Run the default controller and kill it (ctrl+C) when the robot is in half-sitting terminal(2)
 ```
+make docker_connect
 make default_ctrl
 ```
 
@@ -145,6 +145,7 @@ make lf_ctrl
 
 - Run the PD controller using the lfc terminal (3)
 ```
+make docker_connect
 make pd_ctrl
 ```
 
