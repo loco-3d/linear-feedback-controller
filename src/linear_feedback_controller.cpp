@@ -444,7 +444,6 @@ void LinearFeedbackController::filterInitialState() {
       initial_position_(i) = getActualJointPosition(i);
       initial_torque_(i) = getJointMeasuredTorque(i) - in_torque_offsets_[i];
     }
-    ROS_WARN_STREAM("initial_position_ = " << initial_position_.transpose());
     initial_position_filter_.acquire(initial_position_);
     initial_torque_filter_.acquire(initial_torque_);
     ros::Duration(0.01).sleep();
