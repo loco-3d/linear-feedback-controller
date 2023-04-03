@@ -8,6 +8,8 @@
 #include <pinocchio/fwd.hpp>
 #include <pinocchio/multibody/model.hpp>
 
+#include "pinocchio/multibody/data.hpp"
+
 // ROS C++ api
 #include <realtime_tools/realtime_publisher.h>
 #include <ros/ros.h>
@@ -56,6 +58,10 @@ class LinearFeedbackController
     : public pal_base_ros_controller::BaseRobotWithEsimatorController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  typedef std::vector<Eigen::Matrix<double, 6, 1>,
+                      Eigen::aligned_allocator<Eigen::Matrix<double, 6, 1>>>
+      Wrenches;
 
   /**
    * @brief Construct a new LinearFeedbackController.
@@ -159,6 +165,39 @@ class LinearFeedbackController
    */
   void lfController();
 
+  /**
+   * @brief Compute the CoP from contact forces.
+   */
+  void computeCOP(
+      const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+          contacts,
+      std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>&
+          local_cops,
+      Eigen::Vector3d& cop);
+
+  void computeLIPBase(
+      const Eigen::Vector3d& com_position,
+      const Eigen::Vector3d& com_acceleration, const eVector3& gravity_vector,
+      const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+          contacts,
+      Eigen::Vector3d& lip_base);
+
+  /**
+   * @brief Update data to log.
+   */
+  void computeIntrospection();
+
+  /**
+   * @brief Log all useful data.
+   */
+  void initializeIntrospection();
+
+  void computeCOMAccelerationFromForces(
+      const double mass, const eVector3& gravity_vector,
+      const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+          contacts,
+      Eigen::Vector3d& com_acc);
+
  public:  // Setters and getters
   /**
    * @brief Get the moving joint names.
@@ -238,6 +277,7 @@ class LinearFeedbackController
   /// @brief Pinocchio (Rigid body dynamics robot model).
   pinocchio::Model pinocchio_model_complete_;
   pinocchio::Model pinocchio_model_reduced_;
+  pinocchio::Data pinocchio_data_reduced_;
 
   /// @brief Moving joint ids sorted in the urdf order.
   std::vector<pinocchio::JointIndex> moving_joint_ids_;
@@ -253,7 +293,7 @@ class LinearFeedbackController
 
   /// @brief Actual robot state publisher.
   std::shared_ptr<realtime_tools::RealtimePublisher<
-      linear_feedback_controller_msgs::Sensor> >
+      linear_feedback_controller_msgs::Sensor>>
       sensor_publisher_;
 
   /// @brief  ROS sensor message data.
@@ -264,6 +304,7 @@ class LinearFeedbackController
   ros::Subscriber control_subscriber_;
 
   /// @brief  ROS sensor message data.
+  linear_feedback_controller_msgs::Eigen::Control eigen_control_msg_copy_;
   linear_feedback_controller_msgs::Eigen::Control eigen_control_msg_;
 
   /// @brief Configuration around which the controller is linearized.
@@ -350,7 +391,87 @@ class LinearFeedbackController
   /// @brief Time from which we compute the linear feedback control.
   ros::Time init_lfc_time_;
 
+  /// @brief Create some contact detectors.
   std::vector<ContactDetector> contact_detectors_;
+
+  /// @brief PAL log RT systems.
+  pal_statistics::RegistrationsRAII registered_variables_;
+
+  /// @brief Additional logging data: Center of mass position from sensors.
+  Eigen::Vector3d actual_com_position_;
+
+  /// @brief Additional logging data: Center of mass velocity from sensors.
+  Eigen::Vector3d actual_com_velocity_;
+
+  /// @brief Additional logging data: Center of mass acceleration from sensors.
+  Eigen::Vector3d actual_com_acceleration_;
+
+  /// @brief Additional logging data: Center of mass acceleration from sensors.
+  Eigen::Vector3d desired_com_acceleration_;
+
+  /// @brief Additional logging data: CoP of the robot from force sensors.
+  Eigen::Vector3d actual_cop_;
+
+  /// @brief Additional logging data: CoP of the robot from force controller.
+  Eigen::Vector3d desired_cop_;
+
+  /// @brief Additional logging data: Robot equivalent linear inverted pendulum
+  /// base from sensor.
+  Eigen::Vector3d actual_lip_base_;
+
+  /// @brief Additional logging data: Robot equivalent linear inverted pendulum
+  /// base from controller.
+  Eigen::Vector3d desired_lip_base_;
+
+  /// @brief Additional logging data: local CoP of the robot from force sensors.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      actual_local_cops_;
+
+  /// @brief Additional logging data: local CoP of the robot from force
+  /// controller.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      desired_local_cops_;
+
+  /// @brief Additional logging data: Feet positions of the robot from sensor.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      actual_feet_positions_;
+
+  /// @brief Additional logging data: Feet positions of the robot from
+  /// controller.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      desired_feet_positions_;
+
+  /// @brief Additional logging data: Contact linear forces from sensor.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      actual_contact_forces_;
+
+  /// @brief Additional logging data: Contact linear forces from controller.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      desired_contact_forces_;
+
+  /// @brief Additional logging data: Contact linear torques from sensor.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      actual_contact_torques_;
+
+  /// @brief Additional logging data: Contact linear torques from controller.
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      desired_contact_torques_;
+
+  /// @brief Additional logging data: Desired initial configuration around which
+  /// we linearize the control.
+  Eigen::VectorXd desired_initial_joint_configuration_;
+
+  /// @brief Additional logging data: Desired initial velocity around which we
+  /// linearize the control..
+  Eigen::VectorXd desired_initial_joint_velocity_;
+
+  /// @brief Additional logging data: Desired initial torque around which we
+  /// linearize the control..
+  Eigen::VectorXd desired_initial_joint_torques_;
+
+  /// @brief Additional logging data: Desired feedforward torque from the
+  /// controller.
+  Eigen::VectorXd desired_feedforward_torque_;
 };
 
 template <class T>
