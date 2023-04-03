@@ -1,6 +1,8 @@
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 #include <algorithm>
+#include <pinocchio/algorithm/compute-all-terms.hpp>
+#include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/parsers/srdf.hpp>
 #include <pinocchio/parsers/urdf.hpp>
@@ -38,6 +40,7 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
       pinocchio_model_complete_.referenceConfigurations["half_sitting"];
   pinocchio_model_reduced_ = pinocchio::buildReducedModel(
       pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
+  pinocchio_data_reduced_ = pinocchio::Data(pinocchio_model_reduced_);
 
   // Resize the control vector. They are the size of the reduced model.
   desired_configuration_.resize(pinocchio_model_reduced_.nq);
@@ -85,6 +88,7 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
                                            2 * pinocchio_model_reduced_.nv);
   eigen_control_msg_.feedforward.setZero(moving_joint_names_.size(),
                                          2 * pinocchio_model_reduced_.nv);
+  eigen_control_msg_copy_ = eigen_control_msg_;
 
   contact_detectors_.resize(2);
   for (auto ct : contact_detectors_) {
@@ -117,6 +121,9 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   // Mutex watch dog deadline.
   ms_mutex_ = (int)getControllerDt().toSec() * 1000;
 
+  // Register all variables that we wanna log.
+  initializeIntrospection();
+
   ROS_INFO_STREAM("LinearFeedbackController::loadEtras(): Done.");
   return true;
 }
@@ -139,6 +146,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
   // acquired. It could happen that at this point a new control message is
   // arriving. Hence we skip the update from the message.
   if (lock.owns_lock() && (!ctrl_js.name.empty())) {
+    eigen_control_msg_copy_ = eigen_control_msg_;  // for logging
     ROS_INFO_ONCE("LinearFeedbackController::updateExtras(): compute lfc.");
     // compute the freeze robot action and create a smooth transition between
     // the 2 controllers
@@ -181,10 +189,10 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
         "LinearFeedbackController::updateExtras(): Don't do anything.");
     ROS_WARN("Skipping received state");
   }
-  // define the active contacts used for the base estimation
+  // Define the active contacts used for the base estimation.
   setEstimatorContactState(desired_stance_ids_, desired_swing_ids_);
-  /// @todo redo the introspection.
-  // computeIntrospection();
+  // Log data from the controller.
+  computeIntrospection();
 }
 
 void LinearFeedbackController::startingExtras(const ros::Time& /*time*/) {
@@ -477,6 +485,21 @@ void LinearFeedbackController::acquireSensorAndPublish(
         in_torque_offsets_[pin_to_hwi_[i]];
   }
 
+  // Construct the measured state and perform the forward kinematics for the
+  // feet location.
+  if (in_robot_has_free_flyer_) {
+    measured_configuration_.head<7>() = eigen_sensor_msg_.base_pose;
+    measured_velocity_.head<6>() = eigen_sensor_msg_.base_twist;
+  }
+  measured_configuration_.tail(nb_joint) =
+      eigen_sensor_msg_.joint_state.position;
+  measured_velocity_.tail(nb_joint) = eigen_sensor_msg_.joint_state.velocity;
+  pinocchio::forwardKinematics(pinocchio_model_reduced_,
+                               pinocchio_data_reduced_,
+                               measured_configuration_);
+  pinocchio::updateFramePlacements(pinocchio_model_reduced_,
+                                   pinocchio_data_reduced_);
+
   // Fill the information about the force sensor and if the corresponding
   // end-effector are in contact or not.
   const std::vector<pal_controller_interface::FTSensorDefinitionPtr>&
@@ -487,6 +510,13 @@ void LinearFeedbackController::acquireSensorAndPublish(
     eigen_sensor_msg_.contacts[i].wrench.tail<3>() = ft_sensors[i]->torque;
     eigen_sensor_msg_.contacts[i].active = contact_detectors_[i].detectContact(
         eigen_sensor_msg_.contacts[i].wrench);
+    pinocchio::SE3& contact_se3 =
+        pinocchio_data_reduced_.oMf[pinocchio_model_reduced_.getFrameId(
+            eigen_sensor_msg_.contacts[i].name)];
+    eigen_sensor_msg_.contacts[i].pose.head<3>() = contact_se3.translation();
+    Eigen::Map<pinocchio::SE3::Quaternion>(
+        eigen_sensor_msg_.contacts[i].pose.tail<4>().data()) =
+        contact_se3.rotation();
   }
 
   // Publish the message to the ROS topic.
@@ -518,4 +548,204 @@ void LinearFeedbackController::acquireSensorAndPublish(
                      << "the sensor message is not sent.");
   }
 }
+
+void LinearFeedbackController::computeCOP(
+    const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+        contacts,
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >&
+        local_cops,
+    Eigen::Vector3d& cop) {
+  cop.setZero();
+  double total_z_force = 0.0;
+  assert(contacts.size() == local_cops.size() &&
+         "There must as must CoPs as contacts.");
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    auto force = contacts[i].wrench.head<3>();
+    auto torque = contacts[i].wrench.tail<3>();
+    auto pose = contacts[i].pose.head<3>();
+    Eigen::Matrix3d rotation =
+        Eigen::Quaterniond(contacts[i].pose(6), contacts[i].pose(3),
+                           contacts[i].pose(4), contacts[i].pose(5))
+            .matrix();
+    if (std::abs(force.z()) > 1.) {
+      local_cops[i] << -torque.y() / force.z(), torque.x() / force.z(), 0.0;
+      cop += (rotation * local_cops[i] + pose) * force.z();
+      total_z_force += force.z();
+    }
+  }
+
+  // Store the result in this variable.
+  if (total_z_force < 1.)
+    cop.setZero();
+  else {
+    cop /= total_z_force;
+  }
+}
+
+void LinearFeedbackController::computeCOMAccelerationFromForces(
+    const double mass, const eVector3& gravity_vector,
+    const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+        contacts,
+    Eigen::Vector3d& com_acc) {
+  Eigen::Vector3d sum_force(Eigen::Vector3d::Zero());
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    Eigen::Matrix3d rotation =
+        Eigen::Quaterniond(contacts[i].pose(6), contacts[i].pose(3),
+                           contacts[i].pose(4), contacts[i].pose(5))
+            .matrix();
+    sum_force += rotation * contacts[i].wrench.head<3>();
+  }
+  com_acc = sum_force / mass + gravity_vector;
+}
+
+void LinearFeedbackController::computeLIPBase(
+    const Eigen::Vector3d& com_position,
+    const Eigen::Vector3d& com_acceleration, const eVector3& gravity_vector,
+    const std::vector<linear_feedback_controller_msgs::Eigen::Contact>&
+        contacts,
+    Eigen::Vector3d& lip_base) {
+  // cop = com + h/g * ddcom
+  double average_contact_height = 0.0;
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    average_contact_height += contacts[i].pose(2);
+  }
+  average_contact_height /= static_cast<double>(contacts.size());
+  double h = com_position.z() - average_contact_height;
+  double g = gravity_vector.norm();
+
+  lip_base.setZero();
+  lip_base.head<2>() =
+      com_position.head<2>() - h / g * com_acceleration.head<2>();
+}
+
+void LinearFeedbackController::computeIntrospection() {
+  // Sensor data
+  pinocchio::forwardKinematics(pinocchio_model_reduced_,
+                               pinocchio_data_reduced_,
+                               measured_configuration_);
+  pinocchio::updateFramePlacements(pinocchio_model_reduced_,
+                                   pinocchio_data_reduced_);
+  actual_com_position_ = pinocchio::centerOfMass(
+      pinocchio_model_reduced_, pinocchio_data_reduced_,
+      measured_configuration_, measured_velocity_, false);
+  actual_com_velocity_ = pinocchio_data_reduced_.vcom[0];
+  computeCOMAccelerationFromForces(
+      pinocchio_data_reduced_.mass[0], pinocchio_model_reduced_.gravity981,
+      eigen_sensor_msg_.contacts, actual_com_acceleration_);
+  computeCOP(eigen_sensor_msg_.contacts, actual_local_cops_, actual_cop_);
+  computeLIPBase(actual_com_position_, actual_com_acceleration_,
+                 pinocchio_model_reduced_.gravity981,
+                 eigen_sensor_msg_.contacts, actual_lip_base_);
+  for (std::size_t i = 0; i < eigen_sensor_msg_.contacts.size(); ++i) {
+    actual_feet_positions_[i] = eigen_sensor_msg_.contacts[i].pose.head<3>();
+    actual_contact_forces_[i] = eigen_sensor_msg_.contacts[i].wrench.head<3>();
+    actual_contact_torques_[i] = eigen_sensor_msg_.contacts[i].wrench.tail<3>();
+  }
+
+  computeCOMAccelerationFromForces(
+      pinocchio_data_reduced_.mass[0], pinocchio_model_reduced_.gravity981,
+      eigen_control_msg_copy_.initial_state.contacts,
+      desired_com_acceleration_);
+  computeCOP(eigen_control_msg_copy_.initial_state.contacts,
+             desired_local_cops_, desired_cop_);
+  for (std::size_t i = 0;
+       i < eigen_control_msg_copy_.initial_state.contacts.size(); ++i) {
+    desired_feet_positions_[i] =
+        eigen_control_msg_copy_.initial_state.contacts[i].pose.head<3>();
+    desired_contact_forces_[i] =
+        eigen_control_msg_copy_.initial_state.contacts[i].wrench.head<3>();
+    desired_contact_torques_[i] =
+        eigen_control_msg_copy_.initial_state.contacts[i].wrench.tail<3>();
+  }
+  desired_initial_joint_configuration_ =
+      eigen_control_msg_copy_.initial_state.joint_state.position;
+  desired_initial_joint_velocity_ =
+      eigen_control_msg_copy_.initial_state.joint_state.velocity;
+  desired_initial_joint_torques_ =
+      eigen_control_msg_copy_.initial_state.joint_state.effort;
+  desired_feedforward_torque_ = eigen_control_msg_copy_.feedforward;
+}
+
+void LinearFeedbackController::initializeIntrospection() {
+  REGISTER_VARIABLE("/introspection_data", "actual_com_position",
+                    &actual_com_position_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "actual_com_velocity",
+                    &actual_com_velocity_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "sensor_com_acceleration",
+                    &actual_com_acceleration_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "actual_cop", &actual_cop_,
+                    &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "desired_cop", &desired_cop_,
+                    &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "actual_lip_base", &actual_lip_base_,
+                    &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "desired_lip_base",
+                    &desired_lip_base_, &registered_variables_);
+
+  // Resize the STD containers:
+  actual_local_cops_.resize(eigen_sensor_msg_.contacts.size());
+  desired_local_cops_.resize(eigen_sensor_msg_.contacts.size());
+  actual_feet_positions_.resize(eigen_sensor_msg_.contacts.size());
+  desired_feet_positions_.resize(eigen_sensor_msg_.contacts.size());
+  actual_contact_forces_.resize(eigen_sensor_msg_.contacts.size());
+  desired_contact_forces_.resize(eigen_sensor_msg_.contacts.size());
+  actual_contact_torques_.resize(eigen_sensor_msg_.contacts.size());
+  desired_contact_torques_.resize(eigen_sensor_msg_.contacts.size());
+  for (size_t i = 0; i < eigen_sensor_msg_.contacts.size(); ++i) {
+    REGISTER_VARIABLE("/introspection_data",
+                      "actual_local_cops_" + eigen_sensor_msg_.contacts[i].name,
+                      &actual_local_cops_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_local_cops_" + eigen_sensor_msg_.contacts[i].name,
+        &desired_local_cops_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "actual_feet_positions_" + eigen_sensor_msg_.contacts[i].name,
+        &actual_feet_positions_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_feet_positions_" + eigen_sensor_msg_.contacts[i].name,
+        &desired_feet_positions_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "actual_contact_forces_" + eigen_sensor_msg_.contacts[i].name,
+        &actual_contact_forces_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_contact_forces_" + eigen_sensor_msg_.contacts[i].name,
+        &desired_contact_forces_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "actual_contact_torques_" + eigen_sensor_msg_.contacts[i].name,
+        &actual_contact_torques_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_contact_torques_" + eigen_sensor_msg_.contacts[i].name,
+        &desired_contact_torques_[i], &registered_variables_);
+  }
+
+  desired_initial_joint_configuration_.setZero(in_moving_joint_names_.size());
+  desired_initial_joint_velocity_.setZero(in_moving_joint_names_.size());
+  desired_initial_joint_torques_.setZero(in_moving_joint_names_.size());
+  desired_feedforward_torque_.setZero(in_moving_joint_names_.size());
+  for (std::size_t i = 0; i < in_moving_joint_names_.size(); ++i) {
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_initial_joint_configuration_" + in_moving_joint_names_[i],
+        &desired_initial_joint_configuration_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_initial_joint_velocity_" + in_moving_joint_names_[i],
+        &desired_initial_joint_velocity_[i], &registered_variables_);
+    REGISTER_VARIABLE(
+        "/introspection_data",
+        "desired_initial_joint_torques_" + in_moving_joint_names_[i],
+        &desired_initial_joint_torques_[i], &registered_variables_);
+    REGISTER_VARIABLE("/introspection_data",
+                      "desired_feedforward_torque_" + in_moving_joint_names_[i],
+                      &desired_feedforward_torque_[i], &registered_variables_);
+  }
+}
+
 }  // namespace linear_feedback_controller
