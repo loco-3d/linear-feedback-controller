@@ -4,11 +4,12 @@
          default = "false" />
     <arg name = "ns"
          default = "linear_feedback_controller" />
+
     <arg name = "arm_left_control_type"
-         default = "no_control" />
+         default = "inertia_shaping_effort_simple_dob_control" />
     <!-- direct_torque_control / direct_impedance_control / direct_position_control / inertia_shaping_effort_simple_dob_control / no_control -->
     <arg name = "arm_right_control_type"
-         default = "no_control" />
+         default = "inertia_shaping_effort_simple_dob_control" />
     <!-- direct_torque_control / direct_impedance_control / direct_position_control / inertia_shaping_effort_simple_dob_control / no_control -->
     <arg name = "legs_control_type"
          default = "inertia_shaping_effort_analytic_dob_control" />
@@ -21,9 +22,14 @@
     <!-- direct_effort_leaky_integrator_control / direct_position_control -->
     <arg name = "head_local_joint_control_pkg"
          default = "pal_local_joint_control" />
-    <arg name = "wrists_control_type"
-         default = "no_control" />
+    <arg name="wrists_control_type_left"
+    	 default="direct_effort_leaky_integrator_control"/>
     <!-- direct_effort_leaky_integrator_control / direct_torque_control / direct_position_control -->
+    <arg name="wrists_control_type_right"
+    	 default="no_control"/>
+    <!-- direct_effort_leaky_integrator_control / direct_torque_control / direct_position_control -->
+    <arg name="gripper_control_type_left" default="no_control"/>
+    <arg name="gripper_control_type_right" default="no_control"/>
     <arg name = "wrists_local_joint_control_pkg"
          default = "pal_local_joint_control" />
     <arg if = "$(eval arg('arm_left_control_type') == 'inertia_shaping_effort_simple_dob_control')"
@@ -261,7 +267,7 @@
              value = "head_2_joint" />
     </include>
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_left') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -270,7 +276,7 @@
              value = "arm_left_5_joint" />
     </include>
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_left') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -279,7 +285,7 @@
              value = "arm_left_6_joint" />
     </include>
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_left') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -288,7 +294,7 @@
              value = "arm_left_7_joint" />
     </include>
 
-    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('gripper_control_type_left') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -297,7 +303,7 @@
              value = "gripper_left_joint" />
     </include> -->
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_right') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -306,7 +312,7 @@
              value = "arm_right_5_joint" />
     </include>
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_right') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -315,7 +321,7 @@
              value = "arm_right_6_joint" />
     </include>
 
-    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type_right') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
@@ -324,7 +330,7 @@
              value = "arm_right_7_joint" />
     </include>
 
-    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('wrists_control_type') + '.launch')">
+    <!-- <include file = "$(eval find(arg('wrists_local_joint_control_pkg')) + '/launch/' + arg('gripper_control_type_right') + '.launch')">
         <arg name = "controller_pkg_name"
              value = "talos_controller_configuration" />
         <arg name = "ns"
