@@ -456,6 +456,13 @@ void LinearFeedbackController::filterInitialState() {
     ros::Duration(0.01).sleep();
   }
   initial_torque_ = initial_torque_filter_.getFilteredData();
+  for (Eigen::Index i = 0; i < initial_torque_.size(); ++i) {
+    if (std::isnan(initial_torque_(i))) {
+      ROS_ERROR_STREAM_THROTTLE(
+          1000, "Nan detected for joint " << getControlledJointNames()[i]);
+      initial_torque_(i) = 0.0;
+    }
+  }
   initial_position_ = initial_position_filter_.getFilteredData();
 }
 
@@ -483,6 +490,12 @@ void LinearFeedbackController::acquireSensorAndPublish(
     eigen_sensor_msg_.joint_state.effort(i) =
         getJointMeasuredTorque(pin_to_hwi_[i]) -
         in_torque_offsets_[pin_to_hwi_[i]];
+    if (std::isnan(eigen_sensor_msg_.joint_state.effort(i))) {
+      ROS_ERROR_STREAM_THROTTLE(
+          1000,
+          "Nan detected for joint " << eigen_sensor_msg_.joint_state.name[i]);
+      eigen_sensor_msg_.joint_state.effort(i) = 0.0;
+    }
   }
 
   // Construct the measured state and perform the forward kinematics for the
