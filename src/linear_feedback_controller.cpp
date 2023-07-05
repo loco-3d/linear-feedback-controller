@@ -458,7 +458,8 @@ void LinearFeedbackController::filterInitialState() {
   initial_torque_ = initial_torque_filter_.getFilteredData();
   for (Eigen::Index i = 0; i < initial_torque_.size(); ++i) {
     if (std::isnan(initial_torque_(i))) {
-      ROS_WARN_ONCE("Nan detected for joint " << getControlledJointNames()[i]);
+      ROS_ERROR_STREAM_THROTTLE(
+          1000, "Nan detected for joint " << getControlledJointNames()[i]);
       initial_torque_(i) = 0.0;
     }
   }
@@ -490,8 +491,9 @@ void LinearFeedbackController::acquireSensorAndPublish(
         getJointMeasuredTorque(pin_to_hwi_[i]) -
         in_torque_offsets_[pin_to_hwi_[i]];
     if (std::isnan(eigen_sensor_msg_.joint_state.effort(i))) {
-      ROS_WARN_ONCE("Nan detected for joint "
-                    << eigen_sensor_msg_.joint_state.name[i]);
+      ROS_ERROR_STREAM_THROTTLE(
+          1000,
+          "Nan detected for joint " << eigen_sensor_msg_.joint_state.name[i]);
       eigen_sensor_msg_.joint_state.effort(i) = 0.0;
     }
   }
