@@ -27,6 +27,7 @@
 #include "linear_feedback_controller/averaging_filter.hpp"
 #include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
+#include <flex-joints/flexi-hips.hpp>
 
 namespace linear_feedback_controller {
 
@@ -251,6 +252,9 @@ class LinearFeedbackController
     return from_pd_to_lf_duration_;
   }
 
+  bool readEstimator() override;
+
+
  private:  // Members
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
@@ -472,6 +476,11 @@ class LinearFeedbackController
   /// @brief Additional logging data: Desired feedforward torque from the
   /// controller.
   Eigen::VectorXd desired_feedforward_torque_;
+
+  flex::Flex flexibility_compensator_;
+  std::vector<double> std_joint_position_compensated_, std_joint_velocity_compensated_;
+  Eigen::VectorXd ei_joint_position_compensated_, ei_joint_velocity_compensated_, ei_joint_desired_torques_;
+
 };
 
 template <class T>
