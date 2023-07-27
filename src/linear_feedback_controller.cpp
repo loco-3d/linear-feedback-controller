@@ -519,6 +519,14 @@ void LinearFeedbackController::acquireSensorAndPublish(
     flexibility_compensator_.correctEstimatedDeflections(ei_joint_desired_torques_,
                                                          ei_joint_position_compensated_,
                                                          ei_joint_velocity_compensated_);
+    hip_deflection_left_roll_ =  flexibility_compensator_.getLeftFlex()[1];
+    hip_deflection_left_pitch_ =  flexibility_compensator_.getLeftFlex()[0];
+    hip_deflection_right_roll_ =  flexibility_compensator_.getRightFlex()[1];
+    hip_deflection_right_pitch_ =  flexibility_compensator_.getRightFlex()[0];
+  }
+  else
+  {
+    ROS_WARN("ei_joint_desired_torques_ is zero");
   }
 
   std::size_t nb_joint = eigen_sensor_msg_.joint_state.position.size();
