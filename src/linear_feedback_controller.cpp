@@ -726,6 +726,14 @@ void LinearFeedbackController::initializeIntrospection() {
                     &registered_variables_);
   REGISTER_VARIABLE("/introspection_data", "desired_lip_base",
                     &desired_lip_base_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_right_pitch",
+                    &hip_deflection_right_pitch_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_right_roll",
+                    &hip_deflection_right_roll_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_left_pitch",
+                    &hip_deflection_left_pitch_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_left_roll",
+                    &hip_deflection_left_roll_, &registered_variables_);
 
   // Resize the STD containers:
   actual_local_cops_.resize(eigen_sensor_msg_.contacts.size());

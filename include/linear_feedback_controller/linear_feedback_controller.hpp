@@ -480,6 +480,7 @@ class LinearFeedbackController
   flex::Flex flexibility_compensator_;
   std::vector<double> std_joint_position_compensated_, std_joint_velocity_compensated_;
   Eigen::VectorXd ei_joint_position_compensated_, ei_joint_velocity_compensated_, ei_joint_desired_torques_;
+  double hip_deflection_right_pitch_, hip_deflection_right_roll_,hip_deflection_left_pitch_, hip_deflection_left_roll_;
 
 };
 
