@@ -21,7 +21,7 @@
   <depend>example-robot-data</depend>
   <depend>linear_feedback_controller_msgs</depend>
   <depend>pal_base_ros_controller</depend>
-
+  <depend>flex_joints</depend>
   <!-- Need to depend directly on the package containing the base type of the controller for the plugin to work -->
   <depend>controller_interface</depend>
 

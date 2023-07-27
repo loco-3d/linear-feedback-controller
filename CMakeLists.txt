@@ -25,6 +25,7 @@ endif()
 find_package(Eigen3 REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(example-robot-data REQUIRED)
+find_package(flex-joints REQUIRED)
 set(MY_CATKIN_COMPONENTS
     roscpp realtime_tools pal_base_ros_controller
     linear_feedback_controller_msgs pluginlib controller_interface)
@@ -61,7 +62,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${catkin_INCLUDE_DIRS})
 target_include_directories(
   ${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>
                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio Eigen3::Eigen
+target_link_libraries(${PROJECT_NAME} PUBLIC pinocchio::pinocchio Eigen3::Eigen flex-joints::flex-joints
                                              ${catkin_LIBRARIES})
 
 #
