@@ -199,7 +199,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
                            ctrl_js.velocity[i],  //
                            0.0,                  // Acceleration.
                            weighted_desired_torque);
-      ei_joint_desired_torques_[static_cast<Eigen::Index>(i)] = weighted_desired_torque;
+      ei_joint_desired_torques_[pin_to_hwi_[i]] = weighted_desired_torque;
     }
   } else if (ctrl_js.name.empty())  // No control has been sent yet.
   {
@@ -212,7 +212,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
                            0.0,                                // Velocity
                            0.0,                                // Acceleration
                            pd_desired_torque_(pin_to_hwi_[i]));
-      ei_joint_desired_torques_[static_cast<Eigen::Index>(i)] = pd_desired_torque_(pin_to_hwi_[i]);
+      ei_joint_desired_torques_[pin_to_hwi_[i]] = pd_desired_torque_(pin_to_hwi_[i]);
 
     }
     init_lfc_time_ = time;
