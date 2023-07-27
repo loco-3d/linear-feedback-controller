@@ -523,8 +523,8 @@ void LinearFeedbackController::acquireSensorAndPublish(
 
   std::size_t nb_joint = eigen_sensor_msg_.joint_state.position.size();
   for (std::size_t i = 0; i < nb_joint; ++i) {
-    eigen_sensor_msg_.joint_state.position(i) = act_jp[pin_to_hwi_[i]];
-    eigen_sensor_msg_.joint_state.velocity(i) = act_jv[pin_to_hwi_[i]];
+    eigen_sensor_msg_.joint_state.position(i) = ei_joint_position_compensated_[pin_to_hwi_[i]];
+    eigen_sensor_msg_.joint_state.velocity(i) = ei_joint_velocity_compensated_[pin_to_hwi_[i]];
     eigen_sensor_msg_.joint_state.effort(i) =
         getJointMeasuredTorque(pin_to_hwi_[i]) -
         in_torque_offsets_[pin_to_hwi_[i]];
