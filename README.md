@@ -92,7 +92,7 @@ in the same terminal, once the robot is in the default pose, kill (`ctrl+C`) the
 
 - Terminal 3: Spawn the linear feedback controller:
 ```
-reset && source install/setup.bash && roslaunch linear_feedback_controller talos_linear_feedback_controller.launch simulation:=true default_params:=true
+reset && source install/setup.bash && roslaunch linear_feedback_controller talos_linear_feedback_controller.launch simulation:=true default_params:=true activate_right_leg:=true activate_right_leg:=true activate_torso:=true
 ```
 
 - Terminal 4: For recording logs you can use `rosbag`:
