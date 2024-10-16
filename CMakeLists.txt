@@ -36,7 +36,8 @@ set(${PROJECT_NAME}_HEADERS
 set(${PROJECT_NAME}_SOURCES
     # src/linear_feedback_controller.cpp #
     src/min_jerk.cpp #
-    src/contact_detector.cpp
+    src/contact_detector.cpp #
+    src/robot_model_builder.cpp #
 )
 ament_auto_add_library(${PROJECT_NAME}
   ${${PROJECT_NAME}_SOURCES} ${${PROJECT_NAME}_HEADERS})
@@ -77,6 +78,9 @@ if(BUILD_TESTING)
 
   ament_auto_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
   target_link_libraries(test_min_jerk gtest gtest_main ${PROJECT_NAME})
+
+  ament_auto_add_gtest(test_robot_model_builder tests/test_robot_model_builder.cpp)
+  target_link_libraries(test_robot_model_builder gtest gtest_main ${PROJECT_NAME} example-robot-data::example-robot-data)
 endif()
 
 #
