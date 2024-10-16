@@ -82,7 +82,7 @@ TEST_F(AveragingFilterTest, checkEigenConstructor) {
 TEST_F(AveragingFilterTest, checkEigenDefaultBehaviorWhenNoDataSent) {
   AveragingFilter<Eigen::VectorXd> obj;
   for (unsigned int i = 0; i < 5; ++i) {
-    ASSERT_EQ(obj.getFilteredData(), Eigen::VectorXd::Zero(0));
+    ASSERT_TRUE(obj.getFilteredData().isApproxToConstant(0.0));
   }
 }
 
