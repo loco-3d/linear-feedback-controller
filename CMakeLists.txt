@@ -27,7 +27,6 @@ find_package(pinocchio REQUIRED)
 # Main Library
 #
 set(${PROJECT_NAME}_headers
-    # include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/averaging_filter.hpp
     include/${PROJECT_NAME}/averaging_filter.hxx
     include/${PROJECT_NAME}/contact_detector.hpp
@@ -37,12 +36,10 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
+    src/averaging_filter.cpp src/contact_detector.cpp src/lfc.cpp
     # src/linear_feedback_controller.cpp #
-    src/min_jerk.cpp #
-    src/contact_detector.cpp #
-    src/robot_model_builder.cpp #
-)
-ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES}
+    src/min_jerk.cpp src/pd_controller.cpp src/robot_model_builder.cpp)
+ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 ament_target_dependencies(${PROJECT_NAME} pinocchio)
