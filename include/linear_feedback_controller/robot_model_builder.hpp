@@ -7,6 +7,7 @@
 // Rigid body dynamics
 #include <pinocchio/fwd.hpp>
 #include <pinocchio/multibody/model.hpp>
+
 #include "pinocchio/multibody/data.hpp"
 
 namespace linear_feedback_controller {
@@ -90,9 +91,9 @@ class RobotModelBuilder {
 
   /**
    * @brief Get if the robot model has a free flyer joint.
-   * 
-   * @return true 
-   * @return false 
+   *
+   * @return true
+   * @return false
    */
   bool getRobotHasFreeFlyer();
 
