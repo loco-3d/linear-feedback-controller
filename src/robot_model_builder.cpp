@@ -170,4 +170,8 @@ pinocchio::Data& RobotModelBuilder::getPinocchioData() {
   return pinocchio_data_reduced_;
 }
 
+bool RobotModelBuilder::getRobotHasFreeFlyer() {
+  return in_robot_has_free_flyer_;
+}
+
 }  // namespace linear_feedback_controller

@@ -7,7 +7,6 @@
 // Rigid body dynamics
 #include <pinocchio/fwd.hpp>
 #include <pinocchio/multibody/model.hpp>
-
 #include "pinocchio/multibody/data.hpp"
 
 namespace linear_feedback_controller {
@@ -89,6 +88,14 @@ class RobotModelBuilder {
    */
   pinocchio::Data& getPinocchioData();
 
+  /**
+   * @brief Get if the robot model has a free flyer joint.
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool getRobotHasFreeFlyer();
+
  private:
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
@@ -121,6 +128,8 @@ class RobotModelBuilder {
 
   /// @brief Initial whole body configuration setup in the SRDF file.
   Eigen::VectorXd q_default_complete_;
+
+  using SharedPtr = std::shared_ptr<RobotModelBuilder>;
 };
 
 }  // namespace linear_feedback_controller
