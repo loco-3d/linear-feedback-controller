@@ -6,12 +6,26 @@ PDController::PDController() {}
 
 PDController::~PDController() {}
 
-PDController::compute_control(Eigen::VectorXd tau_ref, Eigen::VectorXd q_ref,
-                              Eigen::VectorXd q, Eigen::VectorXd v,
-                              Eigen::VectorXd p_gains,
-                              Eigen::VectorXd d_gains) {
-  control_ = tau.array() - p_gain.array() * (q - initial_position_[i]).array() -
-             d_gain.array() * v.array();
+void PDController::setGains(const Eigen::VectorXd& p_gains,
+                            const Eigen::VectorXd& d_gains) {
+  p_gains_ = p_gains;
+  d_gains_ = d_gains;
+}
+
+void PDController::setReference(const Eigen::VectorXd& tau_ref,
+                                const Eigen::VectorXd& q_ref) {
+  tau_ref_ = tau_ref;
+  q_ref_ = q_ref;
+  control_ = Eigen::VectorXd::Zero(tau_ref.size());
+}
+
+const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
+                                                     const Eigen::VectorXd& v) {
+  assert(q.size() == v.size());
+  assert(tau_ref_.size() == v.size());
+
+  control_ = tau_ref_.array() - p_gains_.array() * (q - q_ref_).array() -
+             d_gains_.array() * v.array();
   return control_;
 }
 
