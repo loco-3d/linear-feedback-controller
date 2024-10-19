@@ -36,9 +36,12 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
-    src/averaging_filter.cpp src/contact_detector.cpp src/lfc.cpp
+    src/contact_detector.cpp #
+    src/lfc.cpp #
     # src/linear_feedback_controller.cpp #
-    src/min_jerk.cpp src/pd_controller.cpp src/robot_model_builder.cpp)
+    src/min_jerk.cpp #
+    src/pd_controller.cpp #
+    src/robot_model_builder.cpp)
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
