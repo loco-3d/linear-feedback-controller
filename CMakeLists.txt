@@ -43,7 +43,6 @@ ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 ament_target_dependencies(${PROJECT_NAME} pinocchio)
-# ament_target_dependencies(${PROJECT_NAME} example-robot-data)
 
 #
 # Plugins
@@ -57,7 +56,6 @@ ament_target_dependencies(${PROJECT_NAME} pinocchio)
 include(CTest)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  find_package(example-robot-data REQUIRED)
   ament_auto_find_test_dependencies()
   # Integration test of the roscontrol controller with simulation on Talos.
   # add_rostest(tests/test_linear_feedback_controller.test)
