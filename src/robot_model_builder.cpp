@@ -13,7 +13,7 @@ RobotModelBuilder::RobotModelBuilder() {}
 
 RobotModelBuilder::~RobotModelBuilder() {}
 
-bool RobotModelBuilder::buildModel(
+bool RobotModelBuilder::build_model(
     const std::string& urdf, const std::string& srdf,
     const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names,
@@ -37,7 +37,7 @@ bool RobotModelBuilder::buildModel(
                                                       iss_srdf, false);
 
   // Reduce the rigid body model and set initial position.
-  if (!parseMovingJointNames(moving_joint_names_, controlled_joint_names_)) {
+  if (!parse_moving_joint_names(moving_joint_names_, controlled_joint_names_)) {
     return false;
   }
 
@@ -50,7 +50,7 @@ bool RobotModelBuilder::buildModel(
   return true;
 }
 
-bool RobotModelBuilder::parseMovingJointNames(
+bool RobotModelBuilder::parse_moving_joint_names(
     const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names) {
   // Get moving joints ids
@@ -139,35 +139,39 @@ bool RobotModelBuilder::parseMovingJointNames(
   return true;
 }
 
-const std::vector<std::string>& RobotModelBuilder::getMovingJointNames() const {
+const std::vector<std::string>& RobotModelBuilder::get_moving_joint_names()
+    const {
   return moving_joint_names_;
 }
 
-const std::vector<long unsigned int>& RobotModelBuilder::getMovingJointIds()
+const std::vector<long unsigned int>& RobotModelBuilder::get_moving_joint_ids()
     const {
   return moving_joint_ids_;
 }
 
-const std::vector<long unsigned int>& RobotModelBuilder::getLockedJointIds()
+const std::vector<long unsigned int>& RobotModelBuilder::get_locked_joint_ids()
     const {
   return locked_joint_ids_;
 }
 
-const std::string& RobotModelBuilder::getUrdf() const { return urdf_; }
+const std::string& RobotModelBuilder::get_urdf() const { return urdf_; }
 
-const std::string& RobotModelBuilder::getSrdf() const { return srdf_; }
+const std::string& RobotModelBuilder::get_srdf() const { return srdf_; }
 
-const pinocchio::Model& RobotModelBuilder::getPinocchioModel() const {
+const pinocchio::Model& RobotModelBuilder::get_model() const {
   return pinocchio_model_reduced_;
 }
 
-pinocchio::Data& RobotModelBuilder::getPinocchioData() {
+pinocchio::Data& RobotModelBuilder::get_data() {
   return pinocchio_data_reduced_;
 }
 
-bool RobotModelBuilder::getRobotHasFreeFlyer() { return robot_has_free_flyer_; }
+bool RobotModelBuilder::get_robot_has_free_flyer() {
+  return robot_has_free_flyer_;
+}
 
-std::map<int, int> RobotModelBuilder::getPinocchioToHarwdareInterfaceMap() {
+const std::map<int, int>&
+RobotModelBuilder::get_pinocchio_to_harwdare_interface_map() {
   return pin_to_hwi_;
 }
 
