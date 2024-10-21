@@ -1,43 +1,44 @@
 #include "linear_feedback_controller/lfc.hpp"
 
+#include "pinocchio/algorithm/joint-configuration.hpp"
+
 namespace linear_feedback_controller {
 
 LFC::LFC() {}
 
 LFC::~LFC() {}
 
-void initialize(const RobotModelBuilder::SharedPtr& rmb) {
+void LFC::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   rmb_ = rmb;
 
-  desired_configuration_ = Eigen::VectorXd::Zero(rmb_->getPinocchioModel().nq)
-      desired_velocity_ = Eigen::VectorXd::Zero(rmb_->getPinocchioModel().nv)
-          measured_configuration_ = Eigen::VectorXd::Zero(
-              rmb_->getPinocchioModel().nq) measured_velocity_ =
-              Eigen::VectorXd::Zero(rmb_->getPinocchioModel()
-                                        .nv) if (rmb_->getRobotHasFreeFlyer()) {
-    control_ = Eigen::VectorXd::Zero(rmb_->getPinocchioModel().nv - 6)
-  }
-  else {
-    control_ = Eigen::VectorXd::Zero(rmb_->getPinocchioModel().nv)
+  desired_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
+  desired_velocity_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
+  measured_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
+  measured_velocity_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
+  if (rmb_->get_robot_has_free_flyer()) {
+    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv - 6);
+  } else {
+    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
   }
 }
 
 const Eigen::VectorXd& LFC::compute_control(
-    const linear_feedback_controller_msgs::Eigen::Sensor& sensor_msg, ) {
+    const linear_feedback_controller_msgs::Eigen::Sensor& sensor_msg,
+    const linear_feedback_controller_msgs::Eigen::Control& control_msg) {
   // Shortcuts for easier code writing.
   const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
       sensor_msg.joint_state;
   const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
-      sensor_msg.initial_state.joint_state;
+      control_msg.initial_state.joint_state;
   const linear_feedback_controller_msgs::Eigen::Sensor& ctrl_init =
-      sensor_msg.initial_state;
+      control_msg.initial_state;
 
   // Reconstruct the state vector: x = [q, v]
-  if (rmb_->getRobotHasFreeFlyer()) {
+  if (rmb_->get_robot_has_free_flyer()) {
     desired_configuration_.head<7>() = ctrl_init.base_pose;
     desired_velocity_.head<6>() = ctrl_init.base_twist;
-    measured_configuration_.head<7>() = eigen_sensor_msg_.base_pose;
-    measured_velocity_.head<6>() = eigen_sensor_msg_.base_twist;
+    measured_configuration_.head<7>() = sensor_msg.base_pose;
+    measured_velocity_.head<6>() = sensor_msg.base_twist;
   }
   int nb_dof_q = ctrl_js.position.size();
   int nb_dof_v = ctrl_js.velocity.size();
@@ -47,28 +48,14 @@ const Eigen::VectorXd& LFC::compute_control(
   measured_velocity_.tail(nb_dof_v) = sensor_js.velocity;
 
   // Compute the linear feedback controller desired torque.
-  pinocchio::difference(rmb_->getPinocchioModel(), measured_configuration_,
+  pinocchio::difference(rmb_->get_model(), measured_configuration_,
                         desired_configuration_,
-                        diff_state_.head(rmb_->getPinocchioModel().nv));
-  diff_state_.tail(rmb_->getPinocchioModel().nv) =
+                        diff_state_.head(rmb_->get_model().nv));
+  diff_state_.tail(rmb_->get_model().nv) =
       desired_velocity_ - measured_velocity_;
-  lf_desired_torque_ = eigen_control_msg_.feedforward +
-                       eigen_control_msg_.feedback_gain * diff_state_;
+  control_ = control_msg.feedforward + control_msg.feedback_gain * diff_state_;
 
-  // Define the support foot
-  /// @todo automatize this in the estimator?
-  desired_swing_ids_.clear();
-  desired_stance_ids_.clear();
-  if (ctrl_init.contacts[0].active) {
-    desired_stance_ids_.push_back("left_sole_link");
-  } else {
-    desired_swing_ids_.push_back("left_sole_link");
-  }
-  if (ctrl_init.contacts[1].active) {
-    desired_stance_ids_.push_back("right_sole_link");
-  } else {
-    desired_swing_ids_.push_back("right_sole_link");
-  }
+  return control_;
 }
 
 }  // namespace linear_feedback_controller
