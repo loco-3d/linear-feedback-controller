@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 namespace linear_feedback_controller {
 
@@ -113,7 +114,7 @@ void MinJerk::setParameters(double end_time, double start_pos,
 
   // Higher order coeffs.
   double tmp = end_time_ * end_time_ * end_time_;
-  if (tmp == 0.0) {
+  if (std::abs(tmp) <= std::numeric_limits<double>::epsilon()) {
     coeffs_[3] = 0.0;
     coeffs_[4] = 0.0;
     coeffs_[5] = 0.0;
