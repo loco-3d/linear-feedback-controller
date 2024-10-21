@@ -6,14 +6,14 @@ PDController::PDController() {}
 
 PDController::~PDController() {}
 
-void PDController::setGains(const Eigen::VectorXd& p_gains,
-                            const Eigen::VectorXd& d_gains) {
+void PDController::set_gains(const Eigen::VectorXd& p_gains,
+                             const Eigen::VectorXd& d_gains) {
   p_gains_ = p_gains;
   d_gains_ = d_gains;
 }
 
-void PDController::setReference(const Eigen::VectorXd& tau_ref,
-                                const Eigen::VectorXd& q_ref) {
+void PDController::set_reference(const Eigen::VectorXd& tau_ref,
+                                 const Eigen::VectorXd& q_ref) {
   tau_ref_ = tau_ref;
   q_ref_ = q_ref;
   control_ = Eigen::VectorXd::Zero(tau_ref.size());

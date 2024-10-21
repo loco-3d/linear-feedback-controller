@@ -14,10 +14,11 @@ class PDController {
   const Eigen::VectorXd& compute_control(const Eigen::VectorXd& q,
                                          const Eigen::VectorXd& v);
 
-  void setGains(const Eigen::VectorXd& p_gains, const Eigen::VectorXd& d_gains);
+  void set_gains(const Eigen::VectorXd& p_gains,
+                 const Eigen::VectorXd& d_gains);
 
-  void setReference(const Eigen::VectorXd& tau_ref,
-                    const Eigen::VectorXd& q_ref);
+  void set_reference(const Eigen::VectorXd& tau_ref,
+                     const Eigen::VectorXd& q_ref);
 
  private:
   Eigen::VectorXd tau_ref_;
