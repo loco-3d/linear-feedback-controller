@@ -27,59 +27,59 @@ class RobotModelBuilder {
    * @param controlled_joint_names List of actively controlled joints.
    * @param robot_has_free_flyer If the robot has a free flyer or not.
    */
-  bool buildModel(const std::string& urdf, const std::string& srdf,
-                  const std::vector<std::string>& moving_joint_names,
-                  const std::vector<std::string>& controlled_joint_names,
-                  bool robot_has_free_flyer);
+  bool build_model(const std::string& urdf, const std::string& srdf,
+                   const std::vector<std::string>& moving_joint_names,
+                   const std::vector<std::string>& controlled_joint_names,
+                   bool robot_has_free_flyer);
 
   /**
    * @brief Get the moving joint names.
    *
    * @return const std::vector<std::string>&
    */
-  const std::vector<std::string>& getMovingJointNames() const;
+  const std::vector<std::string>& get_moving_joint_names() const;
 
   /**
    * @brief Get the moving joint ids.
    *
    * @return const std::vector<pinocchio::Index>&
    */
-  const std::vector<pinocchio::Index>& getMovingJointIds() const;
+  const std::vector<pinocchio::Index>& get_moving_joint_ids() const;
 
   /**
    * @brief Get the locked joint ids.
    *
    * @return const std::vector<pinocchio::Index>&
    */
-  const std::vector<pinocchio::Index>& getLockedJointIds() const;
+  const std::vector<pinocchio::Index>& get_locked_joint_ids() const;
 
   /**
    * @brief Get the URDF string.
    *
    * @return const std::string&
    */
-  const std::string& getUrdf() const;
+  const std::string& get_urdf() const;
 
   /**
    * @brief Get the SRDF string.
    *
    * @return const std::string&
    */
-  const std::string& getSrdf() const;
+  const std::string& get_srdf() const;
 
   /**
    * @brief Get the pinocchio model.
    *
    * @return const pinocchio::Model&
    */
-  const pinocchio::Model& getPinocchioModel() const;
+  const pinocchio::Model& get_model() const;
 
   /**
    * @brief Get the Pinocchio Data.
    *
    * @return pinocchio::Data&
    */
-  pinocchio::Data& getPinocchioData();
+  pinocchio::Data& get_data();
 
   /**
    * @brief Get if the robot model has a free flyer joint.
@@ -87,14 +87,14 @@ class RobotModelBuilder {
    * @return true
    * @return false
    */
-  bool getRobotHasFreeFlyer();
+  bool get_robot_has_free_flyer();
 
   /**
    * @brief Get the Pinocchio To Harwdare Interface Map.
    *
    * @return std::map<int, int>
    */
-  std::map<int, int> getPinocchioToHarwdareInterfaceMap();
+  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map();
 
  private:
   /// @brief String containing the model of the robot in xml/urdf format.
@@ -137,7 +137,7 @@ class RobotModelBuilder {
    * @param moving_joint_ids
    * @param locked_joint_ids
    */
-  bool parseMovingJointNames(
+  bool parse_moving_joint_names(
       const std::vector<std::string>& moving_joint_names,
       const std::vector<std::string>& controlled_joint_names);
 
