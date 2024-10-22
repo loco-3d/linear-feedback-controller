@@ -8,6 +8,8 @@ namespace linear_feedback_controller {
 
 class PDController {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
   PDController();
   ~PDController();
 
@@ -16,6 +18,9 @@ class PDController {
 
   void set_gains(const Eigen::VectorXd& p_gains,
                  const Eigen::VectorXd& d_gains);
+
+  void set_gains(const std::vector<double>& p_gains,
+                 const std::vector<double>& d_gains);
 
   void set_reference(const Eigen::VectorXd& tau_ref,
                      const Eigen::VectorXd& q_ref);

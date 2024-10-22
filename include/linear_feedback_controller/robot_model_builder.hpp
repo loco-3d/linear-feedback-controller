@@ -14,6 +14,8 @@ namespace linear_feedback_controller {
 
 class RobotModelBuilder {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
   RobotModelBuilder();
 
   ~RobotModelBuilder();

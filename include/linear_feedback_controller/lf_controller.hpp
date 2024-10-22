@@ -1,5 +1,5 @@
-#ifndef LINEAR_FEEDBACK_CONTROLLER_LFC_HPP
-#define LINEAR_FEEDBACK_CONTROLLER_LFC_HPP
+#ifndef LINEAR_FEEDBACK_CONTROLLER_LFCONTROLLER_HPP
+#define LINEAR_FEEDBACK_CONTROLLER_LFCONTROLLER_HPP
 
 #include "Eigen/Core"
 #include "linear_feedback_controller/robot_model_builder.hpp"
@@ -7,10 +7,12 @@
 
 namespace linear_feedback_controller {
 
-class LFC {
+class LFController {
  public:
-  LFC();
-  virtual ~LFC();
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+  LFController();
+  virtual ~LFController();
 
   void initialize(const RobotModelBuilder::SharedPtr& rmb);
 
@@ -36,4 +38,4 @@ class LFC {
 
 }  // namespace linear_feedback_controller
 
-#endif  // LINEAR_FEEDBACK_CONTROLLER_LFC_HPP
+#endif  // LINEAR_FEEDBACK_CONTROLLER_LFCONTROLLER_HPP

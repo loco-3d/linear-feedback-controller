@@ -30,15 +30,15 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/averaging_filter.hpp
     include/${PROJECT_NAME}/averaging_filter.hxx
     include/${PROJECT_NAME}/contact_detector.hpp
-    include/${PROJECT_NAME}/lfc.hpp
-    # include/${PROJECT_NAME}/linear_feedback_controller.hpp #
+    include/${PROJECT_NAME}/lf_controller.hpp
+    include/${PROJECT_NAME}/controller.hpp
     include/${PROJECT_NAME}/min_jerk.hpp
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
     src/contact_detector.cpp #
-    src/lfc.cpp #
-    # src/linear_feedback_controller.cpp #
+    src/lf_controller.cpp #
+    src/controller.cpp #
     src/min_jerk.cpp #
     src/pd_controller.cpp #
     src/robot_model_builder.cpp)

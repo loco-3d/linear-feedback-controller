@@ -1,14 +1,14 @@
-#include "linear_feedback_controller/lfc.hpp"
+#include "linear_feedback_controller/lf_controller.hpp"
 
 #include "pinocchio/algorithm/joint-configuration.hpp"
 
 namespace linear_feedback_controller {
 
-LFC::LFC() {}
+LFController::LFController() {}
 
-LFC::~LFC() {}
+LFController::~LFController() {}
 
-void LFC::initialize(const RobotModelBuilder::SharedPtr& rmb) {
+void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   rmb_ = rmb;
 
   desired_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
@@ -22,7 +22,7 @@ void LFC::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   }
 }
 
-const Eigen::VectorXd& LFC::compute_control(
+const Eigen::VectorXd& LFController::compute_control(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor_msg,
     const linear_feedback_controller_msgs::Eigen::Control& control_msg) {
   // Shortcuts for easier code writing.

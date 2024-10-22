@@ -12,6 +12,12 @@ void PDController::set_gains(const Eigen::VectorXd& p_gains,
   d_gains_ = d_gains;
 }
 
+void PDController::set_gains(const std::vector<double>& p_gains,
+                             const std::vector<double>& d_gains) {
+  p_gains_ = Eigen::VectorXd::Map(p_gains.data(), p_gains.size());
+  d_gains_ = Eigen::VectorXd::Map(d_gains.data(), d_gains.size());
+}
+
 void PDController::set_reference(const Eigen::VectorXd& tau_ref,
                                  const Eigen::VectorXd& q_ref) {
   tau_ref_ = tau_ref;
