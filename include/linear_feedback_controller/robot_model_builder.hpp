@@ -16,7 +16,7 @@ class RobotModelBuilder {
  public:
   RobotModelBuilder();
 
-  virtual ~RobotModelBuilder();
+  ~RobotModelBuilder();
 
   /**
    * @brief Build the robot model freezing the joints that are not moving.
@@ -30,7 +30,8 @@ class RobotModelBuilder {
   bool build_model(const std::string& urdf, const std::string& srdf,
                    const std::vector<std::string>& moving_joint_names,
                    const std::vector<std::string>& controlled_joint_names,
-                   bool robot_has_free_flyer);
+                   const std::string& default_configuration_name,
+                   const bool robot_has_free_flyer);
 
   /**
    * @brief Get the moving joint names.
@@ -52,20 +53,6 @@ class RobotModelBuilder {
    * @return const std::vector<pinocchio::Index>&
    */
   const std::vector<pinocchio::Index>& get_locked_joint_ids() const;
-
-  /**
-   * @brief Get the URDF string.
-   *
-   * @return const std::string&
-   */
-  const std::string& get_urdf() const;
-
-  /**
-   * @brief Get the SRDF string.
-   *
-   * @return const std::string&
-   */
-  const std::string& get_srdf() const;
 
   /**
    * @brief Get the pinocchio model.
@@ -97,10 +84,6 @@ class RobotModelBuilder {
   const std::map<int, int>& get_pinocchio_to_harwdare_interface_map();
 
  private:
-  /// @brief String containing the model of the robot in xml/urdf format.
-  std::string urdf_;
-  /// @brief String containing the extras of the model of the robot.
-  std::string srdf_;
   /// @brief List of names that correspond to the joints moving by the MPC.
   std::vector<std::string> moving_joint_names_;
   /// @brief Are we using a robot that has a free-flyer?
@@ -115,14 +98,11 @@ class RobotModelBuilder {
   /// @brief Sort the locked (position moving) joint names using the urdf order.
   std::vector<pinocchio::JointIndex> locked_joint_ids_;
 
-  /// @brief Pinocchio (Rigid body dynamics robot model).
-  pinocchio::Model pinocchio_model_complete_;
-
   /// @brief Pinocchio (Rigid body dynamics robot model) removing locked joints.
-  pinocchio::Model pinocchio_model_reduced_;
+  pinocchio::Model pinocchio_model_;
 
   /// @brief Computation cache.
-  pinocchio::Data pinocchio_data_reduced_;
+  pinocchio::Data pinocchio_data_;
 
   /// @brief Initial whole body configuration setup in the SRDF file.
   Eigen::VectorXd q_default_complete_;
@@ -138,6 +118,7 @@ class RobotModelBuilder {
    * @param locked_joint_ids
    */
   bool parse_moving_joint_names(
+      const pinocchio::Model& pinocchio_model_complete,
       const std::vector<std::string>& moving_joint_names,
       const std::vector<std::string>& controlled_joint_names);
 

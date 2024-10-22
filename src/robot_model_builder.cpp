@@ -17,40 +17,43 @@ bool RobotModelBuilder::build_model(
     const std::string& urdf, const std::string& srdf,
     const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names,
-    bool robot_has_free_flyer) {
+    const std::string& default_configuration_name,
+    const bool robot_has_free_flyer) {
   // Copy the argument inside the class.
-  urdf_ = urdf;
-  srdf_ = srdf;
   moving_joint_names_ = moving_joint_names;
   robot_has_free_flyer_ = robot_has_free_flyer;
   controlled_joint_names_ = controlled_joint_names;
 
+  pinocchio::Model pinocchio_model_complete;
   // Build the rigid body model of the robot.
   if (robot_has_free_flyer_) {
-    pinocchio::urdf::buildModelFromXML(urdf_, pinocchio::JointModelFreeFlyer(),
-                                       pinocchio_model_complete_);
+    pinocchio::urdf::buildModelFromXML(urdf, pinocchio::JointModelFreeFlyer(),
+                                       pinocchio_model_complete);
   } else {
-    pinocchio::urdf::buildModelFromXML(urdf_, pinocchio_model_complete_);
+    pinocchio::urdf::buildModelFromXML(urdf, pinocchio_model_complete);
   }
-  std::istringstream iss_srdf(srdf_);
-  pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete_,
+  std::istringstream iss_srdf(srdf);
+  pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete,
                                                       iss_srdf, false);
 
   // Reduce the rigid body model and set initial position.
-  if (!parse_moving_joint_names(moving_joint_names_, controlled_joint_names_)) {
+  if (!parse_moving_joint_names(pinocchio_model_complete, moving_joint_names_,
+                                controlled_joint_names_)) {
     return false;
   }
 
   q_default_complete_ =
-      pinocchio_model_complete_.referenceConfigurations["half_sitting"];
-  pinocchio_model_reduced_ = pinocchio::buildReducedModel(
-      pinocchio_model_complete_, locked_joint_ids_, q_default_complete_);
-  pinocchio_data_reduced_ = pinocchio::Data(pinocchio_model_reduced_);
+      pinocchio_model_complete
+          .referenceConfigurations[default_configuration_name];
+  pinocchio_model_ = pinocchio::buildReducedModel(
+      pinocchio_model_complete, locked_joint_ids_, q_default_complete_);
+  pinocchio_data_ = pinocchio::Data(pinocchio_model_);
 
   return true;
 }
 
 bool RobotModelBuilder::parse_moving_joint_names(
+    const pinocchio::Model& pinocchio_model_complete,
     const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names) {
   // Get moving joints ids
@@ -58,8 +61,8 @@ bool RobotModelBuilder::parse_moving_joint_names(
   for (const auto& joint_name : moving_joint_names) {
     pinocchio::JointIndex joint_id = 0;
     // do not consider joint that are not in the model
-    if (pinocchio_model_complete_.existJointName(joint_name)) {
-      joint_id = pinocchio_model_complete_.getJointId(joint_name);
+    if (pinocchio_model_complete.existJointName(joint_name)) {
+      joint_id = pinocchio_model_complete.getJointId(joint_name);
       moving_joint_ids_.push_back(joint_id);
     } else {
       std::cerr << "joint_name=" << joint_name
@@ -68,7 +71,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
   }
   if (robot_has_free_flyer_) {
     moving_joint_ids_.push_back(
-        pinocchio_model_complete_.getJointId("root_joint"));
+        pinocchio_model_complete.getJointId("root_joint"));
   }
   // Sort them to the pinocchio order (increasing number) and remove duplicates.
   std::sort(moving_joint_ids_.begin(), moving_joint_ids_.end());
@@ -80,19 +83,19 @@ bool RobotModelBuilder::parse_moving_joint_names(
   moving_joint_names_.clear();
   for (std::size_t i = 0; i < moving_joint_ids_.size(); ++i) {
     moving_joint_names_.push_back(
-        pinocchio_model_complete_.names[moving_joint_ids_[i]]);
+        pinocchio_model_complete.names[moving_joint_ids_[i]]);
   }
 
   // Locked joint ids in the Pinocchio order.
   locked_joint_ids_.clear();
   for (std::vector<std::string>::const_iterator it =
-           pinocchio_model_complete_.names.begin() + 1;
-       it != pinocchio_model_complete_.names.end(); ++it) {
+           pinocchio_model_complete.names.begin() + 1;
+       it != pinocchio_model_complete.names.end(); ++it) {
     const std::string& joint_name = *it;
     if (std::find(moving_joint_names_.begin(), moving_joint_names_.end(),
                   joint_name) == moving_joint_names_.end()) {
       locked_joint_ids_.push_back(
-          pinocchio_model_complete_.getJointId(joint_name));
+          pinocchio_model_complete.getJointId(joint_name));
     }
   }
 
@@ -104,7 +107,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
     moving_joint_names_.erase(root_name, moving_joint_names_.end());
     auto root_id =
         std::remove(moving_joint_ids_.begin(), moving_joint_ids_.end(),
-                    pinocchio_model_complete_.getJointId("root_joint"));
+                    pinocchio_model_complete.getJointId("root_joint"));
     moving_joint_ids_.erase(root_id, moving_joint_ids_.end());
   }
 
@@ -154,17 +157,11 @@ const std::vector<long unsigned int>& RobotModelBuilder::get_locked_joint_ids()
   return locked_joint_ids_;
 }
 
-const std::string& RobotModelBuilder::get_urdf() const { return urdf_; }
-
-const std::string& RobotModelBuilder::get_srdf() const { return srdf_; }
-
 const pinocchio::Model& RobotModelBuilder::get_model() const {
-  return pinocchio_model_reduced_;
+  return pinocchio_model_;
 }
 
-pinocchio::Data& RobotModelBuilder::get_data() {
-  return pinocchio_data_reduced_;
-}
+pinocchio::Data& RobotModelBuilder::get_data() { return pinocchio_data_; }
 
 bool RobotModelBuilder::get_robot_has_free_flyer() {
   return robot_has_free_flyer_;
