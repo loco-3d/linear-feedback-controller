@@ -1,0 +1,35 @@
+name: Ubuntu20.04, ROS2 Continuous Integration
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - ros_version: "humble"
+            ubuntu_version: "ubuntu-22.04"
+          - ros_version: "iron"
+            ubuntu_version: "ubuntu-22.04"
+    runs-on: ${{ matrix.ubuntu_version }}
+    steps:
+      #
+      # Setup the machines and build environment
+      #
+      - name: Install ROS.
+        uses: ros-tooling/setup-ros@0.7.9
+        with:
+          required-ros-distributions: ${{ matrix.ros_version }}
+
+      #
+      # Checkout the current branch
+      #
+      - uses: actions/checkout@v2
+
+      #
+      # Build and test the repo
+      #
+      - uses: ros-tooling/action-ros-ci@0.3.14
+        with:
+          package-name: linear_feedback_controller_msgs
+          target-ros2-distro: ${{ matrix.ros_version }}
