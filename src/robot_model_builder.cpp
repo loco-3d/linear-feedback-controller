@@ -65,8 +65,8 @@ bool RobotModelBuilder::parse_moving_joint_names(
       joint_id = pinocchio_model_complete.getJointId(joint_name);
       moving_joint_ids_.push_back(joint_id);
     } else {
-      std::cerr << "joint_name=" << joint_name
-                << " does not belong to the model" << std::endl;
+      std::cerr << "joint_name='" << joint_name
+                << "' does not belong to the model" << std::endl;
     }
   }
   if (robot_has_free_flyer_) {
