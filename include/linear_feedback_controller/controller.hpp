@@ -12,6 +12,7 @@
 #include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/pd_controller.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
+#include "linear_feedback_controller/time.hpp"
 
 namespace linear_feedback_controller {
 
@@ -26,7 +27,7 @@ class ControllerParameters {
   std::string default_configuration_name_;
   bool robot_has_free_flyer_;
   std::vector<ContactDetector::Parameters> contact_detector_params_;
-  std::chrono::duration<double> from_pd_to_lf_duration_;
+  Duration from_pd_to_lf_duration_;
 };
 
 /**
@@ -55,14 +56,27 @@ class Controller {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
+  using Sensor = linear_feedback_controller_msgs::Eigen::Sensor;
+  using Control = linear_feedback_controller_msgs::Eigen::Control;
+
   Controller();
   ~Controller();
 
-  bool initialize(const ControllerParameters& params,
-                  const Eigen::VectorXd& tau_init,
-                  const Eigen::VectorXd& jq_init);
+  bool load(const ControllerParameters& params);
 
-  const Eigen::VectorXd& compute_control();
+  bool configure(const Eigen::VectorXd& tau_init,
+                 const Eigen::VectorXd& jq_init);
+
+  /**
+   * @brief
+   *
+   * @param time
+   * @param sensor
+   * @param control
+   * @return const Eigen::VectorXd&
+   */
+  const Eigen::VectorXd& compute_control(TimePoint time, Sensor sensor,
+                                         Control control);
 
  private:
   ControllerParameters params_; /*! @brief Parameters of the controller. */
@@ -79,6 +93,10 @@ class Controller {
   LFController lf_controller_;
   /// @brief Smoother for the switch between the PD and the LFC.
   MinJerk min_jerk_;
+  /// @brief Time at which we received the first control.
+  TimePoint first_control_received_time_;
+  /// @brief Duration of the switch between the PD and LF controllers.
+  TimePoint first_control_received_time_;
 };
 
 }  // namespace linear_feedback_controller

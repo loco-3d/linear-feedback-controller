@@ -5,13 +5,12 @@ namespace linear_feedback_controller {
 Controller::Controller() {
   robot_model_builder_ = std::make_shared<RobotModelBuilder>();
   control_.resize(0);
+  first_control_received_time_ = TimePoint::min();
 }
 
 Controller::~Controller() {}
 
-bool Controller::initialize(const ControllerParameters& params,
-                            const Eigen::VectorXd& tau_init,
-                            const Eigen::VectorXd& jq_init) {
+bool Controller::load(const ControllerParameters& params) {
   params_ = params;
 
   // Load the robot model.
@@ -33,7 +32,6 @@ bool Controller::initialize(const ControllerParameters& params,
 
   // Setup the pd controller.
   pd_controller_.set_gains(params.p_gains_, params.d_gains_);
-  pd_controller_.set_reference(tau_init, jq_init);
 
   // Setup the lfc controller.
   lf_controller_.initialize(robot_model_builder_);
@@ -41,6 +39,51 @@ bool Controller::initialize(const ControllerParameters& params,
   return true;
 }
 
-const Eigen::VectorXd& Controller::compute_control() { return control_; }
+bool Controller::configure(const Eigen::VectorXd& tau_init,
+                           const Eigen::VectorXd& jq_init) {
+  pd_controller_.set_reference(tau_init, jq_init);
+}
+
+const Eigen::VectorXd& Controller::compute_control(TimePoint time,
+                                                   Sensor sensor,
+                                                   Control control) {
+  // Shortcuts for easier code writing.
+  const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
+      sensor.joint_state;
+  const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
+      control.initial_state.joint_state;
+
+  // Self documented variables.
+  bool control_msg_received = !ctrl_js.name.empty();
+  bool first_control_received_time_initialized =
+      first_control_received_time_ == TimePoint::min();
+  bool during_switch = (time - first_control_received_time_).count() <
+                       params_.from_pd_to_lf_duration_;
+
+  // Check whenever the first data has arrived and save the time.
+  if (control_msg_received && !first_control_received_time_initialized) {
+    first_control_received_time_ = time;
+  }
+
+  if (!first_control_received_time_initialized) {
+    control_ =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
+  } else if (during_switch) {
+    double weight = ((time - first_control_received_time_).count()) /
+                    params_.from_pd_to_lf_duration_;
+    if (weight < 0.0) {
+      weight = 0.0;
+    } else if (weight > 1.0) {
+      weight = 1.0;
+    }
+    control_ = (1 - weight) * pd_controller_.compute_control(
+                                  sensor_js.position, sensor_js.velocity) +
+               weight * lf_controller_.compute_control(sensor, control);
+  } else {
+    control_ = lf_controller_.compute_control(sensor, control);
+  }
+
+  return control_;
+}
 
 }  // namespace linear_feedback_controller
