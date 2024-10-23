@@ -38,6 +38,6 @@ jobs:
       #
       - uses: ros-tooling/action-ros-ci@0.3.14
         with:
-          package-name: linear_feedback_manager
+          package-name: linear_feedback_controller
           target-ros2-distro: ${{ matrix.ros_version }}
           vcs-repo-file-url: /tmp/deps.repos
