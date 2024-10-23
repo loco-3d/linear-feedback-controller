@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "example-robot-data/path.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
 using namespace linear_feedback_controller;

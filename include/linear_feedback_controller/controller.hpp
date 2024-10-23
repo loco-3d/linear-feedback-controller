@@ -95,8 +95,6 @@ class Controller {
   MinJerk min_jerk_;
   /// @brief Time at which we received the first control.
   TimePoint first_control_received_time_;
-  /// @brief Duration of the switch between the PD and LF controllers.
-  TimePoint first_control_received_time_;
 };
 
 }  // namespace linear_feedback_controller

@@ -42,6 +42,7 @@ bool Controller::load(const ControllerParameters& params) {
 bool Controller::configure(const Eigen::VectorXd& tau_init,
                            const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
+  return true;
 }
 
 const Eigen::VectorXd& Controller::compute_control(TimePoint time,
@@ -57,8 +58,8 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   bool control_msg_received = !ctrl_js.name.empty();
   bool first_control_received_time_initialized =
       first_control_received_time_ == TimePoint::min();
-  bool during_switch = (time - first_control_received_time_).count() <
-                       params_.from_pd_to_lf_duration_;
+  bool during_switch =
+      (time - first_control_received_time_) < params_.from_pd_to_lf_duration_;
 
   // Check whenever the first data has arrived and save the time.
   if (control_msg_received && !first_control_received_time_initialized) {
@@ -70,7 +71,7 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
-                    params_.from_pd_to_lf_duration_;
+                    params_.from_pd_to_lf_duration_.count();
     if (weight < 0.0) {
       weight = 0.0;
     } else if (weight > 1.0) {
