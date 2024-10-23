@@ -14,17 +14,10 @@ jobs:
     runs-on: ${{ matrix.ubuntu_version }}
     steps:
       #
-      # Setup the machines and build environment
+      # Checkout the current branch. Only used to get the deps.repos file.
+      # The last step here re-clone the repo at the right place.
       #
-      - name: Install ROS.
-        uses: ros-tooling/setup-ros@0.7.9
-        with:
-          required-ros-distributions: ${{ matrix.ros_version }}
-
-      #
-      # Checkout the current branch
-      #
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       #
       # Use the .repos inside the cloned repository.
@@ -34,10 +27,18 @@ jobs:
           cp ../${{ github.event.repository.name }}/.github/workflows/deps.repos /tmp/deps.repos
 
       #
+      # Setup the machines and build environment
+      #
+      - name: Install ROS.
+        uses: ros-tooling/setup-ros@0.7.9
+        with:
+          required-ros-distributions: ${{ matrix.ros_version }}
+
+      #
       # Build and test the repo
       #
       - uses: ros-tooling/action-ros-ci@0.3.14
         with:
-          package-name: ${{ github.event.repository.name }}
+          package-name: linear_feedback_manager
           target-ros2-distro: ${{ matrix.ros_version }}
           vcs-repo-file-url: /tmp/deps.repos
