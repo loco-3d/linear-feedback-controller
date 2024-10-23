@@ -23,7 +23,6 @@ jobs:
       # Use the .repos inside the cloned repository.
       #
       - run: |
-          ls -al -R ../
           cp ../${{ github.event.repository.name }}/.github/workflows/deps.repos /tmp/deps.repos
 
       #
