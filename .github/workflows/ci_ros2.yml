@@ -24,12 +24,22 @@ jobs:
       #
       # Checkout the current branch
       #
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      #
+      # Use the .repos inside the cloned repository.
+      #
+      - run: |
+          sudo apt install tree
+          tree .
+          echo "repos ? ${{ github.event.repository }}"
+          cp ${{ github.event.repository }}/.github/workflows/deps.repos /tmp/deps.repos
 
       #
       # Build and test the repo
       #
       - uses: ros-tooling/action-ros-ci@0.3.14
         with:
-          package-name: linear_feedback_controller
+          package-name: ${{ github.event.repository.name }}
           target-ros2-distro: ${{ matrix.ros_version }}
+          vcs-repo-file-url: /tmp/deps.repos
