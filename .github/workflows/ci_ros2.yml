@@ -13,13 +13,6 @@ jobs:
             ubuntu_version: "ubuntu-22.04"
     runs-on: ${{ matrix.ubuntu_version }}
     steps:
-      #
-      # Setup the machines and build environment
-      #
-      - name: Install ROS.
-        uses: ros-tooling/setup-ros@0.7.9
-        with:
-          required-ros-distributions: ${{ matrix.ros_version }}
 
       #
       # Checkout the current branch
@@ -31,9 +24,17 @@ jobs:
       #
       - run: |
           sudo apt install tree
-          tree .
+          tree ..
           echo "repos ? ${{ github.event.repository }}"
-          cp ${{ github.event.repository }}/.github/workflows/deps.repos /tmp/deps.repos
+          cp ../${{ github.event.repository.name }}/.github/workflows/deps.repos /tmp/deps.repos
+
+      #
+      # Setup the machines and build environment
+      #
+      - name: Install ROS.
+        uses: ros-tooling/setup-ros@0.7.9
+        with:
+          required-ros-distributions: ${{ matrix.ros_version }}
 
       #
       # Build and test the repo
