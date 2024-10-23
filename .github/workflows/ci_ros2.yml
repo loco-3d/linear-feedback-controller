@@ -9,8 +9,8 @@ jobs:
         include:
           - ros_version: "humble"
             ubuntu_version: "ubuntu-22.04"
-          - ros_version: "iron"
-            ubuntu_version: "ubuntu-22.04"
+          # - ros_version: "iron"
+          #   ubuntu_version: "ubuntu-22.04"
     runs-on: ${{ matrix.ubuntu_version }}
     steps:
       #
@@ -24,7 +24,7 @@ jobs:
       #
       # Checkout the current branch
       #
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
 
       #
       # Use the .repos inside the cloned repository.
