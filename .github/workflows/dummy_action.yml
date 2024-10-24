@@ -1,0 +1,3 @@
+# Dummy actions
+
+on: [push, pull_request]
