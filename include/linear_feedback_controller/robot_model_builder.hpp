@@ -6,9 +6,8 @@
 
 // Rigid body dynamics
 #include <pinocchio/fwd.hpp>
-#include <pinocchio/multibody/model.hpp>
-
 #include <pinocchio/multibody/data.hpp>
+#include <pinocchio/multibody/model.hpp>
 
 namespace linear_feedback_controller {
 
