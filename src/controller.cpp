@@ -15,23 +15,23 @@ bool Controller::load(const ControllerParameters& params) {
 
   // Load the robot model.
   robot_model_builder_->build_model(
-      params.urdf_, params.srdf_, params.moving_joint_names_,
-      params.controlled_joint_names_, params.default_configuration_name_,
-      params.robot_has_free_flyer_);
+      params_.urdf, params_.srdf, params_.moving_joint_names,
+      params_.controlled_joint_names, params_.default_configuration_name,
+      params_.robot_has_free_flyer);
 
   // Construct the contact estimator if the robot has a free-flyer.
-  if (params.robot_has_free_flyer_) {
-    contact_detectors_.resize(params.contact_detector_params_.size());
+  if (params_.robot_has_free_flyer) {
+    contact_detectors_.resize(params_.contact_detector_params.size());
     for (std::size_t i = 0; i < contact_detectors_.size(); ++i) {
-      contact_detectors_[i].setParameters(params.contact_detector_params_[i]);
+      contact_detectors_[i].setParameters(params_.contact_detector_params[i]);
     }
   }
 
   // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.setParameters(params_.from_pd_to_lf_duration_.count(), 1.0);
+  min_jerk_.setParameters(params_.from_pd_to_lf_duration.count(), 1.0);
 
   // Setup the pd controller.
-  pd_controller_.set_gains(params.p_gains_, params.d_gains_);
+  pd_controller_.set_gains(params_.p_gains, params_.d_gains);
 
   // Setup the lfc controller.
   lf_controller_.initialize(robot_model_builder_);
@@ -57,7 +57,7 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   const bool first_control_received_time_initialized =
       first_control_received_time_ == TimePoint::min();
   const bool during_switch =
-      (time - first_control_received_time_) < params_.from_pd_to_lf_duration_;
+      (time - first_control_received_time_) < params_.from_pd_to_lf_duration;
 
   // Check whenever the first data has arrived and save the time.
   if (control_msg_received && !first_control_received_time_initialized) {
@@ -69,7 +69,7 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
-                    params_.from_pd_to_lf_duration_.count();
+                    params_.from_pd_to_lf_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
     const Eigen::VectorXd& pd_ctrl =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);

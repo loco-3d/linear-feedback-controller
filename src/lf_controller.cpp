@@ -4,8 +4,6 @@
 
 namespace linear_feedback_controller {
 
-static constexpr int LFController::kNbFreeFlyerDof = 6;
-
 LFController::LFController() {}
 
 LFController::~LFController() {}
