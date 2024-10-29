@@ -26,7 +26,7 @@ We send a request with:
 - joint velocities
 - joint efforts (torques applied to the joints)
 
-We sen receive the response in the shape:
+We send receive the response in the shape:
 - A feedback gain matrix
 - A feedforward term in torque
 - The state which was used to linearize the control.
