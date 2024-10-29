@@ -21,6 +21,13 @@ class ContactDetector {
     RELEASING_CONTACT
   };
 
+  class Parameters {
+   public:
+    double lower_threshold_;
+    double upper_threshold_;
+    int threshold_contact_counter_;
+  };
+
  public:
   /**
    * @brief Construct a new Averaging Filter.
@@ -42,28 +49,34 @@ class ContactDetector {
    */
   bool detectContact(Eigen::Matrix<double, 6, 1> wrench);
 
+  void setParameters(const Parameters params) { params_ = params; }
+
   /**
    * @brief Set the Lower Threshold.
    *
    * @param threshold
    */
-  void setLowerThreshold(double threshold) { lower_threshold_ = threshold; }
+  void setLowerThreshold(double threshold) {
+    params_.lower_threshold_ = threshold;
+  }
 
   /**
    * @brief Get the Lower Threshold.
    */
-  const double& getLowerThreshold() { return lower_threshold_; }
+  const double& getLowerThreshold() { return params_.lower_threshold_; }
 
   /**
    * @brief Set the Upper Threshold.
    * @param threshold
    */
-  void setUpperThreshold(double threshold) { upper_threshold_ = threshold; }
+  void setUpperThreshold(double threshold) {
+    params_.upper_threshold_ = threshold;
+  }
 
   /**
    * @brief Get the Upper Threshold.
    */
-  const double& getUpperThreshold() { return upper_threshold_; }
+  const double& getUpperThreshold() { return params_.upper_threshold_; }
 
   /**
    * @brief Set the Threshold Contact Counter.
@@ -71,20 +84,20 @@ class ContactDetector {
    * @param threshold
    */
   void setThresholdContactCounter(int threshold) {
-    threshold_contact_counter_ = threshold;
+    params_.threshold_contact_counter_ = threshold;
   }
 
   /**
    * @brief Get the Threshold Contact Counter.
    * @return const int&
    */
-  const int& getThresholdContactCounter() { return threshold_contact_counter_; }
+  const int& getThresholdContactCounter() {
+    return params_.threshold_contact_counter_;
+  }
 
  private:
-  double lower_threshold_;
-  double upper_threshold_;
+  Parameters params_;
   int contact_counter_;
-  int threshold_contact_counter_;
   ContactState contact_state_;
 };
 

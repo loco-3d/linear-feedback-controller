@@ -13,26 +13,26 @@ Follows a quick description of these package.
 
 ## The linear_feedback_controller
 
-In this package we implement a [roscontrol](http://wiki.ros.org/ros_control)
-controller. It is based on the [pal_base_ros_controller](https://gitlab.com/pal-robotics/LAAS/pal_base_ros_controller_tutorials)
-package.
+In this package we implement a [ros2_control](https://control.ros.org/rolling/index.html)
+controller.
+It is implementing a chainable controller pluggable with any kind of state
+estimator.
 
-We implement a RosTopic publisher that sends the state of the robot:
-- base configuration
-- base velocity
+We implement a ROS 2 action client/server setup.
+We send a request with:
+- base configuration (only if the robot has a free-flyer, identity otherwise)
+- base velocity (only if the robot has a free-flyer, identity otherwise)
 - joint positions
 - joint velocities
 - joint efforts (torques applied to the joints)
 
-We then subscribe to a RosTopic that sends us controls for the robot:
+We send receive the response in the shape:
 - A feedback gain matrix
 - A feedforward term in torque
 - The state which was used to linearize the control.
 
-This allows us, for example,to use it on the Talos (1 and 3) robots with a remote controller
+This allows us, for example, to use it on the Talos (1 and 3) robots with a remote controller
 using a whole body model predictive control based on [croccodyl](https://github.com/loco-3d/crocoddyl)
-
-Please check the [README.md](./linear_feedback_controller/README.md) of the package for more details.
 
 ## The linear_feedback_controller_msgs
 

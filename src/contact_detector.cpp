@@ -3,18 +3,20 @@
 namespace linear_feedback_controller {
 
 ContactDetector::ContactDetector()
-    : lower_threshold_(0.0),
-      upper_threshold_(0.0),
-      contact_counter_(0),
-      threshold_contact_counter_(10),
-      contact_state_(NO_CONTACT) {}
+    : contact_counter_(0), contact_state_(NO_CONTACT) {
+  params_.lower_threshold_ = 0.0;
+  params_.upper_threshold_ = 0.0;
+  params_.threshold_contact_counter_ = 0;
+}
 
 ContactDetector::~ContactDetector() {}
 
 bool ContactDetector::detectContact(Eigen::Matrix<double, 6, 1> wrench) {
   // Compute state of contact
-  bool force_above_threshold(wrench.head<3>().norm() >= upper_threshold_);
-  bool force_below_threshold(wrench.head<3>().norm() <= lower_threshold_);
+  bool force_above_threshold(wrench.head<3>().norm() >=
+                             params_.upper_threshold_);
+  bool force_below_threshold(wrench.head<3>().norm() <=
+                             params_.lower_threshold_);
   ContactState res = contact_state_;
 
   switch (contact_state_) {
@@ -32,7 +34,7 @@ bool ContactDetector::detectContact(Eigen::Matrix<double, 6, 1> wrench) {
       if (force_above_threshold) {
         // increase counter
         ++contact_counter_;
-        if (contact_counter_ >= threshold_contact_counter_) {
+        if (contact_counter_ >= params_.threshold_contact_counter_) {
           // if number of iteration reached, switch to ACTIVE_CONTACT.
           res = ACTIVE_CONTACT;
           contact_counter_ = 0;
@@ -59,7 +61,7 @@ bool ContactDetector::detectContact(Eigen::Matrix<double, 6, 1> wrench) {
       if (force_below_threshold) {
         // increase counter
         ++contact_counter_;
-        if (contact_counter_ >= threshold_contact_counter_) {
+        if (contact_counter_ >= params_.threshold_contact_counter_) {
           // if number of iteration reached, switch to NO_CONTACT.
           res = NO_CONTACT;
           contact_counter_ = 0;
