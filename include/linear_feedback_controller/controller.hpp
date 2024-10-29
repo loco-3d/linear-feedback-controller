@@ -16,18 +16,17 @@
 
 namespace linear_feedback_controller {
 
-class ControllerParameters {
- public:
-  std::string urdf_;
-  std::string srdf_;
-  std::vector<std::string> moving_joint_names_;
-  std::vector<double> p_gains_;
-  std::vector<double> d_gains_;
-  std::vector<std::string> controlled_joint_names_;
-  std::string default_configuration_name_;
-  bool robot_has_free_flyer_;
-  std::vector<ContactDetector::Parameters> contact_detector_params_;
-  Duration from_pd_to_lf_duration_;
+struct ControllerParameters {
+  std::string urdf;
+  std::string srdf;
+  std::vector<std::string> moving_joint_names;
+  std::vector<double> p_gains;
+  std::vector<double> d_gains;
+  std::vector<std::string> controlled_joint_names;
+  std::string default_configuration_name;
+  bool robot_has_free_flyer;
+  std::vector<ContactDetector::Parameters> contact_detector_params;
+  Duration from_pd_to_lf_duration;
 };
 
 /**

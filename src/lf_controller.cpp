@@ -4,6 +4,8 @@
 
 namespace linear_feedback_controller {
 
+static constexpr int LFController::kNbFreeFlyerDof = 6;
+
 LFController::LFController() {}
 
 LFController::~LFController() {}
@@ -16,7 +18,7 @@ void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   measured_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
   measured_velocity_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
   if (rmb_->get_robot_has_free_flyer()) {
-    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv - 6);
+    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv - kNbFreeFlyerDof);
   } else {
     control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
   }
@@ -40,8 +42,8 @@ const Eigen::VectorXd& LFController::compute_control(
     measured_configuration_.head<7>() = sensor_msg.base_pose;
     measured_velocity_.head<6>() = sensor_msg.base_twist;
   }
-  int nb_dof_q = ctrl_js.position.size();
-  int nb_dof_v = ctrl_js.velocity.size();
+  const int nb_dof_q = ctrl_js.position.size();
+  const int nb_dof_v = ctrl_js.velocity.size();
   desired_configuration_.tail(nb_dof_q) = ctrl_js.position;
   desired_velocity_.tail(nb_dof_v) = ctrl_js.velocity;
   measured_configuration_.tail(nb_dof_q) = sensor_js.position;
@@ -53,7 +55,8 @@ const Eigen::VectorXd& LFController::compute_control(
                         diff_state_.head(rmb_->get_model().nv));
   diff_state_.tail(rmb_->get_model().nv) =
       desired_velocity_ - measured_velocity_;
-  control_ = control_msg.feedforward + control_msg.feedback_gain * diff_state_;
+  control_.noalias() =
+      control_msg.feedforward + control_msg.feedback_gain * diff_state_;
 
   return control_;
 }

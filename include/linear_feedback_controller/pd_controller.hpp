@@ -1,5 +1,5 @@
-#ifndef LINEAR_FEEDBACK_CONTROLLER_pd_controller_HPP
-#define LINEAR_FEEDBACK_CONTROLLER_pd_controller_HPP
+#ifndef LINEAR_FEEDBACK_CONTROLLER_PD_CONTROLLER_HPP
+#define LINEAR_FEEDBACK_CONTROLLER_PD_CONTROLLER_HPP
 
 #include "Eigen/Core"
 #include "linear_feedback_controller/robot_model_builder.hpp"
@@ -35,4 +35,4 @@ class PDController {
 
 }  // namespace linear_feedback_controller
 
-#endif  // LINEAR_FEEDBACK_CONTROLLER_pd_controller_HPP
+#endif  // LINEAR_FEEDBACK_CONTROLLER_PD_CONTROLLER_HPP

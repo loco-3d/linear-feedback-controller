@@ -30,7 +30,6 @@
   <depend>linear_feedback_controller_msgs</depend>
 
   <test_depend>example-robot-data</test_depend>
-  <test_depend>rostest</test_depend>
   <test_depend>gtest</test_depend>
 
   <export>

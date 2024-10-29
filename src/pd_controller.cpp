@@ -27,8 +27,10 @@ void PDController::set_reference(const Eigen::VectorXd& tau_ref,
 
 const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
                                                      const Eigen::VectorXd& v) {
-  assert(q.size() == v.size());
-  assert(tau_ref_.size() == v.size());
+  assert(q.size() == v.size() &&
+         "Size missmatach between 'q' and 'v' vectors!");
+  assert(tau_ref_.size() == v.size() &&
+         "Size missmatach between 'tau_ref' and 'v' vectors!");
 
   control_ = tau_ref_.array() - p_gains_.array() * (q - q_ref_).array() -
              d_gains_.array() * v.array();

@@ -49,16 +49,14 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
                                                    Sensor sensor,
                                                    Control control) {
   // Shortcuts for easier code writing.
-  const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
-      sensor.joint_state;
-  const linear_feedback_controller_msgs::Eigen::JointState& ctrl_js =
-      control.initial_state.joint_state;
+  const auto& sensor_js = sensor.joint_state;
+  const auto& ctrl_js = control.initial_state.joint_state;
 
   // Self documented variables.
-  bool control_msg_received = !ctrl_js.name.empty();
-  bool first_control_received_time_initialized =
+  const bool control_msg_received = !ctrl_js.name.empty();
+  const bool first_control_received_time_initialized =
       first_control_received_time_ == TimePoint::min();
-  bool during_switch =
+  const bool during_switch =
       (time - first_control_received_time_) < params_.from_pd_to_lf_duration_;
 
   // Check whenever the first data has arrived and save the time.
@@ -72,14 +70,13 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
                     params_.from_pd_to_lf_duration_.count();
-    if (weight < 0.0) {
-      weight = 0.0;
-    } else if (weight > 1.0) {
-      weight = 1.0;
-    }
-    control_ = (1 - weight) * pd_controller_.compute_control(
-                                  sensor_js.position, sensor_js.velocity) +
-               weight * lf_controller_.compute_control(sensor, control);
+    weight = std::clamp(weight, 0.0, 1.0);
+    const Eigen::VectorXd& pd_ctrl =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
+    const Eigen::VectorXd& lf_ctrl =
+        lf_controller_.compute_control(sensor, control);
+
+    control_ = (1.0 - weight) * pd_ctrl + weight * lf_ctrl;
   } else {
     control_ = lf_controller_.compute_control(sensor, control);
   }

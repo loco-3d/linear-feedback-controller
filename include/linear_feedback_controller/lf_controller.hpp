@@ -34,6 +34,8 @@ class LFController {
 
   Eigen::VectorXd control_;
   RobotModelBuilder::SharedPtr rmb_;
+
+  static constexpr int kNbFreeFlyerDof;
 };
 
 }  // namespace linear_feedback_controller
