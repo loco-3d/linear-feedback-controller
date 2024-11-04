@@ -34,6 +34,8 @@ using controller_interface::InterfaceConfiguration;
 using controller_interface::return_type;
 using hardware_interface::CommandInterface;
 using hardware_interface::HW_IF_EFFORT;
+using hardware_interface::HW_IF_POSITION;
+using hardware_interface::HW_IF_VELOCITY;
 
 /**
  * @brief This chainable controller provides a base state estimator.
@@ -111,6 +113,7 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   bool load_parameters();
   bool wait_for_robot_description(std::string& robot_description);
   bool load_linear_feedback_controller(const std::string& robot_description);
+  bool setup_reference_interface();
   bool allocate_memory();
   bool initialize_introspection();
 

@@ -26,9 +26,13 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
   all_good &= load_parameters();
   all_good &= wait_for_robot_description(robot_description);
   all_good &= load_linear_feedback_controller(robot_description);
+  all_good &= setup_reference_interface();
   all_good &= allocate_memory();
   all_good &= initialize_introspection();
   RCLCPP_INFO(get_node()->get_logger(), "Successfull init.");
+  if (!all_good) {
+    return CallbackReturn::FAILURE;
+  }
   return CallbackReturn::SUCCESS;
 }
 
@@ -45,11 +49,9 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
   command_interfaces_config_names.clear();
 
   // Then the joint informations.
-  for (const auto& interface : {HW_IF_EFFORT}) {
-    for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
-      const auto name = command_prefix_ + joint + "/" + interface;
-      command_interfaces_config_names.emplace_back(name);
-    }
+  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+    const auto name = command_prefix_ + joint + "/" + HW_IF_EFFORT;
+    command_interfaces_config_names.emplace_back(name);
   }
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
@@ -67,34 +69,11 @@ LinearFeedbackControllerRos::state_interface_configuration() const {
 std::vector<hardware_interface::CommandInterface>
 LinearFeedbackControllerRos::on_export_reference_interfaces() {
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
-
-  reference_interface_names_.clear();
-  // Start with the base
-  if (lfc_.getRobotModel()->get_robot_has_free_flyer()) {
-    reference_interface_names_.push_back("base_translation_x");
-    reference_interface_names_.push_back("base_translation_y");
-    reference_interface_names_.push_back("base_translation_z");
-    reference_interface_names_.push_back("base_orientation_qx");
-    reference_interface_names_.push_back("base_orientation_qy");
-    reference_interface_names_.push_back("base_orientation_qz");
-    reference_interface_names_.push_back("base_orientation_qw");
-    reference_interface_names_.push_back("base_linear_velocity_x");
-    reference_interface_names_.push_back("base_linear_velocity_y");
-    reference_interface_names_.push_back("base_linear_velocity_z");
-    reference_interface_names_.push_back("base_angular_velocity_x");
-    reference_interface_names_.push_back("base_angular_velocity_y");
-    reference_interface_names_.push_back("base_angular_velocity_z");
+  for (size_t i = 0; i < reference_interface_names_.size(); ++i) {
+    reference_interfaces.push_back(hardware_interface::CommandInterface(
+        get_node()->get_name(), reference_interface_names_[i],
+        &reference_interfaces_[i]));
   }
-
-  // Joint position:
-
-  // for (size_t i = 0; i < reference_interface_names.size(); ++i)
-  // {
-  //   reference_interfaces.push_back(hardware_interface::CommandInterface(
-  //     get_node()->get_name(), reference_interface_names[i],
-  //     &reference_interfaces_[i]));
-  // }
-
   return reference_interfaces;
 }
 
@@ -398,6 +377,36 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
   return true;
 }
 
+bool LinearFeedbackControllerRos::setup_reference_interface() {
+  // Setup the reference interface memory
+  reference_interface_names_.clear();
+  if (lfc_.getRobotModel()->get_robot_has_free_flyer()) {
+    reference_interface_names_.push_back("base_translation_x");
+    reference_interface_names_.push_back("base_translation_y");
+    reference_interface_names_.push_back("base_translation_z");
+    reference_interface_names_.push_back("base_orientation_qx");
+    reference_interface_names_.push_back("base_orientation_qy");
+    reference_interface_names_.push_back("base_orientation_qz");
+    reference_interface_names_.push_back("base_orientation_qw");
+    reference_interface_names_.push_back("base_linear_velocity_x");
+    reference_interface_names_.push_back("base_linear_velocity_y");
+    reference_interface_names_.push_back("base_linear_velocity_z");
+    reference_interface_names_.push_back("base_angular_velocity_x");
+    reference_interface_names_.push_back("base_angular_velocity_y");
+    reference_interface_names_.push_back("base_angular_velocity_z");
+  }
+  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+    const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
+    reference_interface_names_.emplace_back(name);
+  }
+  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+    const auto name = command_prefix_ + joint + "/" + HW_IF_VELOCITY;
+    reference_interface_names_.emplace_back(name);
+  }
+
+  return true;
+}
+
 bool LinearFeedbackControllerRos::allocate_memory() {
   // // Allocate dynamic memory
   // robot_state_ = robot_model_->createZeroState();
@@ -436,6 +445,10 @@ bool LinearFeedbackControllerRos::allocate_memory() {
 
   // base_command_interface_ =
   //   std::make_unique<OdometryCommandInterface>(command_prefix_ + "base");
+
+  // Resize the reference interface vector to correspond with the names.
+  reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
+
   return true;
 }
 
