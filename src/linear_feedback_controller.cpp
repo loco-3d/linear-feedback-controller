@@ -1,16 +1,16 @@
-#include "linear_feedback_controller/controller.hpp"
+#include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 namespace linear_feedback_controller {
 
-Controller::Controller() {
+LinearFeedbackController::LinearFeedbackController() {
   robot_model_builder_ = std::make_shared<RobotModelBuilder>();
   control_.resize(0);
   first_control_received_time_ = TimePoint::min();
 }
 
-Controller::~Controller() {}
+LinearFeedbackController::~LinearFeedbackController() {}
 
-bool Controller::load(const ControllerParameters& params) {
+bool LinearFeedbackController::load(const ControllerParameters& params) {
   params_ = params;
 
   // Load the robot model.
@@ -39,15 +39,14 @@ bool Controller::load(const ControllerParameters& params) {
   return true;
 }
 
-bool Controller::configure(const Eigen::VectorXd& tau_init,
-                           const Eigen::VectorXd& jq_init) {
+bool LinearFeedbackController::configure(const Eigen::VectorXd& tau_init,
+                                         const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
   return true;
 }
 
-const Eigen::VectorXd& Controller::compute_control(TimePoint time,
-                                                   Sensor sensor,
-                                                   Control control) {
+const Eigen::VectorXd& LinearFeedbackController::compute_control(
+    TimePoint time, Sensor sensor, Control control) {
   // Shortcuts for easier code writing.
   const auto& sensor_js = sensor.joint_state;
   const auto& ctrl_js = control.initial_state.joint_state;
@@ -82,6 +81,11 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   }
 
   return control_;
+}
+
+RobotModelBuilder::ConstSharedPtr LinearFeedbackController::getRobotModel()
+    const {
+  return robot_model_builder_;
 }
 
 }  // namespace linear_feedback_controller

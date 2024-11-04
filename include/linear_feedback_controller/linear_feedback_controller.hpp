@@ -6,7 +6,6 @@
 #include "Eigen/Core"
 
 // local include
-#include "linear_feedback_controller/averaging_filter.hpp"
 #include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/lf_controller.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
@@ -51,15 +50,15 @@ struct ControllerParameters {
  * Hence it's the \f$ x_0 \f$ of the optimal control problem.
  *
  */
-class Controller {
+class LinearFeedbackController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   using Sensor = linear_feedback_controller_msgs::Eigen::Sensor;
   using Control = linear_feedback_controller_msgs::Eigen::Control;
 
-  Controller();
-  ~Controller();
+  LinearFeedbackController();
+  ~LinearFeedbackController();
 
   bool load(const ControllerParameters& params);
 
@@ -76,6 +75,8 @@ class Controller {
    */
   const Eigen::VectorXd& compute_control(TimePoint time, Sensor sensor,
                                          Control control);
+
+  RobotModelBuilder::ConstSharedPtr getRobotModel() const;
 
  private:
   ControllerParameters params_; /*! @brief Parameters of the controller. */

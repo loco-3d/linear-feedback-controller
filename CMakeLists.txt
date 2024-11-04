@@ -24,6 +24,20 @@ find_package(Eigen3)
 find_package(pinocchio REQUIRED)
 
 #
+# Generate the ROS2 parameters interface automatically.
+#
+include(cmake/sec_generate_parameter_library.cmake)
+# Main node params
+sec_generate_parameter_library_markdown(${PROJECT_NAME}_parameters_doc
+                                        src/linear_feedback_controller.yaml)
+sec_generate_parameter_library(
+  generated_parameters # Lib name
+  ${PROJECT_NAME}_parameters # CMake target name for the parameter library.
+  src/linear_feedback_controller.yaml # Path to input yaml file
+)
+add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
+
+#
 # Main Library
 #
 set(${PROJECT_NAME}_headers
@@ -31,14 +45,16 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/averaging_filter.hxx
     include/${PROJECT_NAME}/contact_detector.hpp
     include/${PROJECT_NAME}/lf_controller.hpp
-    include/${PROJECT_NAME}/controller.hpp
+    include/${PROJECT_NAME}/linear_feedback_controller.hpp
+    include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
     include/${PROJECT_NAME}/min_jerk.hpp
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
     src/contact_detector.cpp #
     src/lf_controller.cpp #
-    src/controller.cpp #
+    src/linear_feedback_controller.cpp #
+    src/linear_feedback_controller_ros.cpp #
     src/min_jerk.cpp #
     src/pd_controller.cpp #
     src/robot_model_builder.cpp)
@@ -46,12 +62,7 @@ ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 ament_target_dependencies(${PROJECT_NAME} pinocchio)
-
-#
-# Plugins
-#
-# ament_auto_add_library(${PROJECT_NAME}_plugins src/plugins.cpp)
-# target_link_libraries(${PROJECT_NAME}_plugins ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
 
 #
 # Unit tests

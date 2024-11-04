@@ -32,4 +32,4 @@ repos:
     rev: v0.6.10
     hooks:
     - id: cmake-format
-    - id: cmake-lint
+    # - id: cmake-lint

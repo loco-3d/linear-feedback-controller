@@ -75,14 +75,19 @@ class RobotModelBuilder {
    * @return true
    * @return false
    */
-  bool get_robot_has_free_flyer();
+  bool get_robot_has_free_flyer() const;
 
   /**
    * @brief Get the Pinocchio To Harwdare Interface Map.
    *
    * @return std::map<int, int>
    */
-  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map();
+  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map() const;
+
+  std::size_t getJointNv() const;
+  std::size_t getJointNq() const;
+  std::size_t getNv() const;
+  std::size_t getNq() const;
 
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
@@ -125,6 +130,7 @@ class RobotModelBuilder {
 
  public:
   using SharedPtr = std::shared_ptr<RobotModelBuilder>;
+  using ConstSharedPtr = std::shared_ptr<const RobotModelBuilder>;
 };
 
 }  // namespace linear_feedback_controller
