@@ -1,121 +1,65 @@
 linear_feedback_controller:
-  #
-  # For the defined maps
-  #
-  fts: {
-    type: string_array,
-    default_value: [],
-    description: "List of FT sensors that needs to be read.",
-  }
-  #
-  # ROS2 controls parameters.
-  #
   chainable_controller:
     command_prefix: {
       type: "string",
       description: "Names of the downstream controller that takes the robot state as references.",
       default_value: ""
     }
-    imu_sensor_name: {
-      type: string,
-      description: "Specifies the name of the IMU sensor in the robot description which will be used in the state estimation calculation.",
+    reference_prefix: {
+      type: "string",
+      description: "Names of the downstream controller that takes the robot state as references.",
+      default_value: ""
     }
-    __map_fts:
-      frame_name: {
-        type: string,
-        default_value: "",
-        description: "Specifies the frame/link name.",
-        validation: {
-          not_empty<>: [],
-        }
-      }
-      sensor_name: {
-        type: string,
-        default_value: "",
-        description: "Specifies the sensor name.",
-        validation: {
-          not_empty<>: [],
-        }
-      }
-  #
-  # Robot physics model paramters
-  #
-  robot_physics_model:
-    plugin_type: {
-      type: string,
-      description: "Specifies the name of the state estimator plugin to load.",
-      validation: {
-        not_empty<>: [],
-        one_of<>: [["PINOCCHIO", "RBDL"]]
-      },
+
+  srdf: {
+    type: string,
+    description: "Path to the SRDF file.",
+    validation: { not_empty<>: [] }
+  }
+  moving_joint_names: {
+    type: string_array,
+    description: "list of active joint names used by the controller.",
+    validation: { not_empty<>: [] }
+  }
+  p_gains: {
+    type: double_array,
+    description: "Proportional gains for the PD controller.",
+    validation: { not_empty<>: [] }
+  }
+  d_gains: {
+    type: double_array,
+    description: "Derivation gains for the PD controller.",
+    validation: { not_empty<>: [] }
+  }
+  default_configuration_name: {
+    type: string,
+    description: "Name of the default configuration in the SRDF file.",
+    validation: { not_empty<>: [] }
+  }
+  robot_has_free_flyer: {
+    type: bool,
+    description: "Has the robot a freeflyer or not?",
+  }
+  from_pd_to_lf_duration: {
+    type: double,
+    description: "Duration **in seconds** of transition between the PD and the LF controllers.",
+    validation: {
+      gt_eq<>: 0.0
     }
-    base_type: {
-      type: string,
-      description: "Specifies if the base is fixed, floating or planar.",
-      validation: {
-        not_empty<>: [],
-        one_of<>: [["FIXED", "FLOATING", "PLANAR"]]
-      },
-    }
-  #
-  # State Estimator parameters
-  #
-  floating_base_state_estimator:
-    plugin_name: {
-      type: string,
-      description: "Specifies the name of the state estimator plugin to load. It has to derive from legged_state_estimator::LeggedStateEstimatorBase",
-      validation: {
-        not_empty<>: [],
-      }
-    }
-    yaml_file: {
-      type: string,
-      description: "Location of the configuration YAML file containing the contact estimator parameters.",
-      validation: {
-        not_empty<>: [],
-      }
-    }
-    yaml_namespace: {
-      type: string,
-      description: "Parameter namespace. For example /my_robot/contact_estimator",
-      validation: {
-        not_empty<>: [],
-      }
-    }
-    period: {
-      type: double,
-      description: "Period at which the estimator is recomputed.",
-      validation: {
-        gt<>: 0.0,
-      }
-    }
-    spawn_thread: {
-      type: bool,
-      description: "Decide if the thread should run in a thread or not.",
-      default_value: true
-    }
-  #
-  # Contact estimator.
-  #
-  contact_estimator:
-    plugin_name: {
-      type: string,
-      description: "Specifies the name of the state estimator plugin to load. It has to derive from contact_estimator::BaseContactEstimator",
-      validation: {
-        not_empty<>: [],
-      }
-    }
-    yaml_file: {
-      type: string,
-      description: "Location of the configuration YAML file containing the contact estimator parameters.",
-      validation: {
-        not_empty<>: [],
-      }
-    }
-    yaml_namespace: {
-      type: string,
-      description: "Parameter namespace. For example /my_robot/contact_estimator",
-      validation: {
-        not_empty<>: [],
-      }
-    }
+  }
+  plugin_type: {
+    type: string,
+    description: "Specifies the name of the state estimator plugin to load.",
+    validation: {
+      not_empty<>: [],
+      one_of<>: [["PINOCCHIO", "RBDL"]]
+    },
+  }
+  base_type: {
+    type: string,
+    description: "Specifies if the base is fixed, floating or planar.",
+    validation: {
+      not_empty<>: [],
+      one_of<>: [["FIXED", "FLOATING", "PLANAR"]]
+    },
+  }

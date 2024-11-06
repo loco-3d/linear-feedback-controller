@@ -19,14 +19,6 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
       params_.controlled_joint_names, params_.default_configuration_name,
       params_.robot_has_free_flyer);
 
-  // Construct the contact estimator if the robot has a free-flyer.
-  if (params_.robot_has_free_flyer) {
-    contact_detectors_.resize(params_.contact_detector_params.size());
-    for (std::size_t i = 0; i < contact_detectors_.size(); ++i) {
-      contact_detectors_[i].setParameters(params_.contact_detector_params[i]);
-    }
-  }
-
   // Min jerk to smooth the control when we switch from pd to lfc.
   min_jerk_.setParameters(params_.from_pd_to_lf_duration.count(), 1.0);
 

@@ -2,11 +2,13 @@
 #define LINEAR_FEEDBACK_CONTROLLER_CONTROLLER_HPP
 
 #include <chrono>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "Eigen/Core"
 
 // local include
-#include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/lf_controller.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/pd_controller.hpp"
@@ -24,7 +26,6 @@ struct ControllerParameters {
   std::vector<std::string> controlled_joint_names;
   std::string default_configuration_name;
   bool robot_has_free_flyer;
-  std::vector<ContactDetector::Parameters> contact_detector_params;
   Duration from_pd_to_lf_duration;
 };
 
@@ -85,8 +86,6 @@ class LinearFeedbackController {
 
   /// @brief Rigid body model of the robot.
   RobotModelBuilder::SharedPtr robot_model_builder_;
-  /// @brief Some contact detectors in case the robot has a free-flyer.
-  std::vector<ContactDetector> contact_detectors_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
   PDController pd_controller_;
   /// @brief A simple PD controller to hold the robot still at the beginning.

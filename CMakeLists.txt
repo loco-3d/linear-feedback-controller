@@ -43,7 +43,6 @@ add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
 set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/averaging_filter.hpp
     include/${PROJECT_NAME}/averaging_filter.hxx
-    include/${PROJECT_NAME}/contact_detector.hpp
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
@@ -51,7 +50,6 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
-    src/contact_detector.cpp #
     src/lf_controller.cpp #
     src/linear_feedback_controller.cpp #
     src/linear_feedback_controller_ros.cpp #

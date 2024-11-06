@@ -373,7 +373,21 @@ bool LinearFeedbackControllerRos::load_parameters() {
 }
 
 bool LinearFeedbackControllerRos::load_linear_feedback_controller(
-    const std::string& /* robot_description */) {
+    const std::string& robot_description) {
+  ControllerParameters lfc_params;
+  lfc_params.urdf = robot_description;
+  lfc_params.srdf = parameters_.srdf;
+  lfc_params.moving_joint_names = parameters_.moving_joint_names;
+  lfc_params.controlled_joint_names = parameters_.moving_joint_names;
+  lfc_params.p_gains = parameters_.p_gains;
+  lfc_params.d_gains = parameters_.d_gains;
+  lfc_params.default_configuration_name =
+      parameters_.default_configuration_name;
+  lfc_params.robot_has_free_flyer = parameters_.robot_has_free_flyer;
+  lfc_params.from_pd_to_lf_duration =
+      Duration(parameters_.from_pd_to_lf_duration);
+  lfc_.load(lfc_params);
+
   return true;
 }
 

@@ -109,7 +109,7 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
       const rclcpp_lifecycle::State& previous_state) override;
 
  protected:
-  // INitialization methods.
+  // Initialization methods.
   bool load_parameters();
   bool wait_for_robot_description(std::string& robot_description);
   bool load_linear_feedback_controller(const std::string& robot_description);
