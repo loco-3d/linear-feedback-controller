@@ -283,15 +283,20 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
 }
 
 bool LinearFeedbackControllerRos::initialize_introspection() {
+  register_var(std::string("joint_torques_command"), joint_torques_command_);
   // register_var(
-  //   std::string("estimator_input_imu_linear_acceleration"),
-  //   floating_base_estimator_input_.imu_linear_acceleration_);
-  // register_var(
-  //   std::string("estimator_input_imu_angular_velocity"),
+  //   std::string("base_translation"),
   //   floating_base_estimator_input_.imu_angular_velocity_);
   // register_var(
-  //   std::string("estimator_input_imu_orientation"),
+  //   std::string("base_orientation"),
   //   floating_base_estimator_input_.imu_orientation_);
+  // register_var(
+  //   std::string("base_linear_velocity"),
+  //   floating_base_estimator_input_.imu_angular_velocity_);
+  // register_var(
+  //   std::string("base_angular_velocity"),
+  //   floating_base_estimator_input_.imu_orientation_);
+
   // register_var(
   //   std::string("estimator_input_joint_position"),
   //   floating_base_estimator_input_.joint_position_);
@@ -422,48 +427,32 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  // // Allocate dynamic memory
-  // robot_state_ = robot_model_->createZeroState();
-  // input_joint_state_.name = robot_model_->getJointNames();
-  // double a_nan = std::numeric_limits<double>::quiet_NaN();
-  // std::size_t num_joint = robot_model_->getJointNames().size();
-  // // Initialize the HasNan structure.
-  // input_has_nan_.joint_.reserve(num_joint);
-  // // Inititalize the joint state with nan.
-  // input_joint_state_.position.resize(num_joint, a_nan);
-  // input_joint_state_.velocity.resize(num_joint, a_nan);
-  // input_joint_state_.effort.resize(num_joint, a_nan);
-  // // Inititalize the imu input with nan.
-  // input_imu_state_.orientation.x = a_nan;
-  // input_imu_state_.orientation.y = a_nan;
-  // input_imu_state_.orientation.z = a_nan;
-  // input_imu_state_.orientation.w = a_nan;
-  // input_imu_state_.angular_velocity.x = a_nan;
-  // input_imu_state_.angular_velocity.y = a_nan;
-  // input_imu_state_.angular_velocity.z = a_nan;
-  // input_imu_state_.linear_acceleration.x = a_nan;
-  // input_imu_state_.linear_acceleration.y = a_nan;
-  // input_imu_state_.linear_acceleration.z = a_nan;
+  input_robot_configuration_.resize(lfc_.getRobotModel()->getNq());
+  input_robot_velocity_.resize(lfc_.getRobotModel()->getNv());
 
-  // const auto num_chainable_interfaces =
-  //   robot_model_->getConfigurationVectorSize() +
-  //   robot_model_->getVelocityVectorSize();
-  // command_interfaces_.reserve(num_chainable_interfaces);
-  // command_interfaces_.clear();
+  joint_torques_command_ =
+      Eigen::VectorXd::Zero(lfc_.getRobotModel()->getJointNv());
+  joint_torques_command_interface_.reserve(lfc_.getRobotModel()->getJointNv());
+  joint_torques_command_interface_.clear();
 
-  // if (parameters_.chainable_controller.command_prefix.empty()) {
-  //   command_prefix_ = "";
-  // } else {
-  //   command_prefix_ = parameters_.chainable_controller.command_prefix + "/";
-  // }
-
-  // base_command_interface_ =
-  //   std::make_unique<OdometryCommandInterface>(command_prefix_ + "base");
+  if (parameters_.chainable_controller.command_prefix.empty()) {
+    command_prefix_ = "";
+  } else if (!ends_with(parameters_.chainable_controller.command_prefix, "/")) {
+    command_prefix_ = parameters_.chainable_controller.command_prefix + "/";
+  } else {
+    command_prefix_ = parameters_.chainable_controller.command_prefix;
+  }
 
   // Resize the reference interface vector to correspond with the names.
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   return true;
+}
+
+bool LinearFeedbackControllerRos::ends_with(const std::string& str,
+                                            const std::string& suffix) const {
+  return str.size() >= suffix.size() &&
+         str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 }  // namespace linear_feedback_controller

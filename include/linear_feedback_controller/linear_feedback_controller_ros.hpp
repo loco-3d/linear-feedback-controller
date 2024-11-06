@@ -128,25 +128,28 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   void register_var(const std::string& id, const Eigen::Quaterniond& quat);
   void register_var(const std::string& id, const std::vector<double>& vec);
 
- protected:
-  // Attributes
+  // Utils.
+  bool ends_with(const std::string& str, const std::string& suffix) const;
 
+ protected:
+  // Functional Attributes.
   std::shared_ptr<linear_feedback_controller::ParamListener>
       parameter_listener_;
   linear_feedback_controller::Params parameters_;
-
   LinearFeedbackController lfc_;
-
   InterfaceVector<hardware_interface::LoanedCommandInterface>
       joint_torques_command_interface_;
   std::string command_prefix_;
   std::vector<std::string> reference_interface_names_;
 
-  /// @brief Get the robot description reading the robot_state_publisher
-  ///        parameters.
-  std::shared_ptr<rclcpp::SyncParametersClient> robot_description_client_;
+  // Inputs/Ouputs attributes.
+  /// @brief Genrealized coordinates.
+  Eigen::VectorXd input_robot_configuration_;
+  /// @brief Genrealized coordinates.
+  Eigen::VectorXd input_robot_velocity_;
+  Eigen::VectorXd joint_torques_command_;
 
-  /// @brief Introspection.
+  // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
 };
 
