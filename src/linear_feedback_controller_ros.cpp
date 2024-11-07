@@ -63,6 +63,23 @@ InterfaceConfiguration
 LinearFeedbackControllerRos::state_interface_configuration() const {
   // Get the joint state measurements.
   std::vector<std::string> state_interfaces_config_names;
+
+  // Position and velocity interfaces for the joints and the freeflyer.
+  const auto num_chainable_interfaces = lfc_.get_robot_model()->get_joint_nq() +
+                                        lfc_.get_robot_model()->get_joint_nv();
+
+  // Dynamic allocation.
+  state_interfaces_config_names.reserve(num_chainable_interfaces);
+  state_interfaces_config_names.clear();
+
+  // Then the joint informations.
+  for (auto interface : {HW_IF_POSITION, HW_IF_VELOCITY, HW_IF_EFFORT}) {
+    for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
+      const auto name = joint + "/" + interface;
+      state_interfaces_config_names.emplace_back(name);
+    }
+  }
+
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
           state_interfaces_config_names};
 }
@@ -86,21 +103,42 @@ CallbackReturn LinearFeedbackControllerRos::on_configure(
 
 CallbackReturn LinearFeedbackControllerRos::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  assert(init_joint_torque_.size() == lfc_.get_robot_model()->get_joint_nv() &&
-         "Memory not allocated for the init_joint_torque_");
-  assert(init_joint_position_.size() ==
-             lfc_.get_robot_model()->get_joint_nq() &&
-         "Memory not allocated for the init_joint_position_");
-  lfc_.set_initial_state(init_joint_position_, init_joint_torque_);
-
-  bool all_good = true;
   const std::vector<std::string> joint_names =
       lfc_.get_robot_model()->get_moving_joint_names();
+
+  // Testing variable.
+  bool all_good = true;
+
+  // Get the state interfaces.
+  all_good = controller_interface::get_ordered_interfaces(
+      state_interfaces_, joint_names, HW_IF_POSITION,
+      joint_position_state_interface_);
+  all_good &= controller_interface::get_ordered_interfaces(
+      state_interfaces_, joint_names, HW_IF_VELOCITY,
+      joint_velocity_state_interface_);
+  all_good &= controller_interface::get_ordered_interfaces(
+      state_interfaces_, joint_names, HW_IF_EFFORT,
+      joint_effort_state_interface_);
+  if (!all_good) {
+    RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                        "Error while assigning the state interfaces.");
+    return CallbackReturn::ERROR;
+  }
+
+  // Get current joint average position filtered and current averaged torque.
+  for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
+    init_joint_position_(i) =
+        joint_position_state_interface_[i].get().get_value();
+  }
+  for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
+    init_joint_effort_(i) = joint_effort_state_interface_[i].get().get_value();
+  }
+  lfc_.set_initial_state(init_joint_position_, init_joint_effort_);
 
   // Assign the command interface.
   all_good &= controller_interface::get_ordered_interfaces(
       command_interfaces_, joint_names, HW_IF_EFFORT,
-      joint_torques_command_interface_);
+      joint_effort_command_interface_);
 
   // Initialize states.
   if (!read_state_from_references()) {
@@ -133,19 +171,14 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
 
 CallbackReturn LinearFeedbackControllerRos::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  // imu_sensor_->release_interfaces();
-  // for (auto & ft_sensor : ft_sensors_) {
-  //   ft_sensor->release_interfaces();
-  // }
-  // joint_position_state_interface_.clear();
-  // joint_velocity_state_interface_.clear();
+  // Custom release interfaces for this controller.
+  joint_position_state_interface_.clear();
+  joint_velocity_state_interface_.clear();
+  joint_effort_state_interface_.clear();
+  joint_effort_command_interface_.clear();
 
-  // joint_position_command_interface_.clear();
-  // joint_velocity_command_interface_.clear();
-  // base_command_interface_->release_interfaces();
-
-  // // Default release interface from ros2_control.
-  // release_interfaces();
+  // Default release interface from ros2_control.
+  release_interfaces();
   RCLCPP_INFO(get_node()->get_logger(), "Successfull desactivation.");
   return CallbackReturn::SUCCESS;
 }
@@ -267,7 +300,7 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
 }
 
 bool LinearFeedbackControllerRos::initialize_introspection() {
-  register_var(std::string("output_joint_torques_"), output_joint_torques_);
+  register_var(std::string("output_joint_effort_"), output_joint_effort_);
 
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     // register_var(
@@ -413,11 +446,11 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   input_robot_configuration_.resize(lfc_.get_robot_model()->get_nq());
   input_robot_velocity_.resize(lfc_.get_robot_model()->get_nv());
 
-  output_joint_torques_ =
+  output_joint_effort_ =
       Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
-  joint_torques_command_interface_.reserve(
+  joint_effort_command_interface_.reserve(
       lfc_.get_robot_model()->get_joint_nv());
-  joint_torques_command_interface_.clear();
+  joint_effort_command_interface_.clear();
 
   if (parameters_.chainable_controller.command_prefix.empty()) {
     command_prefix_ = "";
@@ -426,6 +459,11 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   } else {
     command_prefix_ = parameters_.chainable_controller.command_prefix;
   }
+
+  init_joint_position_ =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nq());
+  init_joint_effort_ =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
 
   // Resize the reference interface vector to correspond with the names.
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
