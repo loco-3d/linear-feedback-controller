@@ -136,18 +136,29 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   std::shared_ptr<linear_feedback_controller::ParamListener>
       parameter_listener_;
   linear_feedback_controller::Params parameters_;
-  LinearFeedbackController lfc_;
+
+  // Reference interfaces.
+  std::vector<std::string> reference_interface_names_;
+  std::string reference_prefix_;
+
+  // Command interfaces.
   InterfaceVector<hardware_interface::LoanedCommandInterface>
       joint_torques_command_interface_;
   std::string command_prefix_;
-  std::vector<std::string> reference_interface_names_;
+
+  /// @brief Controller without ROS.
+  LinearFeedbackController lfc_;
 
   // Inputs/Ouputs attributes.
+  /// @brief Joint position measured at init time.
+  Eigen::VectorXd init_joint_position_;
+  /// @brief Joint torques measured at init time.
+  Eigen::VectorXd init_joint_torque_;
   /// @brief Genrealized coordinates.
   Eigen::VectorXd input_robot_configuration_;
   /// @brief Genrealized coordinates.
   Eigen::VectorXd input_robot_velocity_;
-  Eigen::VectorXd joint_torques_command_;
+  Eigen::VectorXd output_joint_torques_;
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;

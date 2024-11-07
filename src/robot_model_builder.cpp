@@ -172,7 +172,7 @@ RobotModelBuilder::get_pinocchio_to_harwdare_interface_map() const {
   return pin_to_hwi_;
 }
 
-std::size_t RobotModelBuilder::getJointNq() const {
+int RobotModelBuilder::get_joint_nq() const {
   if (robot_has_free_flyer_) {
     return pinocchio_model_.nq - 7;
   } else {
@@ -180,7 +180,7 @@ std::size_t RobotModelBuilder::getJointNq() const {
   }
 }
 
-std::size_t RobotModelBuilder::getJointNv() const {
+int RobotModelBuilder::get_joint_nv() const {
   if (robot_has_free_flyer_) {
     return pinocchio_model_.nv - 6;
   } else {
@@ -188,8 +188,8 @@ std::size_t RobotModelBuilder::getJointNv() const {
   }
 }
 
-std::size_t RobotModelBuilder::getNq() const { return pinocchio_model_.nq; }
+int RobotModelBuilder::get_nq() const { return pinocchio_model_.nq; }
 
-std::size_t RobotModelBuilder::getNv() const { return pinocchio_model_.nv; }
+int RobotModelBuilder::get_nv() const { return pinocchio_model_.nv; }
 
 }  // namespace linear_feedback_controller

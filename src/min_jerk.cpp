@@ -37,7 +37,7 @@ double MinJerk::compute(double t) {
   }
 }
 
-double MinJerk::computeDerivative(double t) {
+double MinJerk::compute_derivative(double t) {
   if (t >= end_time_) {
     return end_speed_;
   } else if (t <= start_time_) {
@@ -52,7 +52,7 @@ double MinJerk::computeDerivative(double t) {
   }
 }
 
-double MinJerk::computeSecDerivative(double t) {
+double MinJerk::compute_sec_derivative(double t) {
   if (t >= end_time_) {
     return end_acc_;
   } else if (t <= start_time_) {
@@ -67,11 +67,11 @@ double MinJerk::computeSecDerivative(double t) {
   }
 }
 
-double MinJerk::computeJerk(double t) {
+double MinJerk::compute_jerk(double t) {
   if (t >= end_time_) {
-    return computeJerk(end_time_);
+    return compute_jerk(end_time_);
   } else if (t <= start_time_) {
-    return computeJerk(start_time_);
+    return compute_jerk(start_time_);
   } else {
     double r = 0, pt = 1;
     for (std::size_t i = 3; i < coeffs_.size(); ++i) {
@@ -82,22 +82,23 @@ double MinJerk::computeJerk(double t) {
   }
 }
 
-void MinJerk::getCoefficients(std::array<double, 6> &coeffs) const {
+void MinJerk::get_coefficients(std::array<double, 6> &coeffs) const {
   coeffs = coeffs_;
 }
 
-void MinJerk::setCoefficients(const std::array<double, 6> &lCoefficients) {
+void MinJerk::set_coefficients(const std::array<double, 6> &lCoefficients) {
   coeffs_ = lCoefficients;
 }
 
-void MinJerk::setParameters(double end_time, double end_pos) {
-  setParameters(end_time, 0.0 /*start_pos*/, 0.0 /*start_speed*/,
-                0.0 /*start_acc*/, end_pos, 0.0 /*end_speed*/, 0.0 /*end_acc*/);
+void MinJerk::set_parameters(double end_time, double end_pos) {
+  set_parameters(end_time, 0.0 /*start_pos*/, 0.0 /*start_speed*/,
+                 0.0 /*start_acc*/, end_pos, 0.0 /*end_speed*/,
+                 0.0 /*end_acc*/);
 }
 
-void MinJerk::setParameters(double end_time, double start_pos,
-                            double start_speed, double start_acc,
-                            double end_pos, double end_speed, double end_acc) {
+void MinJerk::set_parameters(double end_time, double start_pos,
+                             double start_speed, double start_acc,
+                             double end_pos, double end_speed, double end_acc) {
   // copy the argument internally;
   end_time_ = end_time;
   start_pos_ = start_pos;

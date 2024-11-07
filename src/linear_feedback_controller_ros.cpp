@@ -8,6 +8,7 @@
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include "controller_interface/helpers.hpp"
 #include "pal_statistics/pal_statistics_macros.hpp"
 
 using namespace std::chrono_literals;
@@ -42,14 +43,14 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
   std::vector<std::string> command_interfaces_config_names = {};
 
   // Position and velocity interfaces for the joints and the freeflyer.
-  const auto num_chainable_interfaces = lfc_.getRobotModel()->getJointNv();
+  const auto num_chainable_interfaces = lfc_.get_robot_model()->get_joint_nv();
 
   // Dynamic allocation.
   command_interfaces_config_names.reserve(num_chainable_interfaces);
   command_interfaces_config_names.clear();
 
   // Then the joint informations.
-  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
     const auto name = command_prefix_ + joint + "/" + HW_IF_EFFORT;
     command_interfaces_config_names.emplace_back(name);
   }
@@ -85,47 +86,28 @@ CallbackReturn LinearFeedbackControllerRos::on_configure(
 
 CallbackReturn LinearFeedbackControllerRos::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  // bool all_good = controller_interface::get_ordered_interfaces(
-  //   state_interfaces_, robot_model_->getJointNames(),
-  //   HW_IF_POSITION, joint_position_state_interface_);
-  // all_good &= controller_interface::get_ordered_interfaces(
-  //   state_interfaces_, robot_model_->getJointNames(),
-  //   HW_IF_VELOCITY, joint_velocity_state_interface_);
-  // all_good &= imu_sensor_->assign_loaned_state_interfaces(state_interfaces_);
-  // for (auto & ft_sensor : ft_sensors_) {
-  //   all_good &= ft_sensor->assign_loaned_state_interfaces(state_interfaces_);
-  // }
+  assert(init_joint_torque_.size() == lfc_.get_robot_model()->get_joint_nv() &&
+         "Memory not allocated for the init_joint_torque_");
+  assert(init_joint_position_.size() ==
+             lfc_.get_robot_model()->get_joint_nq() &&
+         "Memory not allocated for the init_joint_position_");
+  lfc_.set_initial_state(init_joint_position_, init_joint_torque_);
 
-  // if (!all_good) {
-  //   RCLCPP_ERROR_STREAM(
-  //     get_node()->get_logger(), "Error while assigning the state
-  //     interfaces.");
-  //   return CallbackReturn::ERROR;
-  // }
+  bool all_good = true;
+  const std::vector<std::string> joint_names =
+      lfc_.get_robot_model()->get_moving_joint_names();
 
-  // // Assign the command interface.
-  // all_good &= base_command_interface_->assign_loaned_interfaces(
-  //   command_interfaces_);
-  // all_good &= controller_interface::get_ordered_interfaces(
-  //   command_interfaces_, robot_model_->getJointNames(),
-  //   HW_IF_POSITION, joint_position_command_interface_);
-  // all_good &= controller_interface::get_ordered_interfaces(
-  //   command_interfaces_, robot_model_->getJointNames(),
-  //   HW_IF_VELOCITY, joint_velocity_command_interface_);
+  // Assign the command interface.
+  all_good &= controller_interface::get_ordered_interfaces(
+      command_interfaces_, joint_names, HW_IF_EFFORT,
+      joint_torques_command_interface_);
 
-  // // Initialize states.
-  // if (!read_state_from_hardware(
-  //     input_joint_state_, input_imu_state_, input_ft_state_))
-  // {
-  //   RCLCPP_ERROR(
-  //     get_node()->get_logger(),
-  //     (std::ostringstream("Failed to read from the hardware.\n")
-  //       << input_has_nan_).str().c_str());
-  //   return controller_interface::CallbackReturn::ERROR;
-  // }
-  // convert_input_to_eigen_objects();
-
-  // // Initialize the estimator.
+  // Initialize states.
+  if (!read_state_from_references()) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Failed to read from the hardware.");
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  // Initialize the estimator.
   // eVector3 dummy_base_position = Eigen::Vector3d::Zero();
   // floating_base_estimator_->setInitialState(
   //   // Not used here. It assumes the feet are on the ground.
@@ -141,6 +123,9 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
 
   // // Reset the timers.
   // time_profiler_.resetTimers();
+
+  std::fill(reference_interfaces_.begin(), reference_interfaces_.end(),
+            std::numeric_limits<double>::quiet_NaN());
 
   RCLCPP_INFO(get_node()->get_logger(), "Successfull activation.");
   return CallbackReturn::SUCCESS;
@@ -188,7 +173,6 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
   return CallbackReturn::SUCCESS;
 }
 
-/// @brief ChainableControllerInterface::update_reference_from_subscribers
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
   return return_type::OK;
 }
@@ -283,26 +267,25 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
 }
 
 bool LinearFeedbackControllerRos::initialize_introspection() {
-  register_var(std::string("joint_torques_command"), joint_torques_command_);
-  // register_var(
-  //   std::string("base_translation"),
-  //   floating_base_estimator_input_.imu_angular_velocity_);
-  // register_var(
-  //   std::string("base_orientation"),
-  //   floating_base_estimator_input_.imu_orientation_);
-  // register_var(
-  //   std::string("base_linear_velocity"),
-  //   floating_base_estimator_input_.imu_angular_velocity_);
-  // register_var(
-  //   std::string("base_angular_velocity"),
-  //   floating_base_estimator_input_.imu_orientation_);
+  register_var(std::string("output_joint_torques_"), output_joint_torques_);
 
-  // register_var(
-  //   std::string("estimator_input_joint_position"),
-  //   floating_base_estimator_input_.joint_position_);
-  // register_var(
-  //   std::string("estimator_input_joint_velocity"),
-  //   floating_base_estimator_input_.joint_velocity_);
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+    // register_var(
+    //   std::string("base_translation"),
+    //   floating_base_estimator_input_.imu_angular_velocity_);
+    // register_var(
+    //   std::string("base_orientation"),
+    //   floating_base_estimator_input_.imu_orientation_);
+    // register_var(
+    //   std::string("base_linear_velocity"),
+    //   floating_base_estimator_input_.imu_angular_velocity_);
+    // register_var(
+    //   std::string("base_angular_velocity"),
+    //   floating_base_estimator_input_.imu_orientation_);
+  }
+  register_var(std::string("input_robot_configuration"),
+               input_robot_configuration_);
+  register_var(std::string("input_robot_velocity"), input_robot_velocity_);
   return true;
 }
 
@@ -399,7 +382,7 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
 bool LinearFeedbackControllerRos::setup_reference_interface() {
   // Setup the reference interface memory
   reference_interface_names_.clear();
-  if (lfc_.getRobotModel()->get_robot_has_free_flyer()) {
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     reference_interface_names_.push_back("base_translation_x");
     reference_interface_names_.push_back("base_translation_y");
     reference_interface_names_.push_back("base_translation_z");
@@ -414,11 +397,11 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_angular_velocity_y");
     reference_interface_names_.push_back("base_angular_velocity_z");
   }
-  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
     const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
     reference_interface_names_.emplace_back(name);
   }
-  for (const auto& joint : lfc_.getRobotModel()->get_moving_joint_names()) {
+  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
     const auto name = command_prefix_ + joint + "/" + HW_IF_VELOCITY;
     reference_interface_names_.emplace_back(name);
   }
@@ -427,12 +410,13 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  input_robot_configuration_.resize(lfc_.getRobotModel()->getNq());
-  input_robot_velocity_.resize(lfc_.getRobotModel()->getNv());
+  input_robot_configuration_.resize(lfc_.get_robot_model()->get_nq());
+  input_robot_velocity_.resize(lfc_.get_robot_model()->get_nv());
 
-  joint_torques_command_ =
-      Eigen::VectorXd::Zero(lfc_.getRobotModel()->getJointNv());
-  joint_torques_command_interface_.reserve(lfc_.getRobotModel()->getJointNv());
+  output_joint_torques_ =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  joint_torques_command_interface_.reserve(
+      lfc_.get_robot_model()->get_joint_nv());
   joint_torques_command_interface_.clear();
 
   if (parameters_.chainable_controller.command_prefix.empty()) {

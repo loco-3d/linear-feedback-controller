@@ -84,10 +84,10 @@ class RobotModelBuilder {
    */
   const std::map<int, int>& get_pinocchio_to_harwdare_interface_map() const;
 
-  std::size_t getJointNv() const;
-  std::size_t getJointNq() const;
-  std::size_t getNv() const;
-  std::size_t getNq() const;
+  int get_joint_nv() const;
+  int get_joint_nq() const;
+  int get_nv() const;
+  int get_nq() const;
 
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.

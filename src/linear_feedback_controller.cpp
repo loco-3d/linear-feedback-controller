@@ -20,7 +20,7 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
       params_.robot_has_free_flyer);
 
   // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.setParameters(params_.from_pd_to_lf_duration.count(), 1.0);
+  min_jerk_.set_parameters(params_.from_pd_to_lf_duration.count(), 1.0);
 
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
@@ -31,8 +31,8 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   return true;
 }
 
-bool LinearFeedbackController::configure(const Eigen::VectorXd& tau_init,
-                                         const Eigen::VectorXd& jq_init) {
+bool LinearFeedbackController::set_initial_state(
+    const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
   return true;
 }
@@ -75,7 +75,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   return control_;
 }
 
-RobotModelBuilder::ConstSharedPtr LinearFeedbackController::getRobotModel()
+RobotModelBuilder::ConstSharedPtr LinearFeedbackController::get_robot_model()
     const {
   return robot_model_builder_;
 }

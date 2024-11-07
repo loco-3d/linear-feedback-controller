@@ -108,7 +108,7 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   desired_stance_ids_.push_back("left_sole_link");
   desired_stance_ids_.push_back("right_sole_link");
 
-  min_jerk_.setParameters(from_pd_to_lf_duration_, 1.0);
+  min_jerk_.set_parameters(from_pd_to_lf_duration_, 1.0);
 
   /// @todo Automatize the parametrization of these gains.
   p_arm_gain_ = 100.0;  // 500.0

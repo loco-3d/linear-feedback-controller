@@ -30,21 +30,21 @@ class AveragingFilter {
    *
    * @param size
    */
-  void setMaxSize(int size) { max_size_ = size; }
+  void set_max_size(int size) { max_size_ = size; }
 
   /**
    * @brief Get the buffer max size.
    *
    * @return int
    */
-  const std::size_t& getMaxSize() const { return max_size_; }
+  const std::size_t& get_max_size() const { return max_size_; }
 
   /**
    * @brief Get the buffer.
    *
    * @return int
    */
-  const std::deque<DataType>& getBuffer() const { return buffer_; }
+  const std::deque<DataType>& get_buffer() const { return buffer_; }
 
   /**
    * @brief Get the filtered data. In case the buffer is not initialize return
@@ -52,7 +52,7 @@ class AveragingFilter {
    *
    * @return DataType
    */
-  DataType getFilteredData();
+  DataType get_filtered_data();
 
  private:
   /// @brief Inside buffer;

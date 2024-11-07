@@ -63,8 +63,8 @@ class LinearFeedbackController {
 
   bool load(const ControllerParameters& params);
 
-  bool configure(const Eigen::VectorXd& tau_init,
-                 const Eigen::VectorXd& jq_init);
+  bool set_initial_state(const Eigen::VectorXd& tau_init,
+                         const Eigen::VectorXd& jq_init);
 
   /**
    * @brief
@@ -77,7 +77,7 @@ class LinearFeedbackController {
   const Eigen::VectorXd& compute_control(TimePoint time, Sensor sensor,
                                          Control control);
 
-  RobotModelBuilder::ConstSharedPtr getRobotModel() const;
+  RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 
  private:
   ControllerParameters params_; /*! @brief Parameters of the controller. */
