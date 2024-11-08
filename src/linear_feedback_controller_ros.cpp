@@ -198,20 +198,11 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
     reference_interfaces_[0] = state_msg_.msg_odom.pose.pose.position.x;
     reference_interfaces_[1] = state_msg_.msg_odom.pose.pose.position.y;
     reference_interfaces_[2] = state_msg_.msg_odom.pose.pose.position.z;
-
     reference_interfaces_[3] = state_msg_.msg_odom.pose.pose.orientation.x;
     reference_interfaces_[4] = state_msg_.msg_odom.pose.pose.orientation.y;
     reference_interfaces_[5] = state_msg_.msg_odom.pose.pose.orientation.z;
     reference_interfaces_[6] = state_msg_.msg_odom.pose.pose.orientation.w;
-
-    reference_interfaces_[7] = state_msg_.msg_odom.twist.twist.linear.x;
-    reference_interfaces_[8] = state_msg_.msg_odom.twist.twist.linear.y;
-    reference_interfaces_[9] = state_msg_.msg_odom.twist.twist.linear.z;
-
-    reference_interfaces_[10] = state_msg_.msg_odom.twist.twist.angular.x;
-    reference_interfaces_[11] = state_msg_.msg_odom.twist.twist.angular.y;
-    reference_interfaces_[12] = state_msg_.msg_odom.twist.twist.angular.z;
-    index = 13;
+    index = 7;
   }
   const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
@@ -219,7 +210,21 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
     reference_interfaces_[index] = state_msg_.msg_joint_state.position[i];
     ++index;
   }
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+    reference_interfaces_[index + 0] = state_msg_.msg_odom.twist.twist.linear.x;
+    reference_interfaces_[index + 1] = state_msg_.msg_odom.twist.twist.linear.y;
+    reference_interfaces_[index + 2] = state_msg_.msg_odom.twist.twist.linear.z;
+    reference_interfaces_[index + 3] =
+        state_msg_.msg_odom.twist.twist.angular.x;
+    reference_interfaces_[index + 4] =
+        state_msg_.msg_odom.twist.twist.angular.y;
+    reference_interfaces_[index + 5] =
+        state_msg_.msg_odom.twist.twist.angular.z;
+    index += 6;
+  }
   for (auto i = 0; i < joint_nv; ++i) {
+    assert(index < reference_interfaces_.size() &&
+           "Index is greater than the number of reference_interfaces.");
     reference_interfaces_[index] = state_msg_.msg_joint_state.velocity[i];
     ++index;
   }
@@ -439,6 +444,12 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_orientation_qy");
     reference_interface_names_.push_back("base_orientation_qz");
     reference_interface_names_.push_back("base_orientation_qw");
+  }
+  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
+    const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
+    reference_interface_names_.emplace_back(name);
+  }
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     reference_interface_names_.push_back("base_linear_velocity_x");
     reference_interface_names_.push_back("base_linear_velocity_y");
     reference_interface_names_.push_back("base_linear_velocity_z");
@@ -447,14 +458,9 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_angular_velocity_z");
   }
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
-    reference_interface_names_.emplace_back(name);
-  }
-  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
     const auto name = command_prefix_ + joint + "/" + HW_IF_VELOCITY;
     reference_interface_names_.emplace_back(name);
   }
-
   return true;
 }
 
