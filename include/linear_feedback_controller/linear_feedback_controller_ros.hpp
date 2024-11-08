@@ -8,9 +8,16 @@
 #ifndef LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_ROS_HPP
 #define LINEAR_FEEDBACK_CONTROLLER_LINEAR_FEEDBACK_CONTROLLER_ROS_HPP
 
+#include <chrono>
+#include <memory>
+
 // ROS 2
+#include "message_filters/subscriber.h"
+#include "message_filters/time_synchronizer.h"
+#include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "realtime_tools/realtime_buffer.h"
+#include "sensor_msgs/msg/joint_state.hpp"
 
 // ROS 2 control
 #include "controller_interface/chainable_controller_interface.hpp"
@@ -36,6 +43,18 @@ using hardware_interface::CommandInterface;
 using hardware_interface::HW_IF_EFFORT;
 using hardware_interface::HW_IF_POSITION;
 using hardware_interface::HW_IF_VELOCITY;
+using nav_msgs::msg::Odometry;
+using rclcpp_lifecycle::LifecycleNode;
+using sensor_msgs::msg::JointState;
+
+struct StateMsg {
+  Odometry msg_odom;
+  JointState msg_joint_state;
+};
+
+struct ProtectedStateMsg : StateMsg {
+  std::mutex mutex;
+};
 
 /**
  * @brief This chainable controller provides a base state estimator.
@@ -96,6 +115,9 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   virtual CallbackReturn on_activate(
       const rclcpp_lifecycle::State& previous_state) final;
 
+  /// @brief @copydoc rclcpp_lifecycle::on_set_chained_mode
+  virtual bool on_set_chained_mode(bool chained_mode) final;
+
   /// @brief @copydoc rclcpp_lifecycle::on_deactivate
   virtual CallbackReturn on_deactivate(
       const rclcpp_lifecycle::State& previous_state) final;
@@ -130,6 +152,11 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   // Utils.
   bool ends_with(const std::string& str, const std::string& suffix) const;
+
+  // Callbacks.
+  void state_syncher_callback(
+      const Odometry::ConstSharedPtr& msg_odom,
+      const JointState::ConstSharedPtr& msg_joint_state);
 
  protected:
   // Functional Attributes.
@@ -170,6 +197,16 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
+
+  // State subscriber
+  rclcpp::QoS qos_;
+  message_filters::Subscriber<Odometry, LifecycleNode> subscriber_odom_;
+  message_filters::Subscriber<JointState, LifecycleNode>
+      subscriber_joint_state_;
+  std::shared_ptr<message_filters::TimeSynchronizer<Odometry, JointState>>
+      state_syncher_;
+  ProtectedStateMsg synched_state_msg_;
+  StateMsg state_msg_;
 };
 
 }  // namespace linear_feedback_controller

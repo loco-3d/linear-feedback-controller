@@ -24,6 +24,9 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>controller_interface</depend>
   <depend>hardware_interface</depend>
+  <depend>message_filters</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>pluginlib</depend>
   <depend>realtime_tools</depend>
   <depend>pinocchio</depend>

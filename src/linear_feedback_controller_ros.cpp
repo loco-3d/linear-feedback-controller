@@ -16,7 +16,7 @@ using namespace std::chrono_literals;
 namespace linear_feedback_controller {
 
 LinearFeedbackControllerRos::LinearFeedbackControllerRos()
-    : ChainableControllerInterface() {}
+    : ChainableControllerInterface(), qos_(10) {}
 
 LinearFeedbackControllerRos::~LinearFeedbackControllerRos() {}
 
@@ -140,33 +140,23 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
       command_interfaces_, joint_names, HW_IF_EFFORT,
       joint_effort_command_interface_);
 
-  // Initialize states.
-  if (!read_state_from_references()) {
-    RCLCPP_ERROR(get_node()->get_logger(), "Failed to read from the hardware.");
-    return controller_interface::CallbackReturn::ERROR;
-  }
-  // Initialize the estimator.
-  // eVector3 dummy_base_position = Eigen::Vector3d::Zero();
-  // floating_base_estimator_->setInitialState(
-  //   // Not used here. It assumes the feet are on the ground.
-  //   dummy_base_position,
-  //   floating_base_estimator_input_.imu_orientation_,
-  //   floating_base_estimator_input_.joint_position_);
-
-  // // Initilize the contact feet.
-  // floating_base_estimator_input_.in_contact_feet_ =
-  //   contact_estimator_->getStanceFootNames();
-  // floating_base_estimator_input_.swing_feet_ =
-  //   contact_estimator_->getSwingFootNames();
-
-  // // Reset the timers.
-  // time_profiler_.resetTimers();
-
   std::fill(reference_interfaces_.begin(), reference_interfaces_.end(),
             std::numeric_limits<double>::quiet_NaN());
 
   RCLCPP_INFO(get_node()->get_logger(), "Successfull activation.");
   return CallbackReturn::SUCCESS;
+}
+
+bool LinearFeedbackControllerRos::on_set_chained_mode(bool chained_mode) {
+  auto callback =
+      std::bind(&LinearFeedbackControllerRos::state_syncher_callback, this,
+                std::placeholders::_1, std::placeholders::_2);
+  if (chained_mode) {
+    state_syncher_->registerDropCallback(callback);
+  } else {
+    state_syncher_->registerCallback(callback);
+  }
+  return true;
 }
 
 CallbackReturn LinearFeedbackControllerRos::on_deactivate(
@@ -194,19 +184,45 @@ CallbackReturn LinearFeedbackControllerRos::on_cleanup(
 
 CallbackReturn LinearFeedbackControllerRos::on_error(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  // if (!floating_base_estimator_) {
-  //   RCLCPP_ERROR(
-  //     get_node()->get_logger(),
-  //     "The estimator plugin where not loaded or initialized.");
-  //   return CallbackReturn::ERROR;
-  // }
-
-  /// @todo manage error
-
   return CallbackReturn::SUCCESS;
 }
 
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
+  synched_state_msg_.mutex.lock();
+  state_msg_.msg_odom = synched_state_msg_.msg_odom;
+  state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;
+  synched_state_msg_.mutex.unlock();
+
+  std::size_t index = 0;
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+    reference_interfaces_[0] = state_msg_.msg_odom.pose.pose.position.x;
+    reference_interfaces_[1] = state_msg_.msg_odom.pose.pose.position.y;
+    reference_interfaces_[2] = state_msg_.msg_odom.pose.pose.position.z;
+
+    reference_interfaces_[3] = state_msg_.msg_odom.pose.pose.orientation.x;
+    reference_interfaces_[4] = state_msg_.msg_odom.pose.pose.orientation.y;
+    reference_interfaces_[5] = state_msg_.msg_odom.pose.pose.orientation.z;
+    reference_interfaces_[6] = state_msg_.msg_odom.pose.pose.orientation.w;
+
+    reference_interfaces_[7] = state_msg_.msg_odom.twist.twist.linear.x;
+    reference_interfaces_[8] = state_msg_.msg_odom.twist.twist.linear.y;
+    reference_interfaces_[9] = state_msg_.msg_odom.twist.twist.linear.z;
+
+    reference_interfaces_[10] = state_msg_.msg_odom.twist.twist.angular.x;
+    reference_interfaces_[11] = state_msg_.msg_odom.twist.twist.angular.y;
+    reference_interfaces_[12] = state_msg_.msg_odom.twist.twist.angular.z;
+    index = 13;
+  }
+  const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
+  const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
+  for (auto i = 0; i < joint_nq; ++i) {
+    reference_interfaces_[index] = state_msg_.msg_joint_state.position[i];
+    ++index;
+  }
+  for (auto i = 0; i < joint_nv; ++i) {
+    reference_interfaces_[index] = state_msg_.msg_joint_state.velocity[i];
+    ++index;
+  }
   return return_type::OK;
 }
 
@@ -468,6 +484,13 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   // Resize the reference interface vector to correspond with the names.
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
+  // Allocate subscribers
+  auto rmw_qos_profile = qos_.get_rmw_qos_profile();
+  subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+  subscriber_joint_state_.subscribe(get_node(), "joint_state", rmw_qos_profile);
+  state_syncher_ =
+      std::make_shared<message_filters::TimeSynchronizer<Odometry, JointState>>(
+          subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
   return true;
 }
 
@@ -475,6 +498,15 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
                                             const std::string& suffix) const {
   return str.size() >= suffix.size() &&
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+void LinearFeedbackControllerRos::state_syncher_callback(
+    const Odometry::ConstSharedPtr& msg_odom,
+    const JointState::ConstSharedPtr& msg_joint_state) {
+  synched_state_msg_.mutex.lock();
+  synched_state_msg_.msg_joint_state = *msg_joint_state;
+  synched_state_msg_.msg_odom = *msg_odom;
+  synched_state_msg_.mutex.unlock();
 }
 
 }  // namespace linear_feedback_controller
