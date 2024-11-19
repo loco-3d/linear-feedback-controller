@@ -12,6 +12,7 @@
 #include <memory>
 
 // ROS 2
+#include "linear_feedback_control_msgs/action/run_linear_feedback_controller.hpp"
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
 #include "nav_msgs/msg/odometry.hpp"
@@ -24,11 +25,11 @@
 #include "hardware_interface/loaned_command_interface.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 
-// Class to wrap in ROS
-#include "linear_feedback_controller/linear_feedback_controller.hpp"
-
 // PAL public utilities for logging data
 #include "pal_statistics/pal_statistics.hpp"
+
+// Class to wrap in ROS
+#include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 // Auto-generated header by the `generate_parameter_library` package.
 #include "linear_feedback_controller/generated_parameters.hpp"
@@ -46,6 +47,10 @@ using hardware_interface::HW_IF_VELOCITY;
 using nav_msgs::msg::Odometry;
 using rclcpp_lifecycle::LifecycleNode;
 using sensor_msgs::msg::JointState;
+using Fibonacci =
+    linear_feedback_controller_msgs::action::RunLinearFeedbackController;
+using GoalHandleRunLinearFeedbackController =
+    rclcpp_action::ServerGoalHandle<RunLinearFeedbackController>;
 
 struct StateMsg {
   Odometry msg_odom;
@@ -147,8 +152,13 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   // Pal Statistics.
   void register_var(const std::string& id, const Eigen::Vector3d& vec);
+  void register_var(const std::string& id,
+                    const Eigen::Matrix<double, 6, 1>& vec);
+  void register_var(const std::string& id,
+                    const Eigen::Matrix<double, 7, 1>& vec);
   void register_var(const std::string& id, const Eigen::Quaterniond& quat);
   void register_var(const std::string& id, const std::vector<double>& vec);
+  void register_var(const std::string& id, const Eigen::VectorXd& vec);
 
   // Utils.
   bool ends_with(const std::string& str, const std::string& suffix) const;
@@ -184,16 +194,15 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;
 
-  // Inputs/Ouputs attributes.
   /// @brief Joint position measured at init time.
   Eigen::VectorXd init_joint_position_;
   /// @brief Joint torques measured at init time.
   Eigen::VectorXd init_joint_effort_;
-  /// @brief Genrealized coordinates.
-  Eigen::VectorXd input_robot_configuration_;
-  /// @brief Genrealized coordinates.
-  Eigen::VectorXd input_robot_velocity_;
-  Eigen::VectorXd output_joint_effort_;
+
+  // Inputs/Ouputs attributes.
+  TimePoint input_time_;
+  linear_feedback_controller_msgs::Eigen::Sensor input_sensor_;
+  linear_feedback_controller_msgs::Eigen::Control input_control_;
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
@@ -207,6 +216,9 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
       state_syncher_;
   ProtectedStateMsg synched_state_msg_;
   StateMsg state_msg_;
+
+  // Action server
+  rclcpp_action::Server<RunLinearFeedbackController>::SharedPtr action_server_;
 };
 
 }  // namespace linear_feedback_controller

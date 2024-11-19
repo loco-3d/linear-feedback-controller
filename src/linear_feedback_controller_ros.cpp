@@ -232,51 +232,25 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
 }
 
 return_type LinearFeedbackControllerRos::update_and_write_commands(
-    const rclcpp::Time& /* time */, const rclcpp::Duration& /*period*/) {
-  // RCLCPP_WARN(get_node()->get_logger(), "Update the state estimation.");
+    const rclcpp::Time& time, const rclcpp::Duration& /*period*/) {
+  // Read the hardware data.
+  if (!read_state_from_references()) {
+    return return_type::ERROR;
+  }
 
-  // // Start recording time.
-  // time_profiler_.startTimer(estimator_timer_name_);
+  // Get the current time.
+  TimePoint time_lfc = TimePoint(Duration(time.seconds()));
 
-  // // Read the hardware data.
-  // if (!read_state_from_hardware(
-  //     input_joint_state_, input_imu_state_, input_ft_state_))
-  // {
-  //   return return_type::ERROR;
-  // }
-  // convert_input_to_eigen_objects();
-  // estimate_contacts(time);
-  // estimate_base(time);
+  // Copy the output of the control in order to log it.
+  output_joint_effort_ =
+      lfc_.compute_control(time_lfc, input_sensor_, input_control_);
 
-  // // Write the results of the estimator in the command interface.
-  // const EstimatorOutput & output = floating_base_estimator_output_;
-  // // Base 6D pose
-  // command_interfaces_[0].set_value(output.position_.x());
-  // command_interfaces_[1].set_value(output.position_.y());
-  // command_interfaces_[2].set_value(output.position_.z());
-  // command_interfaces_[3].set_value(output.orientation_.x());
-  // command_interfaces_[4].set_value(output.orientation_.y());
-  // command_interfaces_[5].set_value(output.orientation_.z());
-  // command_interfaces_[6].set_value(output.orientation_.w());
-  // // Base 6D velocity
-  // command_interfaces_[7].set_value(output.linear_velocity_.x());
-  // command_interfaces_[8].set_value(output.linear_velocity_.y());
-  // command_interfaces_[9].set_value(output.linear_velocity_.z());
-  // command_interfaces_[10].set_value(output.angular_velocity_.x());
-  // command_interfaces_[11].set_value(output.angular_velocity_.y());
-  // command_interfaces_[12].set_value(output.angular_velocity_.z());
-  // std::size_t index = 13;
-  // // Joint positions.
-  // for (std::size_t i = 0; i < robot_model_->getJointStateSize(); ++i) {
-  //   // joint_command_interface_[0][index] = output.joint_position_[i];
-  //   ++index;
-  // }
-  // // Joint velocity.
-  // for (std::size_t i = 0; i <
-  // robot_model_->getJointStateSize(rpmc::Type::VELOCITY); ++i) {
-  //   // joint_command_interface_[1][index] = output.joint_velocity_[i];
-  //   ++index;
-  // }
+  // Write the output of the control (joint effort), in the command interface.
+  const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
+  for (std::size_t i = 0; i < joint_nv; ++i) {
+    joint_command_interface_[i] = output_joint_effort_[i];
+    ++index;
+  }
 
   // // Stop recoding time.
   // time_profiler_.stopTime(estimator_timer_name_);
@@ -292,31 +266,30 @@ bool LinearFeedbackControllerRos::update_parameters() {
 }
 
 bool LinearFeedbackControllerRos::read_state_from_references() {
-  // std::size_t num_joint = robot_model_->getJointStateSize();
-  // for (size_t joint_ind = 0; joint_ind < num_joint; ++joint_ind) {
-  //   input_joint_state.position[joint_ind] =
-  //     state_interfaces_[joint_ind].get_value();
-  //   input_joint_state.velocity[joint_ind] =
-  //     state_interfaces_[num_joint + joint_ind].get_value();
-  //   input_joint_state.effort[joint_ind] = 0.0;
-  // }
-  // input_has_nan_.joint_.hasNan(input_joint_state);
+  const auto nq = lfc_.get_robot_model()->get_nq();
+  const auto nv = lfc_.get_robot_model()->get_nv();
+  const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
+  const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
 
-  // // If any IMU values are nan, assume values are zero.
-  // imu_sensor_->get_values_as_message(input_imu_state);
-
-  // // If any Force Torque values are nan, assume values are zero.
-  // for (std::size_t i = 0; i < ft_sensors_.size(); ++i) {
-  //   ft_sensors_[i]->get_values_as_message(input_ft_state[i]);
-  // }
-
-  // if (input_has_nan_.hasNan()) {
-  //   RCLCPP_ERROR(
-  //     get_node()->get_logger(),
-  //     (std::ostringstream("Failed to read from the hardware.\n")
-  //       << input_has_nan_).str().c_str());
-  // }
-  // return !input_has_nan_.hasNan();
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+    input_sensor_.base_pose =
+        Eigen::VectorXd::Map(&reference_interfaces_[0], 7);
+    input_sensor_.joint_state.position =
+        Eigen::VectorXd::Map(&reference_interfaces_[7], joint_nq);
+    input_sensor_.base_twist =
+        Eigen::VectorXd::Map(&reference_interfaces_[nq], 6);
+    input_sensor_.joint_state.velocity =
+        Eigen::VectorXd::Map(&reference_interfaces_[nq + 6], joint_nv);
+  } else {
+    input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
+    input_sensor_.joint_state.position =
+        Eigen::VectorXd::Map(&reference_interfaces_[0], nq);
+    input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
+    input_sensor_.joint_state.velocity =
+        Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
+  }
+  input_sensor_.joint_state.effort.fill(
+      std::numeric_limits<double>::signaling_NaN());
   return true;
 }
 
@@ -337,9 +310,15 @@ bool LinearFeedbackControllerRos::initialize_introspection() {
     //   std::string("base_angular_velocity"),
     //   floating_base_estimator_input_.imu_orientation_);
   }
-  register_var(std::string("input_robot_configuration"),
-               input_robot_configuration_);
-  register_var(std::string("input_robot_velocity"), input_robot_velocity_);
+  register_var(std::string("input_sensor_base_pose"), input_sensor_.base_pose);
+  register_var(std::string("input_sensor_base_twist"),
+               input_sensor_.base_twist);
+  register_var(std::string("input_sensor_joint_state_position"),
+               input_sensor_.joint_state.position);
+  register_var(std::string("input_sensor_joint_state_velocity"),
+               input_sensor_.joint_state.velocity);
+  register_var(std::string("input_sensor_joint_state_effort"),
+               input_sensor_.joint_state.effort);
   return true;
 }
 
@@ -373,6 +352,50 @@ void LinearFeedbackControllerRos::register_var(const std::string& id,
     REGISTER_VARIABLE(get_node(), "/introspection_data", oss.str(), &vec[i],
                       &bookkeeping_);
   }
+}
+
+void LinearFeedbackControllerRos::register_var(const std::string& id,
+                                               const Eigen::VectorXd& vec) {
+  for (Eigen::Index i = 0; i < vec.size(); ++i) {
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << id << "_" << i;
+    REGISTER_VARIABLE(get_node(), "/introspection_data", oss.str(), &vec(i),
+                      &bookkeeping_);
+  }
+}
+
+void LinearFeedbackControllerRos::register_var(
+    const std::string& id, const Eigen::Matrix<double, 7, 1>& vec) {
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_x", &vec(0),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_y", &vec(1),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_z", &vec(2),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_qx", &vec(0),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_qy", &vec(1),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_qz", &vec(2),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_qw", &vec(2),
+                    &bookkeeping_);
+}
+
+void LinearFeedbackControllerRos::register_var(
+    const std::string& id, const Eigen::Matrix<double, 6, 1>& vec) {
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_x", &vec(0),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_y", &vec(1),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_z", &vec(2),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_wx", &vec(0),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_wy", &vec(1),
+                    &bookkeeping_);
+  REGISTER_VARIABLE(get_node(), "/introspection_data", id + "_wz", &vec(2),
+                    &bookkeeping_);
 }
 
 bool LinearFeedbackControllerRos::wait_for_robot_description(
@@ -465,9 +488,6 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  input_robot_configuration_.resize(lfc_.get_robot_model()->get_nq());
-  input_robot_velocity_.resize(lfc_.get_robot_model()->get_nv());
-
   output_joint_effort_ =
       Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
   joint_effort_command_interface_.reserve(
@@ -482,13 +502,22 @@ bool LinearFeedbackControllerRos::allocate_memory() {
     command_prefix_ = parameters_.chainable_controller.command_prefix;
   }
 
-  init_joint_position_ =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nq());
-  init_joint_effort_ =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_.joint_state.name =
+      lfc_.get_robot_model()->get_moving_joint_names();
+  input_sensor_.joint_state.position.resize(
+      lfc_.get_robot_model()->get_joint_nq(),
+      std::numeric_limits<double>::signaling_NaN());
+  input_sensor_.joint_state.velocity.resize(
+      lfc_.get_robot_model()->get_joint_nv(),
+      std::numeric_limits<double>::signaling_NaN());
+  input_sensor_.joint_state.acceleration.resize(
+      lfc_.get_robot_model()->get_joint_nv(),
+      std::numeric_limits<double>::signaling_NaN());
+  input_sensor_.base_pose
+      .
 
-  // Resize the reference interface vector to correspond with the names.
-  reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
+      // Resize the reference interface vector to correspond with the names.
+      reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   // Allocate subscribers
   auto rmw_qos_profile = qos_.get_rmw_qos_profile();

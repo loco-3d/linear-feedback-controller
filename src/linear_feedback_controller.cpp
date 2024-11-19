@@ -38,7 +38,7 @@ bool LinearFeedbackController::set_initial_state(
 }
 
 const Eigen::VectorXd& LinearFeedbackController::compute_control(
-    TimePoint time, Sensor sensor, Control control) {
+    const TimePoint& time, const Sensor& sensor, const Control& control) {
   // Shortcuts for easier code writing.
   const auto& sensor_js = sensor.joint_state;
   const auto& ctrl_js = control.initial_state.joint_state;

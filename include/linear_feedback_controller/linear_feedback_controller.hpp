@@ -74,8 +74,9 @@ class LinearFeedbackController {
    * @param control
    * @return const Eigen::VectorXd&
    */
-  const Eigen::VectorXd& compute_control(TimePoint time, Sensor sensor,
-                                         Control control);
+  const Eigen::VectorXd& compute_control(const TimePoint& time,
+                                         const Sensor& sensor,
+                                         const Control& control);
 
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 
