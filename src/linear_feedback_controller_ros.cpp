@@ -9,6 +9,7 @@
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "controller_interface/helpers.hpp"
+#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 #include "pal_statistics/pal_statistics_macros.hpp"
 
 using namespace std::chrono_literals;
@@ -237,6 +238,10 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   if (!read_state_from_references()) {
     return return_type::ERROR;
   }
+  // publish the state.
+  linear_feedback_controller_msgs::sensorEigenToMsg(input_sensor_,
+                                                    input_sensor_msg_);
+  sensor_publisher_->publish(input_sensor_msg_);
 
   // Get the current time.
   TimePoint time_lfc = TimePoint(Duration(time.seconds()));
@@ -247,9 +252,8 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
 
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
-  for (std::size_t i = 0; i < joint_nv; ++i) {
-    joint_command_interface_[i] = output_joint_effort_[i];
-    ++index;
+  for (Eigen::Index i = 0; i < joint_nv; ++i) {
+    joint_effort_command_interface_[i].get().set_value(output_joint_effort_[i]);
   }
 
   // // Stop recoding time.
@@ -504,20 +508,23 @@ bool LinearFeedbackControllerRos::allocate_memory() {
 
   input_sensor_.joint_state.name =
       lfc_.get_robot_model()->get_moving_joint_names();
-  input_sensor_.joint_state.position.resize(
-      lfc_.get_robot_model()->get_joint_nq(),
+  input_sensor_.joint_state.position =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nq());
+  input_sensor_.joint_state.velocity =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_.joint_state.effort =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_.joint_state.position.fill(
       std::numeric_limits<double>::signaling_NaN());
-  input_sensor_.joint_state.velocity.resize(
-      lfc_.get_robot_model()->get_joint_nv(),
+  input_sensor_.joint_state.velocity.fill(
       std::numeric_limits<double>::signaling_NaN());
-  input_sensor_.joint_state.acceleration.resize(
-      lfc_.get_robot_model()->get_joint_nv(),
+  input_sensor_.joint_state.effort.fill(
       std::numeric_limits<double>::signaling_NaN());
-  input_sensor_.base_pose
-      .
+  input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
+  input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
 
-      // Resize the reference interface vector to correspond with the names.
-      reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
+  // Resize the reference interface vector to correspond with the names.
+  reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   // Allocate subscribers
   auto rmw_qos_profile = qos_.get_rmw_qos_profile();
@@ -526,6 +533,16 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   state_syncher_ =
       std::make_shared<message_filters::TimeSynchronizer<Odometry, JointState>>(
           subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
+
+  using namespace std::placeholders;
+  rclcpp::QoS qos(10);
+  qos.best_effort();
+  sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
+  control_subscriber_ = get_node()->create_subscription<ControlMsg>(
+      "control", qos,
+      std::bind(&LinearFeedbackControllerRos::control_subscription_callback,
+                this, _1));
+
   return true;
 }
 
@@ -533,6 +550,13 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
                                             const std::string& suffix) const {
   return str.size() >= suffix.size() &&
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+void LinearFeedbackControllerRos::control_subscription_callback(
+    const ControlMsg msg) {
+  protected_control_msg_.mutex.lock();
+  protected_control_msg_.msg = msg;
+  protected_control_msg_.mutex.unlock();
 }
 
 void LinearFeedbackControllerRos::state_syncher_callback(
@@ -543,5 +567,26 @@ void LinearFeedbackControllerRos::state_syncher_callback(
   synched_state_msg_.msg_odom = *msg_odom;
   synched_state_msg_.mutex.unlock();
 }
+
+// rclcpp_action::GoalResponse LinearFeedbackControllerRos::handle_goal(
+//     const rclcpp_action::GoalUUID & uuid,
+//     std::shared_ptr<const RunLFC::Goal> goal) {
+//   RCLCPP_INFO(this->get_logger(),
+//               "Received goal request with order %d", goal->order);
+//   (void)uuid;
+//   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+// }
+
+// rclcpp_action::CancelResponse LinearFeedbackControllerRos::handle_cancel(
+//   const std::shared_ptr<GoalHandleRunLFC> goal_handle) {
+//   RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
+//   (void)goal_handle;
+//   return rclcpp_action::CancelResponse::ACCEPT;
+// }
+
+// void LinearFeedbackControllerRos::handle_accepted(
+//   const std::shared_ptr<GoalHandleRunLFC> goal_handle) {
+//   action_goal_handle_ = goal_handle;
+// }
 
 }  // namespace linear_feedback_controller

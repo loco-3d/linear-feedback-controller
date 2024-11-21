@@ -12,7 +12,8 @@
 #include <memory>
 
 // ROS 2
-#include "linear_feedback_control_msgs/action/run_linear_feedback_controller.hpp"
+#include "linear_feedback_controller_msgs/msg/control.hpp"
+#include "linear_feedback_controller_msgs/msg/sensor.hpp"
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
 #include "nav_msgs/msg/odometry.hpp"
@@ -47,10 +48,8 @@ using hardware_interface::HW_IF_VELOCITY;
 using nav_msgs::msg::Odometry;
 using rclcpp_lifecycle::LifecycleNode;
 using sensor_msgs::msg::JointState;
-using Fibonacci =
-    linear_feedback_controller_msgs::action::RunLinearFeedbackController;
-using GoalHandleRunLinearFeedbackController =
-    rclcpp_action::ServerGoalHandle<RunLinearFeedbackController>;
+using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
+using ControlMsg = linear_feedback_controller_msgs::msg::Control;
 
 struct StateMsg {
   Odometry msg_odom;
@@ -58,6 +57,11 @@ struct StateMsg {
 };
 
 struct ProtectedStateMsg : StateMsg {
+  std::mutex mutex;
+};
+
+struct ProtectedControlMsg {
+  ControlMsg msg;
   std::mutex mutex;
 };
 
@@ -167,6 +171,14 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   void state_syncher_callback(
       const Odometry::ConstSharedPtr& msg_odom,
       const JointState::ConstSharedPtr& msg_joint_state);
+  //   rclcpp_action::GoalResponse handle_goal(
+  //     const rclcpp_action::GoalUUID & uuid,
+  //     std::shared_ptr<const RunLFC::Goal> goal);
+  //   rclcpp_action::CancelResponse handle_cancel(
+  //     const std::shared_ptr<GoalHandleRunLFC> goal_handle);
+  //   void handle_accepted(const std::shared_ptr<GoalHandleRunLFC>
+  //   goal_handle);
+  void control_subscription_callback(const ControlMsg msg);
 
  protected:
   // Functional Attributes.
@@ -203,6 +215,9 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   TimePoint input_time_;
   linear_feedback_controller_msgs::Eigen::Sensor input_sensor_;
   linear_feedback_controller_msgs::Eigen::Control input_control_;
+  linear_feedback_controller_msgs::msg::Sensor input_sensor_msg_;
+  linear_feedback_controller_msgs::msg::Control input_control_msg_;
+  Eigen::VectorXd output_joint_effort_;
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
@@ -217,8 +232,13 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   ProtectedStateMsg synched_state_msg_;
   StateMsg state_msg_;
 
+  // Control subscriber
+  ProtectedControlMsg protected_control_msg_;
+  ControlMsg control_msg_;
+
   // Action server
-  rclcpp_action::Server<RunLinearFeedbackController>::SharedPtr action_server_;
+  rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;
+  rclcpp::Subscription<ControlMsg>::SharedPtr control_subscriber_;
 };
 
 }  // namespace linear_feedback_controller
