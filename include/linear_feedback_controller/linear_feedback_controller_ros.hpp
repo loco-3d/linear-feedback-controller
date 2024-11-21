@@ -232,13 +232,10 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   ProtectedStateMsg synched_state_msg_;
   StateMsg state_msg_;
 
-  // Control subscriber
-  ProtectedControlMsg protected_control_msg_;
-  ControlMsg control_msg_;
-
-  // Action server
+  // MPC communication
   rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;
   rclcpp::Subscription<ControlMsg>::SharedPtr control_subscriber_;
+  ProtectedControlMsg synched_input_control_msg_;
 };
 
 }  // namespace linear_feedback_controller

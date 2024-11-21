@@ -246,6 +246,13 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   // Get the current time.
   TimePoint time_lfc = TimePoint(Duration(time.seconds()));
 
+  // Copy the last control received:
+  synched_input_control_msg_.mutex.lock();
+  input_control_msg_ = synched_input_control_msg_.msg;
+  synched_input_control_msg_.mutex.unlock();
+  linear_feedback_controller_msgs::controlMsgToEigen(input_control_msg_,
+                                                     input_control_);
+
   // Copy the output of the control in order to log it.
   output_joint_effort_ =
       lfc_.compute_control(time_lfc, input_sensor_, input_control_);
@@ -256,8 +263,6 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
     joint_effort_command_interface_[i].get().set_value(output_joint_effort_[i]);
   }
 
-  // // Stop recoding time.
-  // time_profiler_.stopTime(estimator_timer_name_);
   return return_type::OK;
 }
 
@@ -554,9 +559,9 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
 
 void LinearFeedbackControllerRos::control_subscription_callback(
     const ControlMsg msg) {
-  protected_control_msg_.mutex.lock();
-  protected_control_msg_.msg = msg;
-  protected_control_msg_.mutex.unlock();
+  synched_input_control_msg_.mutex.lock();
+  synched_input_control_msg_.msg = msg;
+  synched_input_control_msg_.mutex.unlock();
 }
 
 void LinearFeedbackControllerRos::state_syncher_callback(
