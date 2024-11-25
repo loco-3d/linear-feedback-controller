@@ -19,8 +19,9 @@ class MinJerk {
 
   /// \brief Set parameters considering initial position, velocity,
   /// acceleration, and final position, velocity and acceleration
-  void set_parameters(const double end_time, const double start_pos, const double start_speed,
-                      const double start_acc, const double end_pos, const double end_speed,
+  void set_parameters(const double end_time, const double start_pos,
+                      const double start_speed, const double start_acc,
+                      const double end_pos, const double end_speed,
                       const double end_acc);
 
   /*! Compute the value. */
@@ -36,7 +37,7 @@ class MinJerk {
   double compute_jerk(const double t);
 
   /*! Get the coefficients. */
-  std::array<double, 6> & get_coefficients() const;
+  std::array<double, 6> &get_coefficients() const;
 
   /*! Set the coefficients. */
   void set_coefficients(const std::array<double, 6> &lCoefficients);

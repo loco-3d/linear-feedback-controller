@@ -83,9 +83,7 @@ double MinJerk::compute_jerk(const double t) {
   }
 }
 
-std::array<double, 6> & MinJerk::get_coefficients() const {
-  return coeffs_;
-}
+std::array<double, 6> &MinJerk::get_coefficients() const { return coeffs_; }
 
 void MinJerk::set_coefficients(const std::array<double, 6> &lCoefficients) {
   coeffs_ = lCoefficients;
@@ -99,7 +97,8 @@ void MinJerk::set_parameters(const double end_time, const double end_pos) {
 
 void MinJerk::set_parameters(const double end_time, const double start_pos,
                              const double start_speed, const double start_acc,
-                             const double end_pos, const double end_speed, const double end_acc) {
+                             const double end_pos, const double end_speed,
+                             const double end_acc) {
   // copy the argument internally;
   end_time_ = end_time;
   start_pos_ = start_pos;
