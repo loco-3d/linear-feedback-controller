@@ -76,8 +76,7 @@ class LinearFeedbackController {
    */
   const Eigen::VectorXd& compute_control(const TimePoint& time,
                                          const Sensor& sensor,
-                                         const Control& control,
-                                         bool remove_gravity_compensation_);
+                                         const Control& control);
 
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 

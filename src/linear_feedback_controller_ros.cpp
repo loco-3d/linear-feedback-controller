@@ -552,22 +552,26 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   // Allocate subscribers
-  rclcpp::QoS qos0(10);
-  auto rmw_qos_profile = qos0.get_rmw_qos_profile();
-  subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
-  subscriber_joint_state_.subscribe(get_node(), "joint_state", rmw_qos_profile);
-  state_syncher_ =
-      std::make_shared<message_filters::TimeSynchronizer<Odometry, JointState>>(
-          subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
-
-  using namespace std::placeholders;
-  rclcpp::QoS qos(10);
-  qos.best_effort();
-  sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
-  control_subscriber_ = get_node()->create_subscription<ControlMsg>(
-      "control", qos,
-      std::bind(&LinearFeedbackControllerRos::control_subscription_callback,
-                this, _1));
+  {
+    rclcpp::QoS qos = rclcpp::QoS(10);
+    auto rmw_qos_profile = qos.get_rmw_qos_profile();
+    subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+    subscriber_joint_state_.subscribe(get_node(), "joint_state",
+                                      rmw_qos_profile);
+    state_syncher_ = std::make_shared<
+        message_filters::TimeSynchronizer<Odometry, JointState>>(
+        subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
+  }
+  {
+    using namespace std::placeholders;
+    rclcpp::QoS qos = rclcpp::QoS(10);
+    qos.best_effort();
+    sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
+    control_subscriber_ = get_node()->create_subscription<ControlMsg>(
+        "control", qos,
+        std::bind(&LinearFeedbackControllerRos::control_subscription_callback,
+                  this, _1));
+  }
 
   return true;
 }
