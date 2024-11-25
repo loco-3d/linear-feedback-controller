@@ -40,7 +40,7 @@ linear_feedback_controller:
     type: bool,
     description: "Has the robot a freeflyer or not?",
   }
-  from_pd_to_lf_duration: {
+  pd_to_lf_transition_duration: {
     type: double,
     description: "Duration **in seconds** of transition between the PD and the LF controllers.",
     validation: {

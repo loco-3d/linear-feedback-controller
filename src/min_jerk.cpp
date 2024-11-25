@@ -37,7 +37,7 @@ double MinJerk::compute(double t) {
   }
 }
 
-double MinJerk::compute_derivative(double t) {
+double MinJerk::compute_derivative(const double t) {
   if (t >= end_time_) {
     return end_speed_;
   } else if (t <= start_time_) {
@@ -52,7 +52,7 @@ double MinJerk::compute_derivative(double t) {
   }
 }
 
-double MinJerk::compute_sec_derivative(double t) {
+double MinJerk::compute_sec_derivative(const double t) {
   if (t >= end_time_) {
     return end_acc_;
   } else if (t <= start_time_) {
@@ -67,13 +67,14 @@ double MinJerk::compute_sec_derivative(double t) {
   }
 }
 
-double MinJerk::compute_jerk(double t) {
+double MinJerk::compute_jerk(const double t) {
   if (t >= end_time_) {
     return compute_jerk(end_time_);
   } else if (t <= start_time_) {
     return compute_jerk(start_time_);
   } else {
-    double r = 0, pt = 1;
+    double r = 0.0;
+    double pt = 1.0;
     for (std::size_t i = 3; i < coeffs_.size(); ++i) {
       r += i * (i - 1) * (i - 2) * coeffs_[i] * pt;
       pt *= t;
@@ -82,23 +83,23 @@ double MinJerk::compute_jerk(double t) {
   }
 }
 
-void MinJerk::get_coefficients(std::array<double, 6> &coeffs) const {
-  coeffs = coeffs_;
+std::array<double, 6> & MinJerk::get_coefficients() const {
+  return coeffs_;
 }
 
 void MinJerk::set_coefficients(const std::array<double, 6> &lCoefficients) {
   coeffs_ = lCoefficients;
 }
 
-void MinJerk::set_parameters(double end_time, double end_pos) {
+void MinJerk::set_parameters(const double end_time, const double end_pos) {
   set_parameters(end_time, 0.0 /*start_pos*/, 0.0 /*start_speed*/,
                  0.0 /*start_acc*/, end_pos, 0.0 /*end_speed*/,
                  0.0 /*end_acc*/);
 }
 
-void MinJerk::set_parameters(double end_time, double start_pos,
-                             double start_speed, double start_acc,
-                             double end_pos, double end_speed, double end_acc) {
+void MinJerk::set_parameters(const double end_time, const double start_pos,
+                             const double start_speed, const double start_acc,
+                             const double end_pos, const double end_speed, const double end_acc) {
   // copy the argument internally;
   end_time_ = end_time;
   start_pos_ = start_pos;
