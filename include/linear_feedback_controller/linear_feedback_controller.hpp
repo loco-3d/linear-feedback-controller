@@ -26,7 +26,7 @@ struct ControllerParameters {
   std::vector<std::string> controlled_joint_names;
   std::string default_configuration_name;
   bool robot_has_free_flyer;
-  Duration from_pd_to_lf_duration;
+  Duration pd_to_lf_transition_duration;
 };
 
 /**
@@ -76,7 +76,8 @@ class LinearFeedbackController {
    */
   const Eigen::VectorXd& compute_control(const TimePoint& time,
                                          const Sensor& sensor,
-                                         const Control& control);
+                                         const Control& control,
+                                         bool remove_gravity_compensation_);
 
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 

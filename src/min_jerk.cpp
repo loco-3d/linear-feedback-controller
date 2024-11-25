@@ -83,7 +83,9 @@ double MinJerk::compute_jerk(const double t) {
   }
 }
 
-std::array<double, 6> &MinJerk::get_coefficients() const { return coeffs_; }
+const std::array<double, 6> &MinJerk::get_coefficients() const {
+  return coeffs_;
+}
 
 void MinJerk::set_coefficients(const std::array<double, 6> &lCoefficients) {
   coeffs_ = lCoefficients;

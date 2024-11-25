@@ -37,7 +37,7 @@ class MinJerk {
   double compute_jerk(const double t);
 
   /*! Get the coefficients. */
-  std::array<double, 6> &get_coefficients() const;
+  const std::array<double, 6> &get_coefficients() const;
 
   /*! Set the coefficients. */
   void set_coefficients(const std::array<double, 6> &lCoefficients);

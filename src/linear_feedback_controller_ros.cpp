@@ -20,7 +20,7 @@ const std::string LinearFeedbackControllerRos::robot_description_name_ =
     "robot_description";
 
 LinearFeedbackControllerRos::LinearFeedbackControllerRos()
-    : ChainableControllerInterface(), qos_(10) {}
+    : ChainableControllerInterface() {}
 
 LinearFeedbackControllerRos::~LinearFeedbackControllerRos() {}
 
@@ -478,8 +478,8 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
   lfc_params.default_configuration_name =
       parameters_.default_configuration_name;
   lfc_params.robot_has_free_flyer = parameters_.robot_has_free_flyer;
-  lfc_params.from_pd_to_lf_duration =
-      Duration(parameters_.from_pd_to_lf_duration);
+  lfc_params.pd_to_lf_transition_duration =
+      Duration(parameters_.pd_to_lf_transition_duration);
   lfc_.load(lfc_params);
 
   return true;
@@ -552,7 +552,8 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   // Allocate subscribers
-  auto rmw_qos_profile = qos_.get_rmw_qos_profile();
+  rclcpp::QoS qos0(10);
+  auto rmw_qos_profile = qos0.get_rmw_qos_profile();
   subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
   subscriber_joint_state_.subscribe(get_node(), "joint_state", rmw_qos_profile);
   state_syncher_ =

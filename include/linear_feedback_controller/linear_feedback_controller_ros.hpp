@@ -67,7 +67,7 @@ struct ProtectedControlMsg {
 
 /**
  * @brief This chainable controller provides a base state estimator.
- *        It computes the state of the base and joint of the robot accroding to
+ *        It computes the state of the base and joint of the robot according to
  *        measurement of the IMU and joint state.
  */
 class LinearFeedbackControllerRos : public ChainableControllerInterface {
@@ -229,7 +229,6 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   pal_statistics::RegistrationsRAII bookkeeping_;
 
   // State subscriber
-  rclcpp::QoS qos_;
   message_filters::Subscriber<Odometry, LifecycleNode> subscriber_odom_;
   message_filters::Subscriber<JointState, LifecycleNode>
       subscriber_joint_state_;

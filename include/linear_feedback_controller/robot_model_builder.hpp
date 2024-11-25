@@ -78,7 +78,7 @@ class RobotModelBuilder {
   bool get_robot_has_free_flyer() const;
 
   /**
-   * @brief Get the Pinocchio To Harwdare Interface Map.
+   * @brief Get the Pinocchio To Hardware Interface Map.
    *
    * @return std::map<int, int>
    */

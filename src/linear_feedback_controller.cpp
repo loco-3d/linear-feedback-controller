@@ -20,7 +20,7 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
       params_.robot_has_free_flyer);
 
   // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.set_parameters(params_.from_pd_to_lf_duration.count(), 1.0);
+  min_jerk_.set_parameters(params_.pd_to_lf_transition_duration.count(), 1.0);
 
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
@@ -47,8 +47,8 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   const bool control_msg_received = !ctrl_js.name.empty();
   const bool first_control_received_time_initialized =
       first_control_received_time_ == TimePoint::min();
-  const bool during_switch =
-      (time - first_control_received_time_) < params_.from_pd_to_lf_duration;
+  const bool during_switch = (time - first_control_received_time_) <
+                             params_.pd_to_lf_transition_duration;
 
   // Check whenever the first data has arrived and save the time.
   if (control_msg_received && !first_control_received_time_initialized) {
@@ -60,7 +60,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
-                    params_.from_pd_to_lf_duration.count();
+                    params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
     const Eigen::VectorXd& pd_ctrl =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
