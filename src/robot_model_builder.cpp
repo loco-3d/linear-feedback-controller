@@ -9,6 +9,10 @@
 
 namespace linear_feedback_controller {
 
+const Eigen::Index RobotModelBuilder::free_flyer_nq_ = 7;
+
+const Eigen::Index RobotModelBuilder::free_flyer_nv_ = 6;
+
 RobotModelBuilder::RobotModelBuilder() {}
 
 RobotModelBuilder::~RobotModelBuilder() {}
@@ -174,7 +178,7 @@ RobotModelBuilder::get_pinocchio_to_harwdare_interface_map() const {
 
 int RobotModelBuilder::get_joint_nq() const {
   if (robot_has_free_flyer_) {
-    return pinocchio_model_.nq - 7;
+    return pinocchio_model_.nq - free_flyer_nq_;
   } else {
     return pinocchio_model_.nq;
   }
@@ -182,7 +186,7 @@ int RobotModelBuilder::get_joint_nq() const {
 
 int RobotModelBuilder::get_joint_nv() const {
   if (robot_has_free_flyer_) {
-    return pinocchio_model_.nv - 6;
+    return pinocchio_model_.nv - free_flyer_nv_;
   } else {
     return pinocchio_model_.nv;
   }

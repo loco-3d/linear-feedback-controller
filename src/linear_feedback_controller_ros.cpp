@@ -16,6 +16,9 @@ using namespace std::chrono_literals;
 
 namespace linear_feedback_controller {
 
+const std::string LinearFeedbackControllerRos::robot_description_name_ =
+    "robot_description";
+
 LinearFeedbackControllerRos::LinearFeedbackControllerRos()
     : ChainableControllerInterface(), qos_(10) {}
 
@@ -24,15 +27,25 @@ LinearFeedbackControllerRos::~LinearFeedbackControllerRos() {}
 CallbackReturn LinearFeedbackControllerRos::on_init() {
   bool all_good = true;
   std::string robot_description = "";
-
-  all_good &= load_parameters();
-  all_good &= wait_for_robot_description(robot_description);
-  all_good &= load_linear_feedback_controller(robot_description);
-  all_good &= setup_reference_interface();
-  all_good &= allocate_memory();
-  all_good &= initialize_introspection();
-  RCLCPP_INFO(get_node()->get_logger(), "Successfull init.");
-  if (!all_good) {
+  if (load_parameters()) {
+    return CallbackReturn::FAILURE;
+  }
+  if (wait_for_robot_description()) {
+    return CallbackReturn::FAILURE;
+  }
+  if (get_robot_description(robot_description)) {
+    return CallbackReturn::FAILURE;
+  }
+  if (load_linear_feedback_controller(robot_description)) {
+    return CallbackReturn::FAILURE;
+  }
+  if (setup_reference_interface()) {
+    return CallbackReturn::FAILURE;
+  }
+  if (allocate_memory()) {
+    return CallbackReturn::FAILURE;
+  }
+  if (initialize_introspection()) {
     return CallbackReturn::FAILURE;
   }
   return CallbackReturn::SUCCESS;
@@ -407,13 +420,13 @@ void LinearFeedbackControllerRos::register_var(
                     &bookkeeping_);
 }
 
-bool LinearFeedbackControllerRos::wait_for_robot_description(
-    std::string& robot_description) {
-  auto new_node = std::make_shared<rclcpp::Node>(
-      get_node()->get_name() + std::string("_robot_description"));
-  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(
-      new_node, "robot_state_publisher");
-  while (!parameters_client->wait_for_service(1s)) {
+bool LinearFeedbackControllerRos::wait_for_robot_description() {
+  robot_description_node_ = std::make_shared<rclcpp::Node>(
+      get_node()->get_name() + std::string("_") + robot_description_name_);
+  robot_description_parameter_client_ =
+      std::make_shared<rclcpp::SyncParametersClient>(robot_description_node_,
+                                                     "robot_state_publisher");
+  while (!robot_description_parameter_client_->wait_for_service(1s)) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Interrupted while waiting for the service. Exiting.");
@@ -422,11 +435,18 @@ bool LinearFeedbackControllerRos::wait_for_robot_description(
     RCLCPP_INFO(get_node()->get_logger(),
                 "service not available, waiting again...");
   }
-  auto parameters = parameters_client->get_parameters({"robot_description"});
+  return true;
+}
+
+bool LinearFeedbackControllerRos::get_robot_description(
+    std::string& robot_description) {
+  auto parameters = robot_description_parameter_client_->get_parameters(
+      {robot_description_name_});
   robot_description = parameters[0].value_to_string();
   if (robot_description.empty()) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "The robot_description parameter is retrieved empty.");
+    RCLCPP_ERROR_STREAM(
+        get_node()->get_logger(),
+        "The " << robot_description_name_ << " parameter is retrieved empty.");
     return false;
   }
   return true;

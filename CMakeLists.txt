@@ -17,13 +17,6 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 #
-# System dependencies
-#
-find_package(eigen3_cmake_module REQUIRED)
-find_package(Eigen3)
-find_package(pinocchio REQUIRED)
-
-#
 # Generate the ROS2 parameters interface automatically.
 #
 include(cmake/sec_generate_parameter_library.cmake)

@@ -47,19 +47,3 @@ linear_feedback_controller:
       gt_eq<>: 0.0
     }
   }
-  plugin_type: {
-    type: string,
-    description: "Specifies the name of the state estimator plugin to load.",
-    validation: {
-      not_empty<>: [],
-      one_of<>: [["PINOCCHIO", "RBDL"]]
-    },
-  }
-  base_type: {
-    type: string,
-    description: "Specifies if the base is fixed, floating or planar.",
-    validation: {
-      not_empty<>: [],
-      one_of<>: [["FIXED", "FLOATING", "PLANAR"]]
-    },
-  }

@@ -113,6 +113,13 @@ class RobotModelBuilder {
   /// @brief Initial whole body configuration setup in the SRDF file.
   Eigen::VectorXd q_default_complete_;
 
+  /// @brief This is the number of DoF of a free-flyer joint.
+  static const Eigen::Index free_flyer_nq_;
+
+  /// @brief This is the number of DoF in the tangent space of a free-flyer
+  ///        joint.
+  static const Eigen::Index free_flyer_nv_;
+
  private:
   /**
    * @brief Parse the joint moving names given by the user and build the

@@ -142,7 +142,8 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
  protected:
   // Initialization methods.
   bool load_parameters();
-  bool wait_for_robot_description(std::string& robot_description);
+  bool wait_for_robot_description();
+  bool get_robot_description(std::string& robot_description);
   bool load_linear_feedback_controller(const std::string& robot_description);
   bool setup_reference_interface();
   bool allocate_memory();
@@ -181,10 +182,15 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   void control_subscription_callback(const ControlMsg msg);
 
  protected:
-  // Functional Attributes.
+  // ROS params.
   std::shared_ptr<linear_feedback_controller::ParamListener>
       parameter_listener_;
   linear_feedback_controller::Params parameters_;
+
+  // Fetch the robot_description
+  static const std::string robot_description_name_;
+  rclcpp::Node::SharedPtr robot_description_node_;
+  rclcpp::SyncParametersClient::SharedPtr robot_description_parameter_client_;
 
   // State interfaces
   InterfaceVector<hardware_interface::LoanedStateInterface>
