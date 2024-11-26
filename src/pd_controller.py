@@ -1,5 +1,10 @@
 #! /usr/bin/env python
 
+"""
+TODO: this node is a Talos specific ROS1 implementation of a PD+ controller
+used to test lfc. Needs to be migrated to ROS2
+"""
+
 from math import sin, pi
 from threading import Lock
 from copy import deepcopy
