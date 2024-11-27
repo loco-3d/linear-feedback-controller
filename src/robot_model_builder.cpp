@@ -20,7 +20,6 @@ RobotModelBuilder::~RobotModelBuilder() {}
 bool RobotModelBuilder::build_model(
     const std::string& urdf, const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names,
-    const std::string& default_configuration_name,
     const bool robot_has_free_flyer) {
   // Copy the argument inside the class.
   moving_joint_names_ = moving_joint_names;
@@ -35,6 +34,7 @@ bool RobotModelBuilder::build_model(
   } else {
     pinocchio::urdf::buildModelFromXML(urdf, pinocchio_model_complete);
   }
+  std::cout << "Robot model:\n" << pinocchio_model_complete << std::endl;
 
   // Reduce the rigid body model and set initial position.
   if (!parse_moving_joint_names(pinocchio_model_complete, moving_joint_names_,
@@ -55,6 +55,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
     const std::vector<std::string>& controlled_joint_names) {
   // Get moving joints ids
   moving_joint_ids_.clear();
+  bool failure = false;
   for (const auto& joint_name : moving_joint_names) {
     pinocchio::JointIndex joint_id = 0;
     // do not consider joint that are not in the model
@@ -64,7 +65,11 @@ bool RobotModelBuilder::parse_moving_joint_names(
     } else {
       std::cerr << "joint_name='" << joint_name
                 << "' does not belong to the model" << std::endl;
+      failure = true;
     }
+  }
+  if (failure) {
+    return false;
   }
   if (robot_has_free_flyer_) {
     moving_joint_ids_.push_back(
@@ -184,6 +189,13 @@ void RobotModelBuilder::construct_robot_state(
   }
   const int nb_dof_q = get_joint_nq();
   const int nb_dof_v = get_joint_nv();
+  std::cout << "robot_configuration.size() = " << robot_configuration.size()
+            << std::endl;
+  std::cout << "robot_velocity.size() = " << robot_velocity.size() << std::endl;
+  std::cout << "sensor.joint_state.position.size() = "
+            << sensor.joint_state.position.size() << std::endl;
+  std::cout << "sensor.joint_state.velocity.size() = "
+            << sensor.joint_state.velocity.size() << std::endl;
   robot_configuration.tail(nb_dof_q) = sensor.joint_state.position;
   robot_velocity.tail(nb_dof_v) = sensor.joint_state.velocity;
 }

@@ -23,11 +23,6 @@ linear_feedback_controller:
       lt_eq<>: 1.0,
     }
   }
-  srdf: {
-    type: string,
-    description: "Path to the SRDF file.",
-    validation: { not_empty<>: [] }
-  }
   moving_joint_names: {
     type: string_array,
     description: "list of active joint names used by the controller.",
@@ -44,11 +39,6 @@ linear_feedback_controller:
       description: "Derivation gains for the PD controller.",
       validation: { gt_eq<>: 0.0 }
     }
-  }
-  default_configuration_name: {
-    type: string,
-    description: "Name of the default configuration in the SRDF file.",
-    validation: { not_empty<>: [] }
   }
   robot_has_free_flyer: {
     type: bool,

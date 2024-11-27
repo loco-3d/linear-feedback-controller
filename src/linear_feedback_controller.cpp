@@ -14,9 +14,11 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   params_ = params;
 
   // Load the robot model.
-  robot_model_builder_->build_model(
-      params_.urdf, params_.moving_joint_names, params_.controlled_joint_names,
-      params_.default_configuration_name, params_.robot_has_free_flyer);
+  if (!robot_model_builder_->build_model(
+          params_.urdf, params_.moving_joint_names,
+          params_.controlled_joint_names, params_.robot_has_free_flyer)) {
+    return false;
+  }
 
   // Min jerk to smooth the control when we switch from pd to lfc.
   min_jerk_.set_parameters(params_.pd_to_lf_transition_duration.count(), 1.0);

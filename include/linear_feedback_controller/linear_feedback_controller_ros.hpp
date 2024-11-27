@@ -80,54 +80,54 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   /// @brief @copydoc ControllerInterfaceBase::command_interface_configuration
   /// This function access the output torques.
-  virtual InterfaceConfiguration command_interface_configuration() const final;
+  InterfaceConfiguration command_interface_configuration() const final;
 
   /// @brief @copydoc ControllerInterfaceBase::state_interface_configuration
   /// This function access none of the states.
-  virtual InterfaceConfiguration state_interface_configuration() const final;
+  InterfaceConfiguration state_interface_configuration() const final;
 
   /// @brief @copydoc
   /// ChainableControllerInterface::on_export_reference_interfaces This function
   /// access the reference state from an estimator.
-  virtual std::vector<hardware_interface::CommandInterface>
+  std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() final;
 
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  virtual return_type update_reference_from_subscribers() final;
+  return_type update_reference_from_subscribers() final;
 
   /// @brief ChainableControllerInterface::update_and_write_commands
-  virtual return_type update_and_write_commands(
-      const rclcpp::Time& time, const rclcpp::Duration& period) final;
+  return_type update_and_write_commands(const rclcpp::Time& time,
+                                        const rclcpp::Duration& period) final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_configure
-  virtual CallbackReturn on_configure(
+  CallbackReturn on_configure(
       const rclcpp_lifecycle::State& previous_state) final;
 
   /// @brief @copydoc ControllerInterfaceBase::on_init
   /// can return SUCCESS, FAILURE, or ERROR
-  virtual CallbackReturn on_init() final;
+  CallbackReturn on_init() final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_activate
   ///
   /// Here we assume that the robot is not moving and has it's feet on the
   /// ground.
-  virtual CallbackReturn on_activate(
+  CallbackReturn on_activate(
       const rclcpp_lifecycle::State& previous_state) final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_set_chained_mode
-  virtual bool on_set_chained_mode(bool chained_mode) final;
+  bool on_set_chained_mode(bool chained_mode) final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_deactivate
-  virtual CallbackReturn on_deactivate(
+  CallbackReturn on_deactivate(
       const rclcpp_lifecycle::State& previous_state) final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_cleanup
-  virtual controller_interface::CallbackReturn on_cleanup(
-      const rclcpp_lifecycle::State& previous_state) override;
+  controller_interface::CallbackReturn on_cleanup(
+      const rclcpp_lifecycle::State& previous_state) final;
 
   /// @brief @copydoc rclcpp_lifecycle::on_error
-  virtual controller_interface::CallbackReturn on_error(
-      const rclcpp_lifecycle::State& previous_state) override;
+  controller_interface::CallbackReturn on_error(
+      const rclcpp_lifecycle::State& previous_state) final;
 
  protected:
   // Initialization methods.
@@ -192,12 +192,10 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   // Reference interfaces.
   std::vector<std::string> reference_interface_names_;
-  std::string reference_prefix_;
 
   // Command interfaces.
   InterfaceVector<hardware_interface::LoanedCommandInterface>
       joint_effort_command_interface_;
-  std::string command_prefix_;
 
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;

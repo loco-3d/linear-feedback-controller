@@ -18,27 +18,41 @@ LinearFeedbackControllerRos::LinearFeedbackControllerRos()
 LinearFeedbackControllerRos::~LinearFeedbackControllerRos() {}
 
 CallbackReturn LinearFeedbackControllerRos::on_init() {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_init.");
   bool all_good = true;
   std::string robot_description = "";
-  if (load_parameters()) {
+  if (!load_parameters()) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Issues loading the parameters.");
     return CallbackReturn::FAILURE;
   }
-  if (wait_for_robot_description()) {
+  if (!wait_for_robot_description()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues waiting for the robot_description parameter service.");
     return CallbackReturn::FAILURE;
   }
-  if (get_robot_description(robot_description)) {
+  if (!get_robot_description(robot_description)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues loading the robot_description.");
     return CallbackReturn::FAILURE;
   }
-  if (load_linear_feedback_controller(robot_description)) {
+  if (!load_linear_feedback_controller(robot_description)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues loading the linear feedback controller");
     return CallbackReturn::FAILURE;
   }
-  if (setup_reference_interface()) {
+  if (!setup_reference_interface()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues setting up the reference interfaces.");
     return CallbackReturn::FAILURE;
   }
-  if (allocate_memory()) {
+  if (!allocate_memory()) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Issues allocating the memory");
     return CallbackReturn::FAILURE;
   }
-  if (initialize_introspection()) {
+  if (!initialize_introspection()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues initializing the introspection.");
     return CallbackReturn::FAILURE;
   }
   return CallbackReturn::SUCCESS;
@@ -46,6 +60,8 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
 
 InterfaceConfiguration
 LinearFeedbackControllerRos::command_interface_configuration() const {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "command_interface_configuration");
   // Output the estimated robot state as command interface.
   std::vector<std::string> command_interfaces_config_names = {};
 
@@ -58,7 +74,8 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
 
   // Then the joint informations.
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_EFFORT;
+    const auto name = parameters_.chainable_controller.command_prefix + joint +
+                      "/" + HW_IF_EFFORT;
     command_interfaces_config_names.emplace_back(name);
   }
 
@@ -68,6 +85,8 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
 
 InterfaceConfiguration
 LinearFeedbackControllerRos::state_interface_configuration() const {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "state_interface_configuration");
   // Get the joint state measurements.
   std::vector<std::string> state_interfaces_config_names;
 
@@ -93,7 +112,10 @@ LinearFeedbackControllerRos::state_interface_configuration() const {
 
 std::vector<hardware_interface::CommandInterface>
 LinearFeedbackControllerRos::on_export_reference_interfaces() {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_export_reference_interfaces");
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
+  reference_interfaces.clear();
   for (size_t i = 0; i < reference_interface_names_.size(); ++i) {
     reference_interfaces.push_back(hardware_interface::CommandInterface(
         get_node()->get_name(), reference_interface_names_[i],
@@ -104,12 +126,15 @@ LinearFeedbackControllerRos::on_export_reference_interfaces() {
 
 CallbackReturn LinearFeedbackControllerRos::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(get_node()->get_logger(), "Successfull configuration.");
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "Successfull configuration.");
   return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn LinearFeedbackControllerRos::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_activate");
   const std::vector<std::string> joint_names =
       lfc_.get_robot_model()->get_moving_joint_names();
 
@@ -155,6 +180,8 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
 }
 
 bool LinearFeedbackControllerRos::on_set_chained_mode(bool chained_mode) {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_set_chained_mode");
   auto callback =
       std::bind(&LinearFeedbackControllerRos::state_syncher_callback, this,
                 std::placeholders::_1, std::placeholders::_2);
@@ -168,6 +195,8 @@ bool LinearFeedbackControllerRos::on_set_chained_mode(bool chained_mode) {
 
 CallbackReturn LinearFeedbackControllerRos::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_deactivate");
   // Custom release interfaces for this controller.
   joint_position_state_interface_.clear();
   joint_velocity_state_interface_.clear();
@@ -182,6 +211,8 @@ CallbackReturn LinearFeedbackControllerRos::on_deactivate(
 
 CallbackReturn LinearFeedbackControllerRos::on_cleanup(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  // DEBUG
+  RCLCPP_WARN(get_node()->get_logger(), "on_cleanup");
   // if (parameters_.floating_base_state_estimator.spawn_thread) {
   //   floating_base_estimator_->joinThread();
   // }
@@ -199,6 +230,10 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
   state_msg_.msg_odom = synched_state_msg_.msg_odom;
   state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;
   synched_state_msg_.mutex.unlock();
+
+  if (state_msg_.msg_joint_state.position.size() == 0) {
+    return return_type::ERROR;
+  }
 
   std::size_t index = 0;
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
@@ -286,6 +321,11 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
   const auto nv = lfc_.get_robot_model()->get_nv();
   const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
+
+  std::cout << "nq = " << nq << std::endl;
+  std::cout << "nv = " << nv << std::endl;
+  std::cout << "joint_nq = " << joint_nq << std::endl;
+  std::cout << "joint_nv = " << joint_nv << std::endl;
 
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     input_sensor_.base_pose =
@@ -479,14 +519,10 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
     lfc_params.d_gains.emplace_back(
         parameters_.moving_joint_names_map.at(joint_name).d);
   }
-  lfc_params.default_configuration_name =
-      parameters_.default_configuration_name;
   lfc_params.robot_has_free_flyer = parameters_.robot_has_free_flyer;
   lfc_params.pd_to_lf_transition_duration =
       Duration(parameters_.pd_to_lf_transition_duration);
-  lfc_.load(lfc_params);
-
-  return true;
+  return lfc_.load(lfc_params);
 }
 
 bool LinearFeedbackControllerRos::setup_reference_interface() {
@@ -502,7 +538,8 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_orientation_qw");
   }
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
+    const auto name = parameters_.chainable_controller.reference_prefix +
+                      joint + "/" + HW_IF_POSITION;
     reference_interface_names_.emplace_back(name);
   }
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
@@ -514,7 +551,8 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_angular_velocity_z");
   }
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_VELOCITY;
+    const auto name = parameters_.chainable_controller.reference_prefix +
+                      joint + "/" + HW_IF_VELOCITY;
     reference_interface_names_.emplace_back(name);
   }
   return true;
@@ -526,14 +564,6 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   joint_effort_command_interface_.reserve(
       lfc_.get_robot_model()->get_joint_nv());
   joint_effort_command_interface_.clear();
-
-  if (parameters_.chainable_controller.command_prefix.empty()) {
-    command_prefix_ = "";
-  } else if (!ends_with(parameters_.chainable_controller.command_prefix, "/")) {
-    command_prefix_ = parameters_.chainable_controller.command_prefix + "/";
-  } else {
-    command_prefix_ = parameters_.chainable_controller.command_prefix;
-  }
 
   input_sensor_.joint_state.name =
       lfc_.get_robot_model()->get_moving_joint_names();
@@ -563,7 +593,9 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   {
     rclcpp::QoS qos = rclcpp::QoS(10);
     auto rmw_qos_profile = qos.get_rmw_qos_profile();
-    subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+    if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+      subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+    }
     subscriber_joint_state_.subscribe(get_node(), "joint_state",
                                       rmw_qos_profile);
     state_syncher_ = std::make_shared<

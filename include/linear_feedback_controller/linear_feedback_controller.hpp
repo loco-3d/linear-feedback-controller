@@ -24,7 +24,6 @@ struct ControllerParameters {
   std::vector<double> p_gains;
   std::vector<double> d_gains;
   std::vector<std::string> controlled_joint_names;
-  std::string default_configuration_name;
   bool robot_has_free_flyer;
   Duration pd_to_lf_transition_duration;
 };

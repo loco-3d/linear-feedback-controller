@@ -1,0 +1,15 @@
+joint_state_estimator:
+  interfaces: {
+    type: string_array,
+    default_value: [],
+    description: "Names of the interfaces to be forwarded",
+    validation: {
+          not_empty<>: null,
+          unique<>: null,
+        }
+  }
+  command_prefix: {
+    type: string,
+    default_value: "",
+    description: "Names of the downstream package.",
+  }

@@ -33,7 +33,6 @@ class RobotModelBuilder {
   bool build_model(const std::string& urdf,
                    const std::vector<std::string>& moving_joint_names,
                    const std::vector<std::string>& controlled_joint_names,
-                   const std::string& default_configuration_name,
                    const bool robot_has_free_flyer);
 
   /**

@@ -116,8 +116,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointNames) {
   RobotModelBuilder obj;
 
   obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
 }
@@ -125,16 +124,14 @@ TEST_F(RobotModelBuilderTest, checkMovingJointNames) {
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesMixed) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
   ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesWrong) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
   test_sorted_moving_joint_names_.pop_back();
   ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
 }
@@ -142,16 +139,14 @@ TEST_F(RobotModelBuilderTest, checkMovingJointNamesWrong) {
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesDuplicate) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
   ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
 }
 
 TEST_F(RobotModelBuilderTest, checkMovingJointIdsSorted) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
   for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
@@ -163,8 +158,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointIdsSorted) {
 TEST_F(RobotModelBuilderTest, checkMovingJointIdsMixed) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
   for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
@@ -176,8 +170,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointIdsMixed) {
 TEST_F(RobotModelBuilderTest, checkMovingJointIdsWrong) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
   sorted_moving_joint_names_.pop_back();
 
   std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
@@ -191,8 +184,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointIdsWrong) {
 TEST_F(RobotModelBuilderTest, checkMovingJointIdsDuplicate) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
   for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
@@ -204,8 +196,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointIdsDuplicate) {
 TEST_F(RobotModelBuilderTest, checkLockedJointIdsSorted) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
@@ -217,8 +208,7 @@ TEST_F(RobotModelBuilderTest, checkLockedJointIdsSorted) {
 TEST_F(RobotModelBuilderTest, checkLockedJointIdsMixed) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
@@ -230,8 +220,7 @@ TEST_F(RobotModelBuilderTest, checkLockedJointIdsMixed) {
 TEST_F(RobotModelBuilderTest, checkLockedJointIdsWrong) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
   sorted_moving_joint_names_.pop_back();
 
   std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
@@ -246,8 +235,7 @@ TEST_F(RobotModelBuilderTest, checkLockedJointIdsWrong) {
 TEST_F(RobotModelBuilderTest, checkLockedJointIdsDuplicate) {
   RobotModelBuilder obj;
   obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, default_configuration_name_,
-                  has_free_flyer_);
+                  controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
@@ -259,8 +247,7 @@ TEST_F(RobotModelBuilderTest, checkLockedJointIdsDuplicate) {
 TEST_F(RobotModelBuilderTest, checkSharedPtr) {
   RobotModelBuilder::SharedPtr obj = std::make_shared<RobotModelBuilder>();
   obj->build_model(talos_urdf_, duplicate_moving_joint_names_,
-                   controlled_joint_names_, default_configuration_name_,
-                   has_free_flyer_);
+                   controlled_joint_names_, has_free_flyer_);
 
   std::vector<long unsigned int> locked_joint_ids = obj->get_locked_joint_ids();
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
