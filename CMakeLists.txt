@@ -112,7 +112,7 @@ pluginlib_export_plugin_description_file(controller_interface
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
         DESTINATION share/${PROJECT_NAME})
 install(
-  PROGRAMS linear-feedback-controller/pd_plus_demo.py
+  PROGRAMS ${PROJECT_NAME}/pd_plus_demo.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME pd_plus_demo.py)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
