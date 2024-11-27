@@ -90,17 +90,16 @@ class PDPlusController(Node):
     def robot_description_callback(self, msg: String):
         self.pin_model = pin.buildModelFromXML(msg.data)
         self.pin_data = self.pin_model.createData()
+        self.get_logger().warn('robot_description_callback')
+        self.get_logger().warn(f'pin_model.nq {self.pin_model.nq}')
 
     def sensor_callback(self, sensor_msg: Sensor):
         self.get_logger().warn('sensor_callback')
-
-        sensor: lfc_py_types.Sensor = sensor_msg_to_numpy(sensor_msg)
-
         t_now = self.get_clock().now()
 
-        # TODO: get q and dq from sensor
-        self.q_m = np.ones(Ndof)
-        self.dq_m = np.ones(Ndof)
+        sensor: lfc_py_types.Sensor = sensor_msg_to_numpy(sensor_msg)
+        self.q_m = sensor.joint_state.position
+        self.dq_m = sensor.joint_state.velocity
     
         if not self.sensor_received:
             self.t0_sensor = t_now
