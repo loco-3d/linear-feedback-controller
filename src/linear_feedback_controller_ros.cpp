@@ -1,3 +1,8 @@
+
+#define EIGEN_NO_MALLOC
+#define EIGEN_INTERNAL_DEBUGGING
+#define EIGEN_INITIALIZE_MATRICES_BY_NAN
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -55,6 +60,7 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
                  "Issues initializing the introspection.");
     return CallbackReturn::FAILURE;
   }
+  first_time_update_and_write_commands_ = true;
   return CallbackReturn::SUCCESS;
 }
 
@@ -128,6 +134,7 @@ CallbackReturn LinearFeedbackControllerRos::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // DEBUG
   RCLCPP_WARN(get_node()->get_logger(), "Successfull configuration.");
+  first_time_update_and_write_commands_ = true;
   return CallbackReturn::SUCCESS;
 }
 
@@ -156,16 +163,6 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
                         "Error while assigning the state interfaces.");
     return CallbackReturn::ERROR;
   }
-
-  // Get current joint average position filtered and current averaged torque.
-  for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
-    init_joint_position_(i) =
-        joint_position_state_interface_[i].get().get_value();
-  }
-  for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
-    init_joint_effort_(i) = joint_effort_state_interface_[i].get().get_value();
-  }
-  lfc_.set_initial_state(init_joint_position_, init_joint_effort_);
 
   // Assign the command interface.
   all_good &= controller_interface::get_ordered_interfaces(
@@ -275,10 +272,26 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
 
 return_type LinearFeedbackControllerRos::update_and_write_commands(
     const rclcpp::Time& time, const rclcpp::Duration& /*period*/) {
+  // First time executing here.
+  if (first_time_update_and_write_commands_) {
+    // Get current joint average position filtered and current averaged torque.
+    for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
+      init_joint_position_(i) =
+          joint_position_state_interface_[i].get().get_value();
+    }
+    for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
+      init_joint_effort_(i) =
+          joint_effort_state_interface_[i].get().get_value();
+    }
+    lfc_.set_initial_state(init_joint_effort_, init_joint_position_);
+    first_time_update_and_write_commands_ = false;
+  }
+
   // Read the hardware data.
   if (!read_state_from_references()) {
     return return_type::ERROR;
   }
+
   // publish the state.
   linear_feedback_controller_msgs::sensorEigenToMsg(input_sensor_,
                                                     input_sensor_msg_);
@@ -291,9 +304,10 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   synched_input_control_msg_.mutex.lock();
   input_control_msg_ = synched_input_control_msg_.msg;
   synched_input_control_msg_.mutex.unlock();
-  linear_feedback_controller_msgs::controlMsgToEigen(input_control_msg_,
-                                                     input_control_);
-
+  if (input_control_msg_.initial_state.joint_state.name.size() != 0) {
+    linear_feedback_controller_msgs::controlMsgToEigen(input_control_msg_,
+                                                       input_control_);
+  }
   // Copy the output of the control in order to log it.
   output_joint_effort_ =
       lfc_.compute_control(time_lfc, input_sensor_, input_control_,
@@ -321,11 +335,6 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
   const auto nv = lfc_.get_robot_model()->get_nv();
   const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
-
-  std::cout << "nq = " << nq << std::endl;
-  std::cout << "nv = " << nv << std::endl;
-  std::cout << "joint_nq = " << joint_nq << std::endl;
-  std::cout << "joint_nv = " << joint_nv << std::endl;
 
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     input_sensor_.base_pose =
@@ -559,31 +568,36 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  output_joint_effort_ =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
-  joint_effort_command_interface_.reserve(
-      lfc_.get_robot_model()->get_joint_nv());
+  const auto nq = lfc_.get_robot_model()->get_nq();
+  const auto nv = lfc_.get_robot_model()->get_nv();
+  const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
+  const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
+
+  output_joint_effort_ = Eigen::VectorXd::Zero(joint_nv);
+  joint_effort_command_interface_.reserve(joint_nv);
   joint_effort_command_interface_.clear();
 
   input_sensor_.joint_state.name =
       lfc_.get_robot_model()->get_moving_joint_names();
-  input_sensor_.joint_state.position =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nq());
-  input_sensor_.joint_state.velocity =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
-  input_sensor_.joint_state.effort =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_.joint_state.position = Eigen::VectorXd::Zero(joint_nq);
+  input_sensor_.joint_state.velocity = Eigen::VectorXd::Zero(joint_nv);
+  input_sensor_.joint_state.effort = Eigen::VectorXd::Zero(joint_nv);
+
   input_sensor_.joint_state.position.fill(
-      std::numeric_limits<double>::signaling_NaN());
-  input_sensor_.joint_state.velocity.fill(
       std::numeric_limits<double>::signaling_NaN());
   input_sensor_.joint_state.effort.fill(
       std::numeric_limits<double>::signaling_NaN());
   input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
   input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
 
-  new_joint_velocity_ =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_msg_.joint_state.position.resize(joint_nq, 0.0);
+  input_sensor_msg_.joint_state.velocity.resize(joint_nv, 0.0);
+  input_sensor_msg_.joint_state.effort.resize(joint_nv, 0.0);
+
+  init_joint_position_ = Eigen::VectorXd::Zero(joint_nq);
+  init_joint_effort_ = Eigen::VectorXd::Zero(joint_nv);
+
+  new_joint_velocity_ = Eigen::VectorXd::Zero(joint_nv);
   new_joint_velocity_.fill(std::numeric_limits<double>::signaling_NaN());
 
   // Resize the reference interface vector to correspond with the names.
@@ -624,6 +638,7 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
 
 void LinearFeedbackControllerRos::control_subscription_callback(
     const ControlMsg msg) {
+  RCLCPP_INFO(get_node()->get_logger(), "Received sensor msgs.");
   synched_input_control_msg_.mutex.lock();
   synched_input_control_msg_.msg = msg;
   synched_input_control_msg_.mutex.unlock();

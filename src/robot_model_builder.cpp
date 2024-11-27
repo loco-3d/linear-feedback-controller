@@ -189,13 +189,6 @@ void RobotModelBuilder::construct_robot_state(
   }
   const int nb_dof_q = get_joint_nq();
   const int nb_dof_v = get_joint_nv();
-  std::cout << "robot_configuration.size() = " << robot_configuration.size()
-            << std::endl;
-  std::cout << "robot_velocity.size() = " << robot_velocity.size() << std::endl;
-  std::cout << "sensor.joint_state.position.size() = "
-            << sensor.joint_state.position.size() << std::endl;
-  std::cout << "sensor.joint_state.velocity.size() = "
-            << sensor.joint_state.velocity.size() << std::endl;
   robot_configuration.tail(nb_dof_q) = sensor.joint_state.position;
   robot_velocity.tail(nb_dof_v) = sensor.joint_state.velocity;
 }

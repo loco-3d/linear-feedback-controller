@@ -232,6 +232,8 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
 
   // Used in the filtering of the joint velocity.
   Eigen::VectorXd new_joint_velocity_;
+
+  bool first_time_update_and_write_commands_;
 };
 
 }  // namespace linear_feedback_controller

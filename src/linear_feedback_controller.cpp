@@ -37,13 +37,13 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 }
 
 bool LinearFeedbackController::set_initial_state(
-    const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
+    Eigen::VectorXd const& tau_init, Eigen::VectorXd const& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
   return true;
 }
 
 const Eigen::VectorXd& LinearFeedbackController::compute_control(
-    const TimePoint& time, const Sensor& sensor, const Control& control,
+    TimePoint const& time, Sensor const& sensor, Control const& control,
     const bool remove_gravity_compensation_effort) {
   // Shortcuts for easier code writing.
   const auto& sensor_js = sensor.joint_state;
@@ -52,7 +52,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   // Self documented variables.
   const bool control_msg_received = !ctrl_js.name.empty();
   const bool first_control_received_time_initialized =
-      first_control_received_time_ == TimePoint::min();
+      first_control_received_time_ != TimePoint::min();
   const bool during_switch = (time - first_control_received_time_) <
                              params_.pd_to_lf_transition_duration;
 

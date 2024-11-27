@@ -62,8 +62,8 @@ class LinearFeedbackController {
 
   bool load(const ControllerParameters& params);
 
-  bool set_initial_state(const Eigen::VectorXd& tau_init,
-                         const Eigen::VectorXd& jq_init);
+  bool set_initial_state(Eigen::VectorXd const& tau_init,
+                         Eigen::VectorXd const& jq_init);
 
   /**
    * @brief
@@ -74,7 +74,7 @@ class LinearFeedbackController {
    * @return const Eigen::VectorXd&
    */
   const Eigen::VectorXd& compute_control(
-      const TimePoint& time, const Sensor& sensor, const Control& control,
+      TimePoint const& time, Sensor const& sensor, Control const& control,
       const bool remove_gravity_compensation_effort);
 
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
