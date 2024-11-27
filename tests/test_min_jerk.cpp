@@ -40,35 +40,35 @@ TEST_F(MinJerkTest, checkConstructor) { MinJerk obj; }
 
 TEST_F(MinJerkTest, checkComputeExtremes) {
   MinJerk obj;
-  obj.setParameters(end_time_, start_pos_,
-                    /*start_speed*/ 0.0,
-                    /*start_acc*/ 0.0, end_pos_,
-                    /*end_speed*/ 0.0,
-                    /*end_acc*/ 0.0);
+  obj.set_parameters(end_time_, start_pos_,
+                     /*start_speed*/ 0.0,
+                     /*start_acc*/ 0.0, end_pos_,
+                     /*end_speed*/ 0.0,
+                     /*end_acc*/ 0.0);
 
   // Test below min.
   for (double t = start_time_ - range_time_; t < start_time_; t += dt_) {
     ASSERT_NEAR(obj.compute(t), start_pos_, 1e-8);
-    ASSERT_NEAR(obj.computeDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeSecDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeSecDerivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_sec_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_sec_derivative(t), 0.0, 1e-8);
   }
   // Test below max.
   for (double t = end_time_; t < end_time_ + range_time_; t += dt_) {
     ASSERT_NEAR(obj.compute(t), end_pos_, 1e-8);
-    ASSERT_NEAR(obj.computeDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeSecDerivative(t), 0.0, 1e-8);
-    ASSERT_NEAR(obj.computeSecDerivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_sec_derivative(t), 0.0, 1e-8);
+    ASSERT_NEAR(obj.compute_sec_derivative(t), 0.0, 1e-8);
   }
   // Test extremities
   ASSERT_NEAR(obj.compute(start_time_), start_pos_, 1e-8);
   ASSERT_NEAR(obj.compute(end_time_), end_pos_, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(end_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(end_time_), 0.0, 1e-8);
 }
 
 TEST_F(MinJerkTest, checkComputeBetween) {
@@ -76,19 +76,19 @@ TEST_F(MinJerkTest, checkComputeBetween) {
   end_pos_ = 1;
 
   MinJerk obj;
-  obj.setParameters(end_time_, start_pos_,
-                    /*start_speed*/ 0.0,
-                    /*start_acc*/ 0.0, end_pos_,
-                    /*end_speed*/ 0.0,
-                    /*end_acc*/ 0.0);
+  obj.set_parameters(end_time_, start_pos_,
+                     /*start_speed*/ 0.0,
+                     /*start_acc*/ 0.0, end_pos_,
+                     /*end_speed*/ 0.0,
+                     /*end_acc*/ 0.0);
 
   // Test extremities
   ASSERT_NEAR(obj.compute(start_time_), start_pos_, 1e-8);
   ASSERT_NEAR(obj.compute(end_time_), end_pos_, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(end_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(end_time_), 0.0, 1e-8);
   // Test between min.
   for (double t = start_time_; t <= end_time_; t += dt_) {
     ASSERT_LE(obj.compute(t), std::max(end_pos_, start_pos_))
@@ -114,19 +114,19 @@ TEST_F(MinJerkTest, checkComputeBetween) {
 
 TEST_F(DISABLED_MinJerkTest, checkComputeBetweenRandom) {
   MinJerk obj;
-  obj.setParameters(end_time_, start_pos_,
-                    /*start_speed*/ 0.0,
-                    /*start_acc*/ 0.0, end_pos_,
-                    /*end_speed*/ 0.0,
-                    /*end_acc*/ 0.0);
+  obj.set_parameters(end_time_, start_pos_,
+                     /*start_speed*/ 0.0,
+                     /*start_acc*/ 0.0, end_pos_,
+                     /*end_speed*/ 0.0,
+                     /*end_acc*/ 0.0);
 
   // Test extremities
   ASSERT_NEAR(obj.compute(start_time_), start_pos_, 1e-8);
   ASSERT_NEAR(obj.compute(end_time_), end_pos_, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeDerivative(end_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(start_time_), 0.0, 1e-8);
-  ASSERT_NEAR(obj.computeSecDerivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_derivative(end_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(start_time_), 0.0, 1e-8);
+  ASSERT_NEAR(obj.compute_sec_derivative(end_time_), 0.0, 1e-8);
   // Test between min.
   for (double t = start_time_; t <= end_time_; t += dt_) {
     ASSERT_LE(obj.compute(t), std::max(end_pos_, start_pos_))

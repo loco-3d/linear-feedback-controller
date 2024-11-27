@@ -15,31 +15,32 @@ class MinJerk {
   ~MinJerk();
 
   /// Set the parameters
-  void setParameters(double end_time, double end_pos);
+  void set_parameters(const double end_time, const double end_pos);
 
   /// \brief Set parameters considering initial position, velocity,
   /// acceleration, and final position, velocity and acceleration
-  void setParameters(double end_time, double start_pos, double start_speed,
-                     double start_acc, double end_pos, double end_speed,
-                     double end_acc);
+  void set_parameters(const double end_time, const double start_pos,
+                      const double start_speed, const double start_acc,
+                      const double end_pos, const double end_speed,
+                      const double end_acc);
 
   /*! Compute the value. */
-  double compute(double t);
+  double compute(const double t);
 
   /*! Compute the value of the derivative. */
-  double computeDerivative(double t);
+  double compute_derivative(const double t);
 
   /*! Compute the value of the second derivative. */
-  double computeSecDerivative(double t);
+  double compute_sec_derivative(const double t);
 
   /*! Compute the value of the third derivative (jerk). */
-  double computeJerk(double t);
+  double compute_jerk(const double t);
 
   /*! Get the coefficients. */
-  void getCoefficients(std::array<double, 6> &coeffs) const;
+  const std::array<double, 6> &get_coefficients() const;
 
   /*! Set the coefficients. */
-  void setCoefficients(const std::array<double, 6> &lCoefficients);
+  void set_coefficients(const std::array<double, 6> &lCoefficients);
 
  private:
   /// @brief Starting time of the min jerk trajectory

@@ -1,16 +1,16 @@
-#include "linear_feedback_controller/controller.hpp"
+#include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 namespace linear_feedback_controller {
 
-Controller::Controller() {
+LinearFeedbackController::LinearFeedbackController() {
   robot_model_builder_ = std::make_shared<RobotModelBuilder>();
   control_.resize(0);
   first_control_received_time_ = TimePoint::min();
 }
 
-Controller::~Controller() {}
+LinearFeedbackController::~LinearFeedbackController() {}
 
-bool Controller::load(const ControllerParameters& params) {
+bool LinearFeedbackController::load(const ControllerParameters& params) {
   params_ = params;
 
   // Load the robot model.
@@ -19,16 +19,8 @@ bool Controller::load(const ControllerParameters& params) {
       params_.controlled_joint_names, params_.default_configuration_name,
       params_.robot_has_free_flyer);
 
-  // Construct the contact estimator if the robot has a free-flyer.
-  if (params_.robot_has_free_flyer) {
-    contact_detectors_.resize(params_.contact_detector_params.size());
-    for (std::size_t i = 0; i < contact_detectors_.size(); ++i) {
-      contact_detectors_[i].setParameters(params_.contact_detector_params[i]);
-    }
-  }
-
   // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.setParameters(params_.from_pd_to_lf_duration.count(), 1.0);
+  min_jerk_.set_parameters(params_.pd_to_lf_transition_duration.count(), 1.0);
 
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
@@ -39,15 +31,14 @@ bool Controller::load(const ControllerParameters& params) {
   return true;
 }
 
-bool Controller::configure(const Eigen::VectorXd& tau_init,
-                           const Eigen::VectorXd& jq_init) {
+bool LinearFeedbackController::set_initial_state(
+    const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
   return true;
 }
 
-const Eigen::VectorXd& Controller::compute_control(TimePoint time,
-                                                   Sensor sensor,
-                                                   Control control) {
+const Eigen::VectorXd& LinearFeedbackController::compute_control(
+    const TimePoint& time, const Sensor& sensor, const Control& control) {
   // Shortcuts for easier code writing.
   const auto& sensor_js = sensor.joint_state;
   const auto& ctrl_js = control.initial_state.joint_state;
@@ -56,8 +47,8 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   const bool control_msg_received = !ctrl_js.name.empty();
   const bool first_control_received_time_initialized =
       first_control_received_time_ == TimePoint::min();
-  const bool during_switch =
-      (time - first_control_received_time_) < params_.from_pd_to_lf_duration;
+  const bool during_switch = (time - first_control_received_time_) <
+                             params_.pd_to_lf_transition_duration;
 
   // Check whenever the first data has arrived and save the time.
   if (control_msg_received && !first_control_received_time_initialized) {
@@ -69,7 +60,7 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
-                    params_.from_pd_to_lf_duration.count();
+                    params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
     const Eigen::VectorXd& pd_ctrl =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
@@ -82,6 +73,11 @@ const Eigen::VectorXd& Controller::compute_control(TimePoint time,
   }
 
   return control_;
+}
+
+RobotModelBuilder::ConstSharedPtr LinearFeedbackController::get_robot_model()
+    const {
+  return robot_model_builder_;
 }
 
 }  // namespace linear_feedback_controller

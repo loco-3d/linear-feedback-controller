@@ -1,0 +1,49 @@
+linear_feedback_controller:
+  chainable_controller:
+    command_prefix: {
+      type: "string",
+      description: "Names of the downstream controller that takes the robot state as references.",
+      default_value: ""
+    }
+    reference_prefix: {
+      type: "string",
+      description: "Names of the downstream controller that takes the robot state as references.",
+      default_value: ""
+    }
+
+  srdf: {
+    type: string,
+    description: "Path to the SRDF file.",
+    validation: { not_empty<>: [] }
+  }
+  moving_joint_names: {
+    type: string_array,
+    description: "list of active joint names used by the controller.",
+    validation: { not_empty<>: [] }
+  }
+  p_gains: {
+    type: double_array,
+    description: "Proportional gains for the PD controller.",
+    validation: { not_empty<>: [] }
+  }
+  d_gains: {
+    type: double_array,
+    description: "Derivation gains for the PD controller.",
+    validation: { not_empty<>: [] }
+  }
+  default_configuration_name: {
+    type: string,
+    description: "Name of the default configuration in the SRDF file.",
+    validation: { not_empty<>: [] }
+  }
+  robot_has_free_flyer: {
+    type: bool,
+    description: "Has the robot a freeflyer or not?",
+  }
+  pd_to_lf_transition_duration: {
+    type: double,
+    description: "Duration **in seconds** of transition between the PD and the LF controllers.",
+    validation: {
+      gt_eq<>: 0.0
+    }
+  }

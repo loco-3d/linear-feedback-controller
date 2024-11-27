@@ -75,14 +75,19 @@ class RobotModelBuilder {
    * @return true
    * @return false
    */
-  bool get_robot_has_free_flyer();
+  bool get_robot_has_free_flyer() const;
 
   /**
-   * @brief Get the Pinocchio To Harwdare Interface Map.
+   * @brief Get the Pinocchio To Hardware Interface Map.
    *
    * @return std::map<int, int>
    */
-  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map();
+  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map() const;
+
+  int get_joint_nv() const;
+  int get_joint_nq() const;
+  int get_nv() const;
+  int get_nq() const;
 
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
@@ -108,6 +113,13 @@ class RobotModelBuilder {
   /// @brief Initial whole body configuration setup in the SRDF file.
   Eigen::VectorXd q_default_complete_;
 
+  /// @brief This is the number of DoF of a free-flyer joint.
+  static const Eigen::Index free_flyer_nq_;
+
+  /// @brief This is the number of DoF in the tangent space of a free-flyer
+  ///        joint.
+  static const Eigen::Index free_flyer_nv_;
+
  private:
   /**
    * @brief Parse the joint moving names given by the user and build the
@@ -125,6 +137,7 @@ class RobotModelBuilder {
 
  public:
   using SharedPtr = std::shared_ptr<RobotModelBuilder>;
+  using ConstSharedPtr = std::shared_ptr<const RobotModelBuilder>;
 };
 
 }  // namespace linear_feedback_controller

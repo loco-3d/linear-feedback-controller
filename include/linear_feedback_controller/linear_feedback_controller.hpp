@@ -2,12 +2,13 @@
 #define LINEAR_FEEDBACK_CONTROLLER_CONTROLLER_HPP
 
 #include <chrono>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "Eigen/Core"
 
 // local include
-#include "linear_feedback_controller/averaging_filter.hpp"
-#include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/lf_controller.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/pd_controller.hpp"
@@ -25,8 +26,7 @@ struct ControllerParameters {
   std::vector<std::string> controlled_joint_names;
   std::string default_configuration_name;
   bool robot_has_free_flyer;
-  std::vector<ContactDetector::Parameters> contact_detector_params;
-  Duration from_pd_to_lf_duration;
+  Duration pd_to_lf_transition_duration;
 };
 
 /**
@@ -51,20 +51,20 @@ struct ControllerParameters {
  * Hence it's the \f$ x_0 \f$ of the optimal control problem.
  *
  */
-class Controller {
+class LinearFeedbackController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   using Sensor = linear_feedback_controller_msgs::Eigen::Sensor;
   using Control = linear_feedback_controller_msgs::Eigen::Control;
 
-  Controller();
-  ~Controller();
+  LinearFeedbackController();
+  ~LinearFeedbackController();
 
   bool load(const ControllerParameters& params);
 
-  bool configure(const Eigen::VectorXd& tau_init,
-                 const Eigen::VectorXd& jq_init);
+  bool set_initial_state(const Eigen::VectorXd& tau_init,
+                         const Eigen::VectorXd& jq_init);
 
   /**
    * @brief
@@ -74,8 +74,11 @@ class Controller {
    * @param control
    * @return const Eigen::VectorXd&
    */
-  const Eigen::VectorXd& compute_control(TimePoint time, Sensor sensor,
-                                         Control control);
+  const Eigen::VectorXd& compute_control(const TimePoint& time,
+                                         const Sensor& sensor,
+                                         const Control& control);
+
+  RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 
  private:
   ControllerParameters params_; /*! @brief Parameters of the controller. */
@@ -84,8 +87,6 @@ class Controller {
 
   /// @brief Rigid body model of the robot.
   RobotModelBuilder::SharedPtr robot_model_builder_;
-  /// @brief Some contact detectors in case the robot has a free-flyer.
-  std::vector<ContactDetector> contact_detectors_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
   PDController pd_controller_;
   /// @brief A simple PD controller to hold the robot still at the beginning.

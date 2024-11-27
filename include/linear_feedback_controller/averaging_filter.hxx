@@ -40,7 +40,7 @@ void AveragingFilter<DataType>::acquire(DataType data) {
 }
 
 template <class DataType>
-DataType AveragingFilter<DataType>::getFilteredData() {
+DataType AveragingFilter<DataType>::get_filtered_data() {
   if (buffer_.empty()) {
     return last_data_;
   }
