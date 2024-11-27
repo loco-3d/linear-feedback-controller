@@ -58,11 +58,6 @@ struct ProtectedControlMsg {
   std::mutex mutex;
 };
 
-/**
- * @brief This chainable controller provides a base state estimator.
- *        It computes the state of the base and joint of the robot according to
- *        measurement of the IMU and joint state.
- */
 class LinearFeedbackControllerRos : public ChainableControllerInterface {
  public:
   /// @brief The interfaces are defined as the types in
