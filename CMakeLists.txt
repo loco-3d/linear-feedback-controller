@@ -96,11 +96,13 @@ pluginlib_export_plugin_description_file(controller_interface
 #
 # Installation
 #
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
+        DESTINATION share/${PROJECT_NAME})
 install(
   PROGRAMS src/pd_controller.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME pd_controller)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
+ament_export_libraries(${PROJECT_NAME})
 ament_auto_package()

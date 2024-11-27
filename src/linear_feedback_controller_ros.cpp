@@ -261,7 +261,8 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
 
   // Copy the output of the control in order to log it.
   output_joint_effort_ =
-      lfc_.compute_control(time_lfc, input_sensor_, input_control_);
+      lfc_.compute_control(time_lfc, input_sensor_, input_control_,
+                           parameters_.remove_gravity_compensation_effort);
 
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
@@ -293,15 +294,20 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         Eigen::VectorXd::Map(&reference_interfaces_[7], joint_nq);
     input_sensor_.base_twist =
         Eigen::VectorXd::Map(&reference_interfaces_[nq], 6);
-    input_sensor_.joint_state.velocity =
+    new_joint_velocity_ =
         Eigen::VectorXd::Map(&reference_interfaces_[nq + 6], joint_nv);
   } else {
     input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
     input_sensor_.joint_state.position =
         Eigen::VectorXd::Map(&reference_interfaces_[0], nq);
     input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
-    input_sensor_.joint_state.velocity =
-        Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
+    new_joint_velocity_ = Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
+  }
+
+  for (Eigen::Index i = 0; i < joint_nv; ++i) {
+    input_sensor_.joint_state.velocity(i) = filters::exponentialSmoothing(
+        new_joint_velocity_(i), input_sensor_.joint_state.velocity(i),
+        parameters_.joint_velocity_filter_coefficient);
   }
   input_sensor_.joint_state.effort.fill(
       std::numeric_limits<double>::signaling_NaN());
@@ -463,11 +469,16 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
     const std::string& robot_description) {
   ControllerParameters lfc_params;
   lfc_params.urdf = robot_description;
-  lfc_params.srdf = parameters_.srdf;
   lfc_params.moving_joint_names = parameters_.moving_joint_names;
   lfc_params.controlled_joint_names = parameters_.moving_joint_names;
-  lfc_params.p_gains = parameters_.p_gains;
-  lfc_params.d_gains = parameters_.d_gains;
+  lfc_params.p_gains.clear();
+  lfc_params.d_gains.clear();
+  for (auto joint_name : parameters_.moving_joint_names) {
+    lfc_params.p_gains.emplace_back(
+        parameters_.moving_joint_names_map.at(joint_name).p);
+    lfc_params.d_gains.emplace_back(
+        parameters_.moving_joint_names_map.at(joint_name).d);
+  }
   lfc_params.default_configuration_name =
       parameters_.default_configuration_name;
   lfc_params.robot_has_free_flyer = parameters_.robot_has_free_flyer;
@@ -541,6 +552,10 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
   input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
 
+  new_joint_velocity_ =
+      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  new_joint_velocity_.fill(std::numeric_limits<double>::signaling_NaN());
+
   // Resize the reference interface vector to correspond with the names.
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
@@ -613,3 +628,6 @@ void LinearFeedbackControllerRos::state_syncher_callback(
 // }
 
 }  // namespace linear_feedback_controller
+
+PLUGINLIB_EXPORT_CLASS(linear_feedback_controller::LinearFeedbackControllerRos,
+                       controller_interface::ChainableControllerInterface);

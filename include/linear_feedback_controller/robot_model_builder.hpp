@@ -4,10 +4,12 @@
 #include <string>
 #include <vector>
 
+#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
+
 // Rigid body dynamics
-#include <pinocchio/fwd.hpp>
-#include <pinocchio/multibody/data.hpp>
-#include <pinocchio/multibody/model.hpp>
+#include "pinocchio/fwd.hpp"
+#include "pinocchio/multibody/data.hpp"
+#include "pinocchio/multibody/model.hpp"
 
 namespace linear_feedback_controller {
 
@@ -28,7 +30,7 @@ class RobotModelBuilder {
    * @param controlled_joint_names List of actively controlled joints.
    * @param robot_has_free_flyer If the robot has a free flyer or not.
    */
-  bool build_model(const std::string& urdf, const std::string& srdf,
+  bool build_model(const std::string& urdf,
                    const std::vector<std::string>& moving_joint_names,
                    const std::vector<std::string>& controlled_joint_names,
                    const std::string& default_configuration_name,
@@ -82,7 +84,11 @@ class RobotModelBuilder {
    *
    * @return std::map<int, int>
    */
-  const std::map<int, int>& get_pinocchio_to_harwdare_interface_map() const;
+  const std::map<int, int>& get_pinocchio_to_hardware_interface_map() const;
+
+  void construct_robot_state(
+      const linear_feedback_controller_msgs::Eigen::Sensor& Sensor,
+      Eigen::VectorXd& robot_configuration, Eigen::VectorXd& robot_velocity);
 
   int get_joint_nv() const;
   int get_joint_nq() const;

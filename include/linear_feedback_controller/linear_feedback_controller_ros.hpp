@@ -5,11 +5,13 @@
 #include <memory>
 
 // ROS 2
+#include "control_toolbox/filters.hpp"
 #include "linear_feedback_controller_msgs/msg/control.hpp"
 #include "linear_feedback_controller_msgs/msg/sensor.hpp"
 #include "message_filters/subscriber.h"
 #include "message_filters/time_synchronizer.h"
 #include "nav_msgs/msg/odometry.hpp"
+#include "pluginlib/class_list_macros.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "realtime_tools/realtime_buffer.h"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -229,6 +231,9 @@ class LinearFeedbackControllerRos : public ChainableControllerInterface {
   rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;
   rclcpp::Subscription<ControlMsg>::SharedPtr control_subscriber_;
   ProtectedControlMsg synched_input_control_msg_;
+
+  // Used in the filtering of the joint velocity.
+  Eigen::VectorXd new_joint_velocity_;
 };
 
 }  // namespace linear_feedback_controller

@@ -1,8 +1,8 @@
-<library path="linear_feedback_controller_plugins">
+<library path="linear_feedback_controller">
 
-  <class name="linear_feedback_controller::LinearFeedbackController"
-         type="linear_feedback_controller::LinearFeedbackController"
-         base_class_type="controller_interface::ControllerBase">
+  <class name="linear_feedback_controller/LinearFeedbackController"
+         type="linear_feedback_controller::LinearFeedbackControllerRos"
+         base_class_type="controller_interface::ChainableControllerInterface">
     <description>
       Linear feedback controller with ROS topic based feedback loop.
     </description>
