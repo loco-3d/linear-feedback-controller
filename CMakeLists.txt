@@ -65,7 +65,7 @@ set(${PROJECT_NAME}_sources
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
-ament_target_dependencies(${PROJECT_NAME} pinocchio)
+target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
 
 #
@@ -89,15 +89,14 @@ if(BUILD_TESTING)
 
   # Test the Averaging filter class.
   ament_auto_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
-  target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
+  target_link_libraries(test_averaging_filter ${PROJECT_NAME})
 
   ament_auto_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
-  target_link_libraries(test_min_jerk gtest gtest_main ${PROJECT_NAME})
+  target_link_libraries(test_min_jerk ${PROJECT_NAME})
 
   ament_auto_add_gtest(test_robot_model_builder
                        tests/test_robot_model_builder.cpp)
-  target_link_libraries(test_robot_model_builder gtest gtest_main
-                        ${PROJECT_NAME} example-robot-data::example-robot-data)
+  target_link_libraries(test_robot_model_builder ${PROJECT_NAME} example-robot-data::example-robot-data)
 endif()
 
 #

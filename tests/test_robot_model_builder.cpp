@@ -130,10 +130,8 @@ TEST_F(RobotModelBuilderTest, checkMovingJointNamesMixed) {
 
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesWrong) {
   RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-  test_sorted_moving_joint_names_.pop_back();
-  ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
+  ASSERT_FALSE(obj.build_model(talos_urdf_, wrong_moving_joint_names_,
+                  controlled_joint_names_, has_free_flyer_));
 }
 
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesDuplicate) {
@@ -164,20 +162,6 @@ TEST_F(RobotModelBuilderTest, checkMovingJointIdsMixed) {
   for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
     ASSERT_LE(moving_joint_ids[i - 1], moving_joint_ids[i]);
   }
-  ASSERT_EQ(obj.get_moving_joint_ids(), sorted_moving_joint_ids_);
-}
-
-TEST_F(RobotModelBuilderTest, checkMovingJointIdsWrong) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-  sorted_moving_joint_names_.pop_back();
-
-  std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
-  for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
-    ASSERT_LE(moving_joint_ids[i - 1], moving_joint_ids[i]);
-  }
-  sorted_moving_joint_ids_.pop_back();
   ASSERT_EQ(obj.get_moving_joint_ids(), sorted_moving_joint_ids_);
 }
 
@@ -214,21 +198,6 @@ TEST_F(RobotModelBuilderTest, checkLockedJointIdsMixed) {
   for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
     ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
   }
-  ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
-}
-
-TEST_F(RobotModelBuilderTest, checkLockedJointIdsWrong) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-  sorted_moving_joint_names_.pop_back();
-
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  sorted_locked_joint_ids_.insert(sorted_locked_joint_ids_.begin(),
-                                  sorted_moving_joint_ids_.back());
   ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
 }
 
