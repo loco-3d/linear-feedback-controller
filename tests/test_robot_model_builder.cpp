@@ -131,7 +131,7 @@ TEST_F(RobotModelBuilderTest, checkMovingJointNamesMixed) {
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesWrong) {
   RobotModelBuilder obj;
   ASSERT_FALSE(obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_));
+                               controlled_joint_names_, has_free_flyer_));
 }
 
 TEST_F(RobotModelBuilderTest, checkMovingJointNamesDuplicate) {

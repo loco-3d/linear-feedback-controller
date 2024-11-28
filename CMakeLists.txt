@@ -96,7 +96,8 @@ if(BUILD_TESTING)
 
   ament_auto_add_gtest(test_robot_model_builder
                        tests/test_robot_model_builder.cpp)
-  target_link_libraries(test_robot_model_builder ${PROJECT_NAME} example-robot-data::example-robot-data)
+  target_link_libraries(test_robot_model_builder ${PROJECT_NAME}
+                        example-robot-data::example-robot-data)
 endif()
 
 #
