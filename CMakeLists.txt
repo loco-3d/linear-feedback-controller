@@ -114,7 +114,7 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
 install(
   PROGRAMS ${PROJECT_NAME}/pd_plus_demo.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME pd_plus_demo.py)
+  RENAME pd_plus_demo)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 ament_export_libraries(${PROJECT_NAME})

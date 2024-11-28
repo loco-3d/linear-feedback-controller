@@ -8,14 +8,13 @@ Test PD+gravity tracking sinusoidal joint trajectory for Panda robot (7Dof).
 import numpy as np
 import pinocchio as pin
 
-
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 import rclpy.duration
 import rclpy.time
 from std_msgs.msg import String
-from linear_feedback_controller_msgs.msg import Sensor, Control
+from linear_feedback_controller_msgs.msg import Sensor, Control, Pose, Twist
 from linear_feedback_controller_msgs_py.numpy_conversions import sensor_msg_to_numpy
 import linear_feedback_controller_msgs_py.lfc_py_types as lfc_py_types
 
@@ -51,13 +50,23 @@ class PDPlusController(Node):
         super().__init__("pd_plus_demo")
         self.get_logger().warn("INITIALIZING pd_plus_demo")
         self.publisher_control_ = self.create_publisher(
-            Control, "/linear_feedback_controller/desired_control", qos_profile=5
+            Control,
+            "/control",
+            QoSProfile(
+                depth=10,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+            ),
         )
         self.subscriber_sensor_ = self.create_subscription(
             Sensor,
-            "/linear_feedback_controller/sensor_state",
+            "/sensor",
             self.sensor_callback,
-            qos_profile=5,
+            QoSProfile(
+                depth=10,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+            ),
         )
 
         # Obtained by checking "QoS profile" values in out of:
@@ -85,6 +94,7 @@ class PDPlusController(Node):
         self.dq_m = None
         self.pin_model = None
         self.pin_data = None
+        self.sensor_received = False
 
         # PD gains
         # TODO: read from ROS params
@@ -108,12 +118,17 @@ class PDPlusController(Node):
         if not self.sensor_received:
             self.t0_sensor = t_now
             self.q0 = self.q_m
+            self.sensor_received = True
 
     def timer_callback(self):
         self.get_logger().warn("timer_callback")
 
         t_now = self.get_clock().now()
-        if self.t0_sensor is None or self.pin_model is None:
+        if self.pin_model is None:
+            self.get_logger().warn("Waiting for the Robot model.")
+            return
+        if self.t0_sensor is None:
+            self.get_logger().warn("Waiting for the first sensor message.")
             return
 
         dt_sec = (t_now - self.t0_sensor).nanoseconds / 1e9
@@ -126,8 +141,8 @@ class PDPlusController(Node):
         K_ricattti = np.zeros((Ndof, 2 * Ndof))
 
         sensor = Sensor(
-            base_pose=[],
-            base_twist=[],
+            base_pose=Pose(),
+            base_twist=Twist(),
             joint_state=self.q_m,
             contacts=[],
         )

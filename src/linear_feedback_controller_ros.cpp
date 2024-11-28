@@ -588,6 +588,8 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   // Allocate subscribers
   {
     rclcpp::QoS qos = rclcpp::QoS(10);
+    qos.transient_local();
+    qos.best_effort();
     auto rmw_qos_profile = qos.get_rmw_qos_profile();
     if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
       subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
@@ -602,6 +604,7 @@ bool LinearFeedbackControllerRos::allocate_memory() {
     using namespace std::placeholders;
     rclcpp::QoS qos = rclcpp::QoS(10);
     qos.best_effort();
+    qos.transient_local();
     sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
     control_subscriber_ = get_node()->create_subscription<ControlMsg>(
         "control", qos,
