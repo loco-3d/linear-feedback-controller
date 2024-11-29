@@ -73,14 +73,20 @@ class PDPlusController(Node):
         self.publisher_control_ = self.create_publisher(
             Control,
             "/control",
-            qos_profile=qos_profile_system_default,
+            qos_profile=QoSProfile(
+                depth=10,
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+            ),
             qos_overriding_options=QoSOverridingOptions.with_default_policies(),
         )
         self.subscriber_sensor_ = self.create_subscription(
             Sensor,
             "sensor",
             self.sensor_callback,
-            qos_profile=qos_profile_system_default,
+            qos_profile=QoSProfile(
+                depth=10,
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+            ),
             qos_overriding_options=QoSOverridingOptions.with_default_policies(),
         )
 
@@ -109,13 +115,6 @@ class PDPlusController(Node):
         self.get_logger().info("Controller stated.")
 
     def compute_sinusoid_q_delta_reference(self, amp, period, dt):
-        """
-        Compute a delta joint sinusoid reference with zero initial velocity.
-
-        a and c obtained for each joint using constraints:
-        delta_q(t=0.0) = 0
-        delta_q(t=period/2) = amp
-        """
         w = np.zeros(period.shape)
         for i in range(period.shape[0]):
             if period[i] >= 1e-5:
