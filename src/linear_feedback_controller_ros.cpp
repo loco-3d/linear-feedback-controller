@@ -1,7 +1,3 @@
-#define EIGEN_NO_MALLOC
-#define EIGEN_INTERNAL_DEBUGGING
-#define EIGEN_INITIALIZE_MATRICES_BY_NAN
-#define EIGEN_NO_AUTOMATIC_RESIZING
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
