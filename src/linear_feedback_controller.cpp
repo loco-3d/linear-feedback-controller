@@ -37,13 +37,13 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 }
 
 bool LinearFeedbackController::set_initial_state(
-    const Eigen::VectorXd & tau_init, const Eigen::VectorXd & jq_init) {
+    const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
   return true;
 }
 
 const Eigen::VectorXd& LinearFeedbackController::compute_control(
-    const TimePoint & time, const Sensor & sensor, const Control & control,
+    const TimePoint& time, const Sensor& sensor, const Control& control,
     const bool remove_gravity_compensation_effort) {
   // Shortcuts for easier code writing.
   const auto& sensor_js = sensor.joint_state;
