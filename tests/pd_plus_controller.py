@@ -39,6 +39,8 @@ class PDPlusController(Node):
         self.declare_parameter("d_gains", [0.0])
         # Controller period.
         self.declare_parameter("controller_period", 0.01)
+        # Do we use the Ricatti gains or not.
+        self.declare_parameter("with_ricatti_gains", True)
 
         # Obtain the parameter value
         self.moving_joint_names = (
@@ -60,6 +62,9 @@ class PDPlusController(Node):
         )
         self.controller_period = (
             self.get_parameter("controller_period").get_parameter_value().double_value
+        )
+        self.with_ricatti_gains = (
+            self.get_parameter("with_ricatti_gains").get_parameter_value().bool_value
         )
 
         self.get_logger().info("\tmoving_joint_names = " + str(self.moving_joint_names))
@@ -182,6 +187,9 @@ class PDPlusController(Node):
         ).reshape(self.pin_model.nv, 1)
 
         K_ricattti = np.zeros((self.pin_model.nv, 2 * self.pin_model.nv))
+        if self.with_ricatti_gains:
+            K_ricattti[:, : self.pin_model.nv] = np.diag(self.p_gains)
+            K_ricattti[:, self.pin_model.nv :] = np.diag(self.d_gains)
 
         sensor = lfc_py_types.Sensor(
             base_pose=np.zeros(7),
