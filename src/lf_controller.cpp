@@ -10,16 +10,17 @@ LFController::~LFController() {}
 
 void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   rmb_ = rmb;
+  const auto nq = rmb_->get_nq();
+  const auto nv = rmb_->get_nv();
+  const auto joint_nq = rmb_->get_joint_nq();
+  const auto joint_nv = rmb_->get_joint_nv();
 
-  desired_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
-  desired_velocity_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
-  measured_configuration_ = Eigen::VectorXd::Zero(rmb_->get_model().nq);
-  measured_velocity_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
-  if (rmb_->get_robot_has_free_flyer()) {
-    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv - kNbFreeFlyerDof);
-  } else {
-    control_ = Eigen::VectorXd::Zero(rmb_->get_model().nv);
-  }
+  desired_configuration_ = Eigen::VectorXd::Zero(nq);
+  desired_velocity_ = Eigen::VectorXd::Zero(nv);
+  measured_configuration_ = Eigen::VectorXd::Zero(nq);
+  measured_velocity_ = Eigen::VectorXd::Zero(nv);
+  control_ = Eigen::VectorXd::Zero(joint_nv);
+  diff_state_ = Eigen::VectorXd::Zero(2 * nv);
 }
 
 const Eigen::VectorXd& LFController::compute_control(

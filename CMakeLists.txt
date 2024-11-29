@@ -75,19 +75,7 @@ include(CTest)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_auto_find_test_dependencies()
-  # Integration test of the roscontrol controller with simulation on Talos.
-  # add_rostest(tests/test_linear_feedback_controller.test)
 
-  # Loading test, especially the parameters add_rostest_gtest(
-  # test_linear_feedback_controller_basic
-  # tests/test_linear_feedback_controller_basic.test
-  # tests/test_linear_feedback_controller_basic.cpp tests/ros_gtest_main.cpp)
-  # target_link_libraries(test_linear_feedback_controller_basic ${PROJECT_NAME}
-  # example-robot-data::example-robot-data) target_compile_definitions(
-  # test_linear_feedback_controller_basic PRIVATE
-  # TEST_ROS_NODE_NAME="test_linear_feedback_controller_basic")
-
-  # Test the Averaging filter class.
   ament_auto_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
   target_link_libraries(test_averaging_filter ${PROJECT_NAME})
 
@@ -112,9 +100,9 @@ pluginlib_export_plugin_description_file(controller_interface
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
         DESTINATION share/${PROJECT_NAME})
 install(
-  PROGRAMS ${PROJECT_NAME}/pd_plus_demo.py
+  PROGRAMS tests/pd_plus_controller.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME pd_plus_demo)
+  RENAME pd_plus_controller)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 ament_export_libraries(${PROJECT_NAME})

@@ -50,7 +50,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   const auto& ctrl_js = control.initial_state.joint_state;
 
   // Self documented variables.
-  const bool control_msg_received = !ctrl_js.name.empty();
+  const bool control_msg_received = !control.feedforward.hasNaN();
   const bool first_control_received_time_initialized =
       first_control_received_time_ != TimePoint::min();
   const bool during_switch = (time - first_control_received_time_) <
