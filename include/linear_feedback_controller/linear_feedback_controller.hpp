@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Eigen/Core"
+#include "pinocchio/algorithm/rnea.hpp"
 
 // local include
 #include "linear_feedback_controller/lf_controller.hpp"
@@ -19,12 +20,10 @@ namespace linear_feedback_controller {
 
 struct ControllerParameters {
   std::string urdf;
-  std::string srdf;
   std::vector<std::string> moving_joint_names;
   std::vector<double> p_gains;
   std::vector<double> d_gains;
   std::vector<std::string> controlled_joint_names;
-  std::string default_configuration_name;
   bool robot_has_free_flyer;
   Duration pd_to_lf_transition_duration;
 };
@@ -63,8 +62,8 @@ class LinearFeedbackController {
 
   bool load(const ControllerParameters& params);
 
-  bool set_initial_state(const Eigen::VectorXd& tau_init,
-                         const Eigen::VectorXd& jq_init);
+  bool set_initial_state(Eigen::VectorXd const& tau_init,
+                         Eigen::VectorXd const& jq_init);
 
   /**
    * @brief
@@ -74,9 +73,9 @@ class LinearFeedbackController {
    * @param control
    * @return const Eigen::VectorXd&
    */
-  const Eigen::VectorXd& compute_control(const TimePoint& time,
-                                         const Sensor& sensor,
-                                         const Control& control);
+  const Eigen::VectorXd& compute_control(
+      const TimePoint& time, const Sensor& sensor, const Control& control,
+      const bool remove_gravity_compensation_effort);
 
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
 
@@ -95,6 +94,12 @@ class LinearFeedbackController {
   MinJerk min_jerk_;
   /// @brief Time at which we received the first control.
   TimePoint first_control_received_time_;
+  /// @brief Robot generalized coordinates.
+  Eigen::VectorXd robot_configuration_;
+  /// @brief Robot generalized velocity coordinates.
+  Eigen::VectorXd robot_velocity_;
+  /// @brief Robot generalized tangent space 0 coordinates.
+  Eigen::VectorXd robot_velocity_null_;
 };
 
 }  // namespace linear_feedback_controller

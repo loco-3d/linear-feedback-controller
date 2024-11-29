@@ -18,10 +18,8 @@ RobotModelBuilder::RobotModelBuilder() {}
 RobotModelBuilder::~RobotModelBuilder() {}
 
 bool RobotModelBuilder::build_model(
-    const std::string& urdf, const std::string& srdf,
-    const std::vector<std::string>& moving_joint_names,
+    const std::string& urdf, const std::vector<std::string>& moving_joint_names,
     const std::vector<std::string>& controlled_joint_names,
-    const std::string& default_configuration_name,
     const bool robot_has_free_flyer) {
   // Copy the argument inside the class.
   moving_joint_names_ = moving_joint_names;
@@ -36,9 +34,7 @@ bool RobotModelBuilder::build_model(
   } else {
     pinocchio::urdf::buildModelFromXML(urdf, pinocchio_model_complete);
   }
-  std::istringstream iss_srdf(srdf);
-  pinocchio::srdf::loadReferenceConfigurationsFromXML(pinocchio_model_complete,
-                                                      iss_srdf, false);
+  std::cout << "Robot model:\n" << pinocchio_model_complete << std::endl;
 
   // Reduce the rigid body model and set initial position.
   if (!parse_moving_joint_names(pinocchio_model_complete, moving_joint_names_,
@@ -46,13 +42,10 @@ bool RobotModelBuilder::build_model(
     return false;
   }
 
-  q_default_complete_ =
-      pinocchio_model_complete
-          .referenceConfigurations[default_configuration_name];
+  q_default_complete_ = Eigen::VectorXd::Zero(pinocchio_model_complete.nq);
   pinocchio_model_ = pinocchio::buildReducedModel(
       pinocchio_model_complete, locked_joint_ids_, q_default_complete_);
   pinocchio_data_ = pinocchio::Data(pinocchio_model_);
-
   return true;
 }
 
@@ -62,6 +55,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
     const std::vector<std::string>& controlled_joint_names) {
   // Get moving joints ids
   moving_joint_ids_.clear();
+  bool failure = false;
   for (const auto& joint_name : moving_joint_names) {
     pinocchio::JointIndex joint_id = 0;
     // do not consider joint that are not in the model
@@ -71,7 +65,11 @@ bool RobotModelBuilder::parse_moving_joint_names(
     } else {
       std::cerr << "joint_name='" << joint_name
                 << "' does not belong to the model" << std::endl;
+      failure = true;
     }
+  }
+  if (failure) {
+    return false;
   }
   if (robot_has_free_flyer_) {
     moving_joint_ids_.push_back(
@@ -172,8 +170,27 @@ bool RobotModelBuilder::get_robot_has_free_flyer() const {
 }
 
 const std::map<int, int>&
-RobotModelBuilder::get_pinocchio_to_harwdare_interface_map() const {
+RobotModelBuilder::get_pinocchio_to_hardware_interface_map() const {
   return pin_to_hwi_;
+}
+
+void RobotModelBuilder::construct_robot_state(
+    const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
+    Eigen::VectorXd& robot_configuration, Eigen::VectorXd& robot_velocity) {
+  assert(robot_configuration.size() == get_nq() &&
+         "robot_configuration has the wrong size");
+  assert(robot_velocity.size() == get_nv() &&
+         "robot_velocity has the wrong size");
+
+  // Reconstruct the state vector: x = [q, v]
+  if (get_robot_has_free_flyer()) {
+    robot_configuration.head<7>() = sensor.base_pose;
+    robot_velocity.head<6>() = sensor.base_twist;
+  }
+  const int nb_dof_q = get_joint_nq();
+  const int nb_dof_v = get_joint_nv();
+  robot_configuration.tail(nb_dof_q) = sensor.joint_state.position;
+  robot_velocity.tail(nb_dof_v) = sensor.joint_state.velocity;
 }
 
 int RobotModelBuilder::get_joint_nq() const {

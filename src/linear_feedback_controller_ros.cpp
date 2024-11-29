@@ -1,3 +1,8 @@
+
+#define EIGEN_NO_MALLOC
+#define EIGEN_INTERNAL_DEBUGGING
+#define EIGEN_INITIALIZE_MATRICES_BY_NAN
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -20,27 +25,40 @@ LinearFeedbackControllerRos::~LinearFeedbackControllerRos() {}
 CallbackReturn LinearFeedbackControllerRos::on_init() {
   bool all_good = true;
   std::string robot_description = "";
-  if (load_parameters()) {
+  if (!load_parameters()) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Issues loading the parameters.");
     return CallbackReturn::FAILURE;
   }
-  if (wait_for_robot_description()) {
+  if (!wait_for_robot_description()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues waiting for the robot_description parameter service.");
     return CallbackReturn::FAILURE;
   }
-  if (get_robot_description(robot_description)) {
+  if (!get_robot_description(robot_description)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues loading the robot_description.");
     return CallbackReturn::FAILURE;
   }
-  if (load_linear_feedback_controller(robot_description)) {
+  if (!load_linear_feedback_controller(robot_description)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues loading the linear feedback controller");
     return CallbackReturn::FAILURE;
   }
-  if (setup_reference_interface()) {
+  if (!setup_reference_interface()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues setting up the reference interfaces.");
     return CallbackReturn::FAILURE;
   }
-  if (allocate_memory()) {
+  if (!allocate_memory()) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Issues allocating the memory");
     return CallbackReturn::FAILURE;
   }
-  if (initialize_introspection()) {
+  if (!initialize_introspection()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Issues initializing the introspection.");
     return CallbackReturn::FAILURE;
   }
+  first_time_update_and_write_commands_ = true;
   return CallbackReturn::SUCCESS;
 }
 
@@ -58,7 +76,8 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
 
   // Then the joint informations.
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_EFFORT;
+    const auto name = parameters_.chainable_controller.command_prefix + joint +
+                      "/" + HW_IF_EFFORT;
     command_interfaces_config_names.emplace_back(name);
   }
 
@@ -94,6 +113,7 @@ LinearFeedbackControllerRos::state_interface_configuration() const {
 std::vector<hardware_interface::CommandInterface>
 LinearFeedbackControllerRos::on_export_reference_interfaces() {
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
+  reference_interfaces.clear();
   for (size_t i = 0; i < reference_interface_names_.size(); ++i) {
     reference_interfaces.push_back(hardware_interface::CommandInterface(
         get_node()->get_name(), reference_interface_names_[i],
@@ -104,7 +124,7 @@ LinearFeedbackControllerRos::on_export_reference_interfaces() {
 
 CallbackReturn LinearFeedbackControllerRos::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(get_node()->get_logger(), "Successfull configuration.");
+  first_time_update_and_write_commands_ = true;
   return CallbackReturn::SUCCESS;
 }
 
@@ -131,16 +151,6 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
                         "Error while assigning the state interfaces.");
     return CallbackReturn::ERROR;
   }
-
-  // Get current joint average position filtered and current averaged torque.
-  for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
-    init_joint_position_(i) =
-        joint_position_state_interface_[i].get().get_value();
-  }
-  for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
-    init_joint_effort_(i) = joint_effort_state_interface_[i].get().get_value();
-  }
-  lfc_.set_initial_state(init_joint_position_, init_joint_effort_);
 
   // Assign the command interface.
   all_good &= controller_interface::get_ordered_interfaces(
@@ -200,6 +210,10 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
   state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;
   synched_state_msg_.mutex.unlock();
 
+  if (state_msg_.msg_joint_state.position.size() == 0) {
+    return return_type::ERROR;
+  }
+
   std::size_t index = 0;
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
     reference_interfaces_[0] = state_msg_.msg_odom.pose.pose.position.x;
@@ -240,10 +254,26 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
 
 return_type LinearFeedbackControllerRos::update_and_write_commands(
     const rclcpp::Time& time, const rclcpp::Duration& /*period*/) {
+  // First time executing here.
+  if (first_time_update_and_write_commands_) {
+    // Get current joint average position filtered and current averaged torque.
+    for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
+      init_joint_position_[i] =
+          joint_position_state_interface_[i].get().get_value();
+    }
+    for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
+      init_joint_effort_[i] =
+          joint_effort_state_interface_[i].get().get_value();
+    }
+    lfc_.set_initial_state(init_joint_effort_, init_joint_position_);
+    first_time_update_and_write_commands_ = false;
+  }
+
   // Read the hardware data.
   if (!read_state_from_references()) {
     return return_type::ERROR;
   }
+
   // publish the state.
   linear_feedback_controller_msgs::sensorEigenToMsg(input_sensor_,
                                                     input_sensor_msg_);
@@ -256,12 +286,14 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   synched_input_control_msg_.mutex.lock();
   input_control_msg_ = synched_input_control_msg_.msg;
   synched_input_control_msg_.mutex.unlock();
-  linear_feedback_controller_msgs::controlMsgToEigen(input_control_msg_,
-                                                     input_control_);
-
+  if (input_control_msg_.initial_state.joint_state.name.size() != 0) {
+    linear_feedback_controller_msgs::controlMsgToEigen(input_control_msg_,
+                                                       input_control_);
+  }
   // Copy the output of the control in order to log it.
   output_joint_effort_ =
-      lfc_.compute_control(time_lfc, input_sensor_, input_control_);
+      lfc_.compute_control(time_lfc, input_sensor_, input_control_,
+                           parameters_.remove_gravity_compensation_effort);
 
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
@@ -293,15 +325,20 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         Eigen::VectorXd::Map(&reference_interfaces_[7], joint_nq);
     input_sensor_.base_twist =
         Eigen::VectorXd::Map(&reference_interfaces_[nq], 6);
-    input_sensor_.joint_state.velocity =
+    new_joint_velocity_ =
         Eigen::VectorXd::Map(&reference_interfaces_[nq + 6], joint_nv);
   } else {
     input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
     input_sensor_.joint_state.position =
         Eigen::VectorXd::Map(&reference_interfaces_[0], nq);
     input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
-    input_sensor_.joint_state.velocity =
-        Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
+    new_joint_velocity_ = Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
+  }
+
+  for (Eigen::Index i = 0; i < joint_nv; ++i) {
+    input_sensor_.joint_state.velocity[i] = filters::exponentialSmoothing(
+        new_joint_velocity_[i], input_sensor_.joint_state.velocity[i],
+        parameters_.joint_velocity_filter_coefficient);
   }
   input_sensor_.joint_state.effort.fill(
       std::numeric_limits<double>::signaling_NaN());
@@ -463,19 +500,20 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
     const std::string& robot_description) {
   ControllerParameters lfc_params;
   lfc_params.urdf = robot_description;
-  lfc_params.srdf = parameters_.srdf;
   lfc_params.moving_joint_names = parameters_.moving_joint_names;
   lfc_params.controlled_joint_names = parameters_.moving_joint_names;
-  lfc_params.p_gains = parameters_.p_gains;
-  lfc_params.d_gains = parameters_.d_gains;
-  lfc_params.default_configuration_name =
-      parameters_.default_configuration_name;
+  lfc_params.p_gains.clear();
+  lfc_params.d_gains.clear();
+  for (const auto joint_name : parameters_.moving_joint_names) {
+    lfc_params.p_gains.emplace_back(
+        parameters_.moving_joint_names_map.at(joint_name).p);
+    lfc_params.d_gains.emplace_back(
+        parameters_.moving_joint_names_map.at(joint_name).d);
+  }
   lfc_params.robot_has_free_flyer = parameters_.robot_has_free_flyer;
   lfc_params.pd_to_lf_transition_duration =
       Duration(parameters_.pd_to_lf_transition_duration);
-  lfc_.load(lfc_params);
-
-  return true;
+  return lfc_.load(lfc_params);
 }
 
 bool LinearFeedbackControllerRos::setup_reference_interface() {
@@ -491,7 +529,8 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_orientation_qw");
   }
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_POSITION;
+    const auto name = parameters_.chainable_controller.reference_prefix +
+                      joint + "/" + HW_IF_POSITION;
     reference_interface_names_.emplace_back(name);
   }
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
@@ -503,43 +542,45 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
     reference_interface_names_.push_back("base_angular_velocity_z");
   }
   for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = command_prefix_ + joint + "/" + HW_IF_VELOCITY;
+    const auto name = parameters_.chainable_controller.reference_prefix +
+                      joint + "/" + HW_IF_VELOCITY;
     reference_interface_names_.emplace_back(name);
   }
   return true;
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  output_joint_effort_ =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
-  joint_effort_command_interface_.reserve(
-      lfc_.get_robot_model()->get_joint_nv());
-  joint_effort_command_interface_.clear();
+  const auto nq = lfc_.get_robot_model()->get_nq();
+  const auto nv = lfc_.get_robot_model()->get_nv();
+  const auto joint_nq = lfc_.get_robot_model()->get_joint_nq();
+  const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
 
-  if (parameters_.chainable_controller.command_prefix.empty()) {
-    command_prefix_ = "";
-  } else if (!ends_with(parameters_.chainable_controller.command_prefix, "/")) {
-    command_prefix_ = parameters_.chainable_controller.command_prefix + "/";
-  } else {
-    command_prefix_ = parameters_.chainable_controller.command_prefix;
-  }
+  output_joint_effort_ = Eigen::VectorXd::Zero(joint_nv);
+  joint_effort_command_interface_.reserve(joint_nv);
+  joint_effort_command_interface_.clear();
 
   input_sensor_.joint_state.name =
       lfc_.get_robot_model()->get_moving_joint_names();
-  input_sensor_.joint_state.position =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nq());
-  input_sensor_.joint_state.velocity =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
-  input_sensor_.joint_state.effort =
-      Eigen::VectorXd::Zero(lfc_.get_robot_model()->get_joint_nv());
+  input_sensor_.joint_state.position = Eigen::VectorXd::Zero(joint_nq);
+  input_sensor_.joint_state.velocity = Eigen::VectorXd::Zero(joint_nv);
+  input_sensor_.joint_state.effort = Eigen::VectorXd::Zero(joint_nv);
+
   input_sensor_.joint_state.position.fill(
-      std::numeric_limits<double>::signaling_NaN());
-  input_sensor_.joint_state.velocity.fill(
       std::numeric_limits<double>::signaling_NaN());
   input_sensor_.joint_state.effort.fill(
       std::numeric_limits<double>::signaling_NaN());
   input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
   input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
+
+  input_sensor_msg_.joint_state.position.resize(joint_nq, 0.0);
+  input_sensor_msg_.joint_state.velocity.resize(joint_nv, 0.0);
+  input_sensor_msg_.joint_state.effort.resize(joint_nv, 0.0);
+
+  init_joint_position_ = Eigen::VectorXd::Zero(joint_nq);
+  init_joint_effort_ = Eigen::VectorXd::Zero(joint_nv);
+
+  new_joint_velocity_ = Eigen::VectorXd::Zero(joint_nv);
+  new_joint_velocity_.fill(std::numeric_limits<double>::signaling_NaN());
 
   // Resize the reference interface vector to correspond with the names.
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
@@ -548,7 +589,9 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   {
     rclcpp::QoS qos = rclcpp::QoS(10);
     auto rmw_qos_profile = qos.get_rmw_qos_profile();
-    subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+    if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+      subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+    }
     subscriber_joint_state_.subscribe(get_node(), "joint_state",
                                       rmw_qos_profile);
     state_syncher_ = std::make_shared<
@@ -577,6 +620,7 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
 
 void LinearFeedbackControllerRos::control_subscription_callback(
     const ControlMsg msg) {
+  RCLCPP_INFO_ONCE(get_node()->get_logger(), "Received sensor msgs.");
   synched_input_control_msg_.mutex.lock();
   synched_input_control_msg_.msg = msg;
   synched_input_control_msg_.mutex.unlock();
@@ -613,3 +657,6 @@ void LinearFeedbackControllerRos::state_syncher_callback(
 // }
 
 }  // namespace linear_feedback_controller
+
+PLUGINLIB_EXPORT_CLASS(linear_feedback_controller::LinearFeedbackControllerRos,
+                       controller_interface::ChainableControllerInterface);

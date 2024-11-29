@@ -34,18 +34,10 @@ const Eigen::VectorXd& LFController::compute_control(
       control_msg.initial_state;
 
   // Reconstruct the state vector: x = [q, v]
-  if (rmb_->get_robot_has_free_flyer()) {
-    desired_configuration_.head<7>() = ctrl_init.base_pose;
-    desired_velocity_.head<6>() = ctrl_init.base_twist;
-    measured_configuration_.head<7>() = sensor_msg.base_pose;
-    measured_velocity_.head<6>() = sensor_msg.base_twist;
-  }
-  const int nb_dof_q = ctrl_js.position.size();
-  const int nb_dof_v = ctrl_js.velocity.size();
-  desired_configuration_.tail(nb_dof_q) = ctrl_js.position;
-  desired_velocity_.tail(nb_dof_v) = ctrl_js.velocity;
-  measured_configuration_.tail(nb_dof_q) = sensor_js.position;
-  measured_velocity_.tail(nb_dof_v) = sensor_js.velocity;
+  rmb_->construct_robot_state(ctrl_init, desired_configuration_,
+                              desired_velocity_);
+  rmb_->construct_robot_state(sensor_msg, measured_configuration_,
+                              measured_velocity_);
 
   // Compute the linear feedback controller desired torque.
   pinocchio::difference(rmb_->get_model(), measured_configuration_,

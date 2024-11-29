@@ -29,6 +29,17 @@ sec_generate_parameter_library(
   src/linear_feedback_controller.yaml # Path to input yaml file
 )
 add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
+# Joint estimator params
+sec_generate_parameter_library_markdown(joint_state_estimator_parameters_doc
+                                        src/linear_feedback_controller.yaml)
+sec_generate_parameter_library(
+  joint_state_estimator_generated_parameters # Lib name
+  joint_state_estimator_parameters # CMake target name for the parameter
+                                   # library.
+  src/joint_state_estimator.yaml # Path to input yaml file
+)
+add_dependencies(joint_state_estimator_parameters
+                 joint_state_estimator_parameters_doc)
 
 #
 # Main Library
@@ -36,6 +47,7 @@ add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
 set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/averaging_filter.hpp
     include/${PROJECT_NAME}/averaging_filter.hxx
+    include/${PROJECT_NAME}/joint_state_estimator.hpp
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
@@ -43,6 +55,7 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
+    src/joint_state_estimator.cpp #
     src/lf_controller.cpp #
     src/linear_feedback_controller.cpp #
     src/linear_feedback_controller_ros.cpp #
@@ -52,7 +65,7 @@ set(${PROJECT_NAME}_sources
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
-ament_target_dependencies(${PROJECT_NAME} pinocchio)
+target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
 
 #
@@ -76,15 +89,15 @@ if(BUILD_TESTING)
 
   # Test the Averaging filter class.
   ament_auto_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
-  target_link_libraries(test_averaging_filter gtest gtest_main ${PROJECT_NAME})
+  target_link_libraries(test_averaging_filter ${PROJECT_NAME})
 
   ament_auto_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
-  target_link_libraries(test_min_jerk gtest gtest_main ${PROJECT_NAME})
+  target_link_libraries(test_min_jerk ${PROJECT_NAME})
 
   ament_auto_add_gtest(test_robot_model_builder
                        tests/test_robot_model_builder.cpp)
-  target_link_libraries(test_robot_model_builder gtest gtest_main
-                        ${PROJECT_NAME} example-robot-data::example-robot-data)
+  target_link_libraries(test_robot_model_builder ${PROJECT_NAME}
+                        example-robot-data::example-robot-data)
 endif()
 
 #
@@ -96,11 +109,13 @@ pluginlib_export_plugin_description_file(controller_interface
 #
 # Installation
 #
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
+        DESTINATION share/${PROJECT_NAME})
 install(
   PROGRAMS src/pd_controller.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME pd_controller)
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
+ament_export_libraries(${PROJECT_NAME})
 ament_auto_package()

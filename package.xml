@@ -23,6 +23,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>controller_interface</depend>
+  <depend>control_toolbox</depend>
   <depend>hardware_interface</depend>
   <depend>message_filters</depend>
   <depend>nav_msgs</depend>
@@ -39,6 +40,5 @@
 
   <export>
     <build_type>ament_cmake</build_type>
-    <controller_interface plugin="${prefix}/controller_plugins.xml" />
   </export>
 </package>
