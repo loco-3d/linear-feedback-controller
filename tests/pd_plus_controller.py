@@ -3,17 +3,18 @@
 """
 Test PD+gravity tracking sinusoidal joint trajectory for Panda robot (7Dof).
 """
-
-
 import numpy as np
 import pinocchio as pin
-
 import rclpy
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 import rclpy.duration
+from rclpy.node import Node
+from rclpy.qos import qos_profile_system_default
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
+from rclpy.qos_overriding_options import QoSOverridingOptions
 import rclpy.time
+
 from std_msgs.msg import String
+
 from linear_feedback_controller_msgs.msg import Sensor, Control
 from linear_feedback_controller_msgs_py.numpy_conversions import (
     sensor_msg_to_numpy,
@@ -71,22 +72,16 @@ class PDPlusController(Node):
         # Load publisher and subscriber for LFC communication.
         self.publisher_control_ = self.create_publisher(
             Control,
-            "control",
-            QoSProfile(
-                depth=10,
-                durability=DurabilityPolicy.TRANSIENT_LOCAL,
-                reliability=ReliabilityPolicy.BEST_EFFORT,
-            ),
+            "/control",
+            qos_profile=qos_profile_system_default,
+            qos_overriding_options=QoSOverridingOptions.with_default_policies(),
         )
         self.subscriber_sensor_ = self.create_subscription(
             Sensor,
             "sensor",
             self.sensor_callback,
-            QoSProfile(
-                depth=10,
-                durability=DurabilityPolicy.TRANSIENT_LOCAL,
-                reliability=ReliabilityPolicy.BEST_EFFORT,
-            ),
+            qos_profile=qos_profile_system_default,
+            qos_overriding_options=QoSOverridingOptions.with_default_policies(),
         )
 
         # Get the robot model.
