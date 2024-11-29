@@ -258,11 +258,11 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   if (first_time_update_and_write_commands_) {
     // Get current joint average position filtered and current averaged torque.
     for (Eigen::Index i = 0; i < init_joint_position_.size(); ++i) {
-      init_joint_position_(i) =
+      init_joint_position_[i] =
           joint_position_state_interface_[i].get().get_value();
     }
     for (Eigen::Index i = 0; i < init_joint_effort_.size(); ++i) {
-      init_joint_effort_(i) =
+      init_joint_effort_[i] =
           joint_effort_state_interface_[i].get().get_value();
     }
     lfc_.set_initial_state(init_joint_effort_, init_joint_position_);
@@ -336,8 +336,8 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
   }
 
   for (Eigen::Index i = 0; i < joint_nv; ++i) {
-    input_sensor_.joint_state.velocity(i) = filters::exponentialSmoothing(
-        new_joint_velocity_(i), input_sensor_.joint_state.velocity(i),
+    input_sensor_.joint_state.velocity[i] = filters::exponentialSmoothing(
+        new_joint_velocity_[i], input_sensor_.joint_state.velocity[i],
         parameters_.joint_velocity_filter_coefficient);
   }
   input_sensor_.joint_state.effort.fill(
@@ -504,7 +504,7 @@ bool LinearFeedbackControllerRos::load_linear_feedback_controller(
   lfc_params.controlled_joint_names = parameters_.moving_joint_names;
   lfc_params.p_gains.clear();
   lfc_params.d_gains.clear();
-  for (auto joint_name : parameters_.moving_joint_names) {
+  for (const auto joint_name : parameters_.moving_joint_names) {
     lfc_params.p_gains.emplace_back(
         parameters_.moving_joint_names_map.at(joint_name).p);
     lfc_params.d_gains.emplace_back(
@@ -620,7 +620,7 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
 
 void LinearFeedbackControllerRos::control_subscription_callback(
     const ControlMsg msg) {
-  RCLCPP_INFO(get_node()->get_logger(), "Received sensor msgs.");
+  RCLCPP_INFO_ONCE(get_node()->get_logger(), "Received sensor msgs.");
   synched_input_control_msg_.mutex.lock();
   synched_input_control_msg_.msg = msg;
   synched_input_control_msg_.mutex.unlock();
