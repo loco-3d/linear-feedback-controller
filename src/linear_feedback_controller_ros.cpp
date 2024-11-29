@@ -1,8 +1,3 @@
-
-#define EIGEN_NO_MALLOC
-#define EIGEN_INTERNAL_DEBUGGING
-#define EIGEN_INITIALIZE_MATRICES_BY_NAN
-#define EIGEN_NO_AUTOMATIC_RESIZING
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -327,6 +322,8 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         Eigen::VectorXd::Map(&reference_interfaces_[nq], 6);
     new_joint_velocity_ =
         Eigen::VectorXd::Map(&reference_interfaces_[nq + 6], joint_nv);
+    input_sensor_.joint_state.effort =
+        Eigen::VectorXd::Map(&reference_interfaces_[nq + nv], joint_nv);
   } else {
     input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
     input_sensor_.joint_state.position =
@@ -340,8 +337,12 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         new_joint_velocity_[i], input_sensor_.joint_state.velocity[i],
         parameters_.joint_velocity_filter_coefficient);
   }
-  input_sensor_.joint_state.effort.fill(
-      std::numeric_limits<double>::signaling_NaN());
+
+  for (Eigen::Index i = 0; i < joint_nv; ++i) {
+    input_sensor_.joint_state.velocity(i) = filters::exponentialSmoothing(
+        new_joint_velocity_(i), input_sensor_.joint_state.velocity(i),
+        parameters_.joint_velocity_filter_coefficient);
+  }
   return true;
 }
 
@@ -546,6 +547,11 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
                       joint + "/" + HW_IF_VELOCITY;
     reference_interface_names_.emplace_back(name);
   }
+  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
+    const auto name = parameters_.chainable_controller.reference_prefix +
+                      joint + "/" + HW_IF_EFFORT;
+    reference_interface_names_.emplace_back(name);
+  }
   return true;
 }
 
@@ -576,6 +582,13 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   input_sensor_msg_.joint_state.velocity.resize(joint_nv, 0.0);
   input_sensor_msg_.joint_state.effort.resize(joint_nv, 0.0);
 
+  input_control_.initial_state = input_sensor_;
+  input_control_.feedback_gain = Eigen::MatrixXd::Zero(nv, 2 * nv);
+  input_control_.feedback_gain.fill(
+      std::numeric_limits<double>::signaling_NaN());
+  input_control_.feedforward = Eigen::VectorXd::Zero(nv);
+  input_control_.feedforward.fill(std::numeric_limits<double>::signaling_NaN());
+
   init_joint_position_ = Eigen::VectorXd::Zero(joint_nq);
   init_joint_effort_ = Eigen::VectorXd::Zero(joint_nv);
 
@@ -586,29 +599,24 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   reference_interfaces_.resize(reference_interface_names_.size(), 0.0);
 
   // Allocate subscribers
-  {
-    rclcpp::QoS qos = rclcpp::QoS(10);
-    auto rmw_qos_profile = qos.get_rmw_qos_profile();
-    if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
-      subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
-    }
-    subscriber_joint_state_.subscribe(get_node(), "joint_state",
-                                      rmw_qos_profile);
-    state_syncher_ = std::make_shared<
-        message_filters::TimeSynchronizer<Odometry, JointState>>(
-        subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
-  }
-  {
-    using namespace std::placeholders;
-    rclcpp::QoS qos = rclcpp::QoS(10);
-    qos.best_effort();
-    sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
-    control_subscriber_ = get_node()->create_subscription<ControlMsg>(
-        "control", qos,
-        std::bind(&LinearFeedbackControllerRos::control_subscription_callback,
-                  this, _1));
-  }
+  rclcpp::QoS qos = rclcpp::QoS(10);
+  qos.best_effort();
+  using namespace std::placeholders;
 
+  auto rmw_qos_profile = qos.get_rmw_qos_profile();
+  if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
+    subscriber_odom_.subscribe(get_node(), "odom", rmw_qos_profile);
+  }
+  subscriber_joint_state_.subscribe(get_node(), "joint_state", rmw_qos_profile);
+  state_syncher_ =
+      std::make_shared<message_filters::TimeSynchronizer<Odometry, JointState>>(
+          subscriber_odom_, subscriber_joint_state_, rmw_qos_profile.depth);
+
+  sensor_publisher_ = get_node()->create_publisher<SensorMsg>("sensor", qos);
+  control_subscriber_ = get_node()->create_subscription<ControlMsg>(
+      "control", qos,
+      std::bind(&LinearFeedbackControllerRos::control_subscription_callback,
+                this, _1));
   return true;
 }
 
