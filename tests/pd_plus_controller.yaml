@@ -1,0 +1,16 @@
+pd_plus_controller:
+  ros__parameter:
+    moving_joint_names: [
+      "fer_joint1",
+      "fer_joint2",
+      "fer_joint3",
+      "fer_joint4",
+      "fer_joint5",
+      "fer_joint6",
+      "fer_joint7"
+    ]
+    amplitudes: [0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    periods: [4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    p_gains: [60.0, 60.0, 60.0, 60.0, 20.0, 10.0, 5.0]
+    d_gains: [5.0, 5.0, 5.0, 2.0, 2.0, 2.0, 1.0]
+    controller_period: 0.01
