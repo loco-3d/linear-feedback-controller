@@ -1,5 +1,3 @@
-// #include <algorithm>
-// #include <pinocchio/algorithm/compute-all-terms.hpp>
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
 #include <pinocchio/algorithm/frames.hpp>
