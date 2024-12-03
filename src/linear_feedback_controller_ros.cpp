@@ -199,7 +199,9 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
   return CallbackReturn::SUCCESS;
 }
 
-return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
+return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
+  const rclcpp::Time & /* time */, const rclcpp::Duration & /* period */)
+{
   synched_state_msg_.mutex.lock();
   state_msg_.msg_odom = synched_state_msg_.msg_odom;
   state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;

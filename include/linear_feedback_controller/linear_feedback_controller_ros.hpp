@@ -95,7 +95,8 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   on_export_reference_interfaces() final;
 
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  return_type update_reference_from_subscribers() final;
+  return_type update_reference_from_subscribers(const rclcpp::Time& time,
+                                                const rclcpp::Duration& period) final;
 
   /// @brief ChainableControllerInterface::update_and_write_commands
   return_type update_and_write_commands(const rclcpp::Time& time,
