@@ -97,6 +97,13 @@ if(BUILD_TESTING)
     test_robot_model_builder
     PROPERTIES ENVIRONMENT_MODIFICATION
                LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
+
+  ament_auto_add_gtest(test_pd_controller
+    tests/test_pd_controller.cpp
+  )
+  target_link_libraries(test_pd_controller
+    ${PROJECT_NAME}
+  )
 endif()
 
 #
