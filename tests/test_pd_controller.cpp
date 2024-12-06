@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <array>
+#include <limits>
 #include <optional>
 
 #include "linear_feedback_controller/pd_controller.hpp"
@@ -49,9 +50,27 @@ TEST(PdControllerTest, SetGains)
     SCOPED_TRACE("Same Sizes");
     for (const auto both_size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000))
     {
-      const auto requested_gains = Gains::Random(both_size);
+      auto requested_gains = Gains::Random(both_size);
       EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
       // FIXME: How to test the validity ??
+
+      // Test for special double values acceptance
+      for (const auto special_value : {
+             std::numeric_limits<double>::infinity(),
+             std::numeric_limits<double>::quiet_NaN(),
+             std::numeric_limits<double>::signaling_NaN(),
+           })
+      {
+        auto before = requested_gains.d(0);
+        requested_gains.d(0) = special_value;
+        EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+        requested_gains.d(0) = before;
+
+        before = requested_gains.p(0);
+        requested_gains.p(0) = special_value;
+        EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+        requested_gains.p(0) = before;
+      }
     }
   }
 
@@ -62,14 +81,10 @@ TEST(PdControllerTest, SetGains)
          MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
     {
       const auto requested_gains = Gains::Random(p_size, d_size);
+      // FIXME: I guess it should fail but set_gains doesn't provide any feedback on failure
       EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-      // FIXME: Is it valid ??
     }
   }
-
-  // TODO:
-  // - What about +/- inf ?
-  // - What about nan ?
 }
 
 struct References
@@ -102,9 +117,27 @@ TEST(PdControllerTest, SetReferences)
     SCOPED_TRACE("Same Sizes");
     for (const auto both_size : MakeArray<References::IdxType>(1, 3, 4, 50, 1000))
     {
-      const auto requested_refs = References::Random(both_size);
+      auto requested_refs = References::Random(both_size);
       EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
       // FIXME: How to test the validity ??
+
+      // Test for special double values acceptance
+      for (const auto special_value : {
+             std::numeric_limits<double>::infinity(),
+             std::numeric_limits<double>::quiet_NaN(),
+             std::numeric_limits<double>::signaling_NaN(),
+           })
+      {
+        auto before = requested_refs.tau(0);
+        requested_refs.tau(0) = special_value;
+        EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+        requested_refs.tau(0) = before;
+
+        before = requested_refs.q(0);
+        requested_refs.q(0) = special_value;
+        EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+        requested_refs.q(0) = before;
+      }
     }
   }
 
@@ -115,12 +148,8 @@ TEST(PdControllerTest, SetReferences)
          MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
     {
       const auto requested_refs = References::Random(tau_size, q_size);
+      // FIXME: I guess it should fail but set_ref doesn't provide any feedback on failure
       EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-      // FIXME: Is it valid ??
     }
   }
-
-  // TODO:
-  // - What about +/- inf ?
-  // - What about nan ?
 }
