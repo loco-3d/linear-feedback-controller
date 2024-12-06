@@ -57,10 +57,9 @@ TEST(PdControllerTest, SetGains)
 
   {
     SCOPED_TRACE("Different Sizes");
-
-    using IndexesList = std::array<Gains::IdxType, 2>;
+    using SizeList = std::array<Gains::IdxType, 2>;
     for (const auto [p_size, d_size] :
-         MakeArray<IndexesList>(IndexesList{1, 2}, IndexesList{4, 3}, IndexesList{50, 1000}))
+         MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
     {
       const auto requested_gains = Gains::Random(p_size, d_size);
       EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
@@ -111,12 +110,11 @@ TEST(PdControllerTest, SetReferences)
 
   {
     SCOPED_TRACE("Different Sizes");
-
-    using IndexesList = std::array<References::IdxType, 2>;
-    for (const auto [p_size, d_size] :
-         MakeArray<IndexesList>(IndexesList{1, 2}, IndexesList{4, 3}, IndexesList{50, 1000}))
+    using SizeList = std::array<References::IdxType, 2>;
+    for (const auto [tau_size, q_size] :
+         MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
     {
-      const auto requested_refs = References::Random(p_size, d_size);
+      const auto requested_refs = References::Random(tau_size, q_size);
       EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
       // FIXME: Is it valid ??
     }
