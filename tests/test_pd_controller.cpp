@@ -1,22 +1,70 @@
 #include "gtest/gtest.h"
 
-#include <memory>
+#include <array>
+#include <optional>
 
 #include "linear_feedback_controller/pd_controller.hpp"
 
 using namespace linear_feedback_controller;
 
-class UninitializedPdControllerTest : public ::testing::Test
+// Generate an array of a given type with size deduced by the number of arguments
+template <typename ValueType, typename... Values>
+constexpr auto MakeArray(Values &&... values) -> std::array<ValueType, sizeof...(Values)>
 {
-protected:
-  void SetUp() override {}
-  void TearDown() override {}
+  return std::array<ValueType, sizeof...(Values)>{std::forward<Values>(values)...};
+}
 
-  std::unique_ptr<PDController> pd_ctrl_ptr_ = nullptr;
+TEST(PdControllerTest, Ctor)
+{
+  EXPECT_NO_THROW({ const auto pd_ctrl = PDController(); });
+}
+
+struct Gains
+{
+  using IdxType = Eigen::VectorXd::Index;
+
+  Eigen::VectorXd p;
+  Eigen::VectorXd d;
+
+  static auto Random(IdxType p_size, std::optional<IdxType> d_size = std::nullopt) -> Gains
+  {
+    return Gains{
+      Eigen::VectorXd::Random(p_size),
+      Eigen::VectorXd::Random(d_size.value_or(p_size)),
+    };
+  }
 };
 
-using PdControllerTest = UninitializedPdControllerTest;
-TEST_F(PdControllerTest, Ctor)
+TEST(PdControllerTest, SetGains)
 {
-  EXPECT_NO_THROW({ pd_ctrl_ptr_ = std::make_unique<PDController>(); });
+  auto pd_ctrl = PDController();
+
+  {
+    // FIXME: Is it valid ?
+    SCOPED_TRACE("Size 0");
+    EXPECT_NO_THROW({ pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+  }
+
+  {
+    SCOPED_TRACE("Same Sizes");
+    for (const auto both_size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000))
+    {
+      const auto requested_gains = Gains::Random(both_size);
+      EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+      // FIXME: How to test the validity ??
+    }
+  }
+
+  {
+    SCOPED_TRACE("Different Sizes");
+
+    using IndexesList = std::array<Gains::IdxType, 2>;
+    for (const auto [p_size, d_size] :
+         MakeArray<IndexesList>(IndexesList{1, 2}, IndexesList{4, 3}, IndexesList{50, 1000}))
+    {
+      const auto requested_gains = Gains::Random(p_size, d_size);
+      EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+      // FIXME: Is it valid ??
+    }
+  }
 }
