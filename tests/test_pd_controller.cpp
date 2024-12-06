@@ -8,12 +8,39 @@
 
 using namespace linear_feedback_controller;
 
-// Generate an array of a given type with size deduced by the number of arguments
-template <typename ValueType, typename... Values>
-constexpr auto MakeArray(Values &&... values) -> std::array<ValueType, sizeof...(Values)>
+// Generate an array of a given type with its size deduced by the number of args
+//
+// This may be usefull when you don't want to specify by hand the number of
+// elements inside an array but want to force the value_type of the array (in
+// order to force conversion & co ...)
+template <typename ValueType, typename... T>
+constexpr auto MakeArray(T &&... values) -> std::array<ValueType, sizeof...(T)>
 {
-  return std::array<ValueType, sizeof...(Values)>{std::forward<Values>(values)...};
+  return std::array<ValueType, sizeof...(T)>{std::forward<T>(values)...};
 }
+
+// RAII mutator, use to temporary modify a value given a reference and a tmp value
+//
+// WARNING: Dangling references & co ...
+template <typename ValueType>
+struct TemporaryMutate
+{
+  TemporaryMutate() = delete;
+
+  template <typename T>
+  TemporaryMutate(ValueType & data, T && tmp_value) : data_(data), before_(data_)
+  {
+    data_ = std::forward<T>(tmp_value);
+  }
+
+  virtual ~TemporaryMutate() { data_ = before_; }
+
+  constexpr auto GetOldValue() const -> const ValueType & { return before_; }
+
+private:
+  ValueType & data_;
+  ValueType before_;
+};
 
 TEST(PdControllerTest, Ctor)
 {
@@ -61,15 +88,15 @@ TEST(PdControllerTest, SetGains)
              std::numeric_limits<double>::signaling_NaN(),
            })
       {
-        auto before = requested_gains.d(0);
-        requested_gains.d(0) = special_value;
-        EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-        requested_gains.d(0) = before;
+        {
+          auto _ = TemporaryMutate{requested_gains.p(0), special_value};
+          EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+        }
 
-        before = requested_gains.p(0);
-        requested_gains.p(0) = special_value;
-        EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-        requested_gains.p(0) = before;
+        {
+          auto _ = TemporaryMutate{requested_gains.d(0), special_value};
+          EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+        }
       }
     }
   }
@@ -128,15 +155,15 @@ TEST(PdControllerTest, SetReferences)
              std::numeric_limits<double>::signaling_NaN(),
            })
       {
-        auto before = requested_refs.tau(0);
-        requested_refs.tau(0) = special_value;
-        EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-        requested_refs.tau(0) = before;
+        {
+          auto _ = TemporaryMutate{requested_refs.tau(0), special_value};
+          EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+        }
 
-        before = requested_refs.q(0);
-        requested_refs.q(0) = special_value;
-        EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-        requested_refs.q(0) = before;
+        {
+          auto _ = TemporaryMutate{requested_refs.q(0), special_value};
+          EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+        }
       }
     }
   }
