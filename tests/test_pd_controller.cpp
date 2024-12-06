@@ -68,3 +68,53 @@ TEST(PdControllerTest, SetGains)
     }
   }
 }
+
+struct References
+{
+  using IdxType = Eigen::VectorXd::Index;
+
+  Eigen::VectorXd tau;
+  Eigen::VectorXd q;
+
+  static auto Random(IdxType tau_size, std::optional<IdxType> q_size = std::nullopt) -> References
+  {
+    return References{
+      Eigen::VectorXd::Random(tau_size),
+      Eigen::VectorXd::Random(q_size.value_or(tau_size)),
+    };
+  }
+};
+
+TEST(PdControllerTest, SetReferences)
+{
+  auto pd_ctrl = PDController();
+
+  {
+    // FIXME: Is it valid ?
+    SCOPED_TRACE("Size 0");
+    EXPECT_NO_THROW({ pd_ctrl.set_reference(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+  }
+
+  {
+    SCOPED_TRACE("Same Sizes");
+    for (const auto both_size : MakeArray<References::IdxType>(1, 3, 4, 50, 1000))
+    {
+      const auto requested_refs = References::Random(both_size);
+      EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+      // FIXME: How to test the validity ??
+    }
+  }
+
+  {
+    SCOPED_TRACE("Different Sizes");
+
+    using IndexesList = std::array<References::IdxType, 2>;
+    for (const auto [p_size, d_size] :
+         MakeArray<IndexesList>(IndexesList{1, 2}, IndexesList{4, 3}, IndexesList{50, 1000}))
+    {
+      const auto requested_refs = References::Random(p_size, d_size);
+      EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+      // FIXME: Is it valid ??
+    }
+  }
+}
