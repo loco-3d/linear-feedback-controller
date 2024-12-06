@@ -57,8 +57,8 @@ struct Gains
   static auto Random(IdxType p_size, std::optional<IdxType> d_size = std::nullopt) -> Gains
   {
     return Gains{
-      Eigen::VectorXd::Random(p_size),
-      Eigen::VectorXd::Random(d_size.value_or(p_size)),
+      .p = Eigen::VectorXd::Random(p_size),
+      .d = Eigen::VectorXd::Random(d_size.value_or(p_size)),
     };
   }
 };
@@ -124,8 +124,8 @@ struct References
   static auto Random(IdxType tau_size, std::optional<IdxType> q_size = std::nullopt) -> References
   {
     return References{
-      Eigen::VectorXd::Random(tau_size),
-      Eigen::VectorXd::Random(q_size.value_or(tau_size)),
+      .tau = Eigen::VectorXd::Random(tau_size),
+      .q = Eigen::VectorXd::Random(q_size.value_or(tau_size)),
     };
   }
 };
@@ -179,4 +179,32 @@ TEST(PdControllerTest, SetReferences)
       EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
     }
   }
+}
+
+TEST(PdController, ComputeControl)
+{
+  auto pd_ctrl = PDController();
+
+  constexpr auto size = 4;
+  const auto gains = Gains::Random(size);
+  pd_ctrl.set_gains(gains.p, gains.d);
+
+  const auto refs = References::Random(size);
+  pd_ctrl.set_reference(refs.tau, refs.q);
+
+  const auto arg_q = Eigen::VectorXd::Random(size);
+  const auto arg_v = Eigen::VectorXd::Random(size);
+
+  // o = tau_r - (p * (q - q_r)) - (d * v)
+
+  // clang-format off
+  const Eigen::VectorXd expected_control =
+    refs.tau.array()
+    - (gains.p.array() * (arg_q - refs.q).array())
+    - (gains.d.array() * arg_v.array());
+  // clang-format on
+
+  EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
+
+  // TODO test wrong sizes & co
 }
