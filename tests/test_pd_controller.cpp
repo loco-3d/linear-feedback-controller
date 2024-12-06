@@ -67,6 +67,10 @@ TEST(PdControllerTest, SetGains)
       // FIXME: Is it valid ??
     }
   }
+
+  // TODO:
+  // - What about +/- inf ?
+  // - What about nan ?
 }
 
 struct References
@@ -117,4 +121,8 @@ TEST(PdControllerTest, SetReferences)
       // FIXME: Is it valid ??
     }
   }
+
+  // TODO:
+  // - What about +/- inf ?
+  // - What about nan ?
 }
