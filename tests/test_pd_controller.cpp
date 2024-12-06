@@ -1,9 +1,8 @@
-#include "gtest/gtest.h"
-
 #include <array>
 #include <limits>
 #include <optional>
 
+#include "gtest/gtest.h"
 #include "linear_feedback_controller/pd_controller.hpp"
 
 using namespace linear_feedback_controller;
@@ -14,22 +13,21 @@ using namespace linear_feedback_controller;
 // elements inside an array but want to force the value_type of the array (in
 // order to force conversion & co ...)
 template <typename ValueType, typename... T>
-constexpr auto MakeArray(T &&... values) -> std::array<ValueType, sizeof...(T)>
-{
+constexpr auto MakeArray(T &&...values) -> std::array<ValueType, sizeof...(T)> {
   return std::array<ValueType, sizeof...(T)>{std::forward<T>(values)...};
 }
 
-// RAII mutator, use to temporary modify a value given a reference and a tmp value
+// RAII mutator, use to temporary modify a value given a reference and a tmp
+// value
 //
 // WARNING: Dangling references & co ...
 template <typename ValueType>
-struct TemporaryMutate
-{
+struct TemporaryMutate {
   TemporaryMutate() = delete;
 
   template <typename T>
-  TemporaryMutate(ValueType & data, T && tmp_value) : data_(data), before_(data_)
-  {
+  TemporaryMutate(ValueType &data, T &&tmp_value)
+      : data_(data), before_(data_) {
     data_ = std::forward<T>(tmp_value);
   }
 
@@ -37,65 +35,64 @@ struct TemporaryMutate
 
   constexpr auto GetOldValue() const -> const ValueType & { return before_; }
 
-private:
-  ValueType & data_;
+ private:
+  ValueType &data_;
   ValueType before_;
 };
 
-TEST(PdControllerTest, Ctor)
-{
+TEST(PdControllerTest, Ctor) {
   EXPECT_NO_THROW({ const auto pd_ctrl = PDController(); });
 }
 
-struct Gains
-{
+struct Gains {
   using IdxType = Eigen::VectorXd::Index;
 
   Eigen::VectorXd p;
   Eigen::VectorXd d;
 
-  static auto Random(IdxType p_size, std::optional<IdxType> d_size = std::nullopt) -> Gains
-  {
+  static auto Random(IdxType p_size,
+                     std::optional<IdxType> d_size = std::nullopt) -> Gains {
     return Gains{
-      .p = Eigen::VectorXd::Random(p_size),
-      .d = Eigen::VectorXd::Random(d_size.value_or(p_size)),
+        .p = Eigen::VectorXd::Random(p_size),
+        .d = Eigen::VectorXd::Random(d_size.value_or(p_size)),
     };
   }
 };
 
-TEST(PdControllerTest, SetGains)
-{
+TEST(PdControllerTest, SetGains) {
   auto pd_ctrl = PDController();
 
   {
     // FIXME: Is it valid ?
     SCOPED_TRACE("Size 0");
-    EXPECT_NO_THROW({ pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+    EXPECT_NO_THROW(
+        { pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
   }
 
   {
     SCOPED_TRACE("Same Sizes");
-    for (const auto both_size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000))
-    {
+    for (const auto both_size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000)) {
       auto requested_gains = Gains::Random(both_size);
-      EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
       // FIXME: How to test the validity ??
 
       // Test for special double values acceptance
       for (const auto special_value : {
-             std::numeric_limits<double>::infinity(),
-             std::numeric_limits<double>::quiet_NaN(),
-             std::numeric_limits<double>::signaling_NaN(),
-           })
-      {
+               std::numeric_limits<double>::infinity(),
+               std::numeric_limits<double>::quiet_NaN(),
+               std::numeric_limits<double>::signaling_NaN(),
+           }) {
         {
           auto _ = TemporaryMutate{requested_gains.p(0), special_value};
-          EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+          EXPECT_NO_THROW(
+              { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
         }
 
         {
           auto _ = TemporaryMutate{requested_gains.d(0), special_value};
-          EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+          EXPECT_NO_THROW(
+              { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
         }
       }
     }
@@ -104,65 +101,68 @@ TEST(PdControllerTest, SetGains)
   {
     SCOPED_TRACE("Different Sizes");
     using SizeList = std::array<Gains::IdxType, 2>;
-    for (const auto [p_size, d_size] :
-         MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
-    {
+    for (const auto [p_size, d_size] : MakeArray<SizeList>(
+             SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000})) {
       const auto requested_gains = Gains::Random(p_size, d_size);
-      // FIXME: I guess it should fail but set_gains doesn't provide any feedback on failure
-      EXPECT_NO_THROW({ pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+      // FIXME: I guess it should fail but set_gains doesn't provide any
+      // feedback on failure
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
     }
   }
 }
 
-struct References
-{
+struct References {
   using IdxType = Eigen::VectorXd::Index;
 
   Eigen::VectorXd tau;
   Eigen::VectorXd q;
 
-  static auto Random(IdxType tau_size, std::optional<IdxType> q_size = std::nullopt) -> References
-  {
+  static auto Random(IdxType tau_size,
+                     std::optional<IdxType> q_size = std::nullopt)
+      -> References {
     return References{
-      .tau = Eigen::VectorXd::Random(tau_size),
-      .q = Eigen::VectorXd::Random(q_size.value_or(tau_size)),
+        .tau = Eigen::VectorXd::Random(tau_size),
+        .q = Eigen::VectorXd::Random(q_size.value_or(tau_size)),
     };
   }
 };
 
-TEST(PdControllerTest, SetReferences)
-{
+TEST(PdControllerTest, SetReferences) {
   auto pd_ctrl = PDController();
 
   {
     // FIXME: Is it valid ?
     SCOPED_TRACE("Size 0");
-    EXPECT_NO_THROW({ pd_ctrl.set_reference(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+    EXPECT_NO_THROW(
+        { pd_ctrl.set_reference(Eigen::VectorXd{}, Eigen::VectorXd{}); });
   }
 
   {
     SCOPED_TRACE("Same Sizes");
-    for (const auto both_size : MakeArray<References::IdxType>(1, 3, 4, 50, 1000))
-    {
+    for (const auto both_size :
+         MakeArray<References::IdxType>(1, 3, 4, 50, 1000)) {
       auto requested_refs = References::Random(both_size);
-      EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
       // FIXME: How to test the validity ??
 
       // Test for special double values acceptance
       for (const auto special_value : {
-             std::numeric_limits<double>::infinity(),
-             std::numeric_limits<double>::quiet_NaN(),
-             std::numeric_limits<double>::signaling_NaN(),
-           })
-      {
+               std::numeric_limits<double>::infinity(),
+               std::numeric_limits<double>::quiet_NaN(),
+               std::numeric_limits<double>::signaling_NaN(),
+           }) {
         {
           auto _ = TemporaryMutate{requested_refs.tau(0), special_value};
-          EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+          EXPECT_NO_THROW(
+              { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
         }
 
         {
           auto _ = TemporaryMutate{requested_refs.q(0), special_value};
-          EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+          EXPECT_NO_THROW(
+              { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
         }
       }
     }
@@ -171,18 +171,18 @@ TEST(PdControllerTest, SetReferences)
   {
     SCOPED_TRACE("Different Sizes");
     using SizeList = std::array<References::IdxType, 2>;
-    for (const auto [tau_size, q_size] :
-         MakeArray<SizeList>(SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000}))
-    {
+    for (const auto [tau_size, q_size] : MakeArray<SizeList>(
+             SizeList{1, 2}, SizeList{4, 3}, SizeList{50, 1000})) {
       const auto requested_refs = References::Random(tau_size, q_size);
-      // FIXME: I guess it should fail but set_ref doesn't provide any feedback on failure
-      EXPECT_NO_THROW({ pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+      // FIXME: I guess it should fail but set_ref doesn't provide any feedback
+      // on failure
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
     }
   }
 }
 
-TEST(PdController, ComputeControl)
-{
+TEST(PdController, ComputeControl) {
   auto pd_ctrl = PDController();
 
   constexpr auto size = 4;
