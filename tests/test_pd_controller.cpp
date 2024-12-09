@@ -45,7 +45,7 @@ TEST(PdControllerTest, Ctor) {
 }
 
 struct Gains {
-  using IdxType = Eigen::VectorXd::Index;
+  using IdxType = Eigen::Index;
 
   Eigen::VectorXd p;
   Eigen::VectorXd d;
@@ -113,7 +113,7 @@ TEST(PdControllerTest, SetGains) {
 }
 
 struct References {
-  using IdxType = Eigen::VectorXd::Index;
+  using IdxType = Eigen::Index;
 
   Eigen::VectorXd tau;
   Eigen::VectorXd q;
