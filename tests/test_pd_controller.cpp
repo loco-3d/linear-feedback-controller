@@ -174,7 +174,7 @@ TEST(PdControllerTest, SetReferences) {
   }
 }
 
-TEST(PdController, ComputeControl) {
+TEST(PdControllerTest, ComputeControl) {
   auto pd_ctrl = PDController();
 
   for (const auto size : {1u, 2u, 5u, 20u}) {
