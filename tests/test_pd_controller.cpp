@@ -114,8 +114,9 @@ struct References {
   Eigen::VectorXd tau;
   Eigen::VectorXd q;
 
-  static auto Random(IdxType tau_size, std::optional<IdxType> q_size =
-                                           std::nullopt) -> References {
+  static auto Random(IdxType tau_size,
+                     std::optional<IdxType> q_size = std::nullopt)
+      -> References {
     return References{
         .tau = Eigen::VectorXd::Random(tau_size),
         .q = Eigen::VectorXd::Random(q_size.value_or(tau_size)),
