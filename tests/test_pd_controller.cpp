@@ -185,26 +185,30 @@ TEST(PdControllerTest, SetReferences) {
 TEST(PdController, ComputeControl) {
   auto pd_ctrl = PDController();
 
-  constexpr auto size = 4;
-  const auto gains = Gains::Random(size);
-  pd_ctrl.set_gains(gains.p, gains.d);
+  for (const auto size : {1u, 2u, 5u, 20u})
+  {
+    SCOPED_TRACE(::testing::Message() << "Problem size = " << size);
 
-  const auto refs = References::Random(size);
-  pd_ctrl.set_reference(refs.tau, refs.q);
+    const auto gains = Gains::Random(size);
+    pd_ctrl.set_gains(gains.p, gains.d);
 
-  const auto arg_q = Eigen::VectorXd::Random(size);
-  const auto arg_v = Eigen::VectorXd::Random(size);
+    const auto refs = References::Random(size);
+    pd_ctrl.set_reference(refs.tau, refs.q);
 
-  // o = tau_r - (p * (q - q_r)) - (d * v)
+    const Eigen::VectorXd arg_q = Eigen::VectorXd::Random(size);
+    const Eigen::VectorXd arg_v = Eigen::VectorXd::Random(size);
 
-  // clang-format off
+    // o = tau_r - (p * (q - q_r)) - (d * v)
+
+    // clang-format off
   const Eigen::VectorXd expected_control =
-    refs.tau.array()
-    - (gains.p.array() * (arg_q - refs.q).array())
-    - (gains.d.array() * arg_v.array());
-  // clang-format on
+    (refs.tau.array()
+     - (gains.p.array() * (arg_q - refs.q).array())
+     - (gains.d.array() * arg_v.array()));
+    // clang-format on
 
-  EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
+    EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
+  }
 
   // TODO test wrong sizes & co
 }
