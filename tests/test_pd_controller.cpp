@@ -200,7 +200,27 @@ TEST(PdControllerTest, ComputeControl) {
     // clang-format on
 
     EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
-  }
 
-  // TODO test wrong sizes & co
+    EXPECT_DEBUG_DEATH(
+        {
+          const auto _ = pd_ctrl.compute_control(
+              arg_q, Eigen::VectorXd::Random(arg_q.size() + 1));
+        },
+        ::testing::ContainsRegex("Size missmatch"));
+
+    EXPECT_DEBUG_DEATH(
+        {
+          const auto _ = pd_ctrl.compute_control(
+              Eigen::VectorXd::Random(arg_v.size() + 1), arg_v);
+        },
+        ::testing::ContainsRegex("Size missmatch"));
+
+    EXPECT_DEBUG_DEATH(
+        {
+          const auto _ = pd_ctrl.compute_control(
+              Eigen::VectorXd::Random(refs.q.size() + 1),
+              Eigen::VectorXd::Random(refs.q.size() + 1));
+        },
+        ::testing::ContainsRegex("Size missmatch"));
+  }
 }
