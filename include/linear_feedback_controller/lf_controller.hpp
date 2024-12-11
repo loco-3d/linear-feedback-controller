@@ -20,6 +20,7 @@ class LFController {
       const linear_feedback_controller_msgs::Eigen::Sensor& sensor_msg,
       const linear_feedback_controller_msgs::Eigen::Control& control_msg);
 
+private:
   Eigen::VectorXd desired_configuration_;
   Eigen::VectorXd desired_velocity_;
   Eigen::VectorXd measured_configuration_;
