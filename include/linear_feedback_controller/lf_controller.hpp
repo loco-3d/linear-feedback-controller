@@ -11,6 +11,8 @@ class LFController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
+  static constexpr int kNbFreeFlyerDof = 6;
+
   LFController();
   virtual ~LFController();
 
@@ -35,8 +37,6 @@ private:
 
   Eigen::VectorXd control_;
   RobotModelBuilder::SharedPtr rmb_;
-
-  static constexpr int kNbFreeFlyerDof = 6;
 };
 
 }  // namespace linear_feedback_controller
