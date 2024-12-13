@@ -3,7 +3,7 @@
 #include <array>
 #include <ostream>
 #include <type_traits>
-#include <utility> // std::forward
+#include <utility>  // std::forward
 
 namespace test::utils {
 
@@ -31,16 +31,18 @@ constexpr auto MakeArray(T &&...values) -> std::array<ValueType, sizeof...(T)> {
 
 namespace meta {
 
-template <typename T, typename = void> struct IsStreamable : std::false_type {};
+template <typename T, typename = void>
+struct IsStreamable : std::false_type {};
 
 template <typename T>
 struct IsStreamable<T, std::void_t<decltype(std::declval<std::ostream &>()
                                             << std::declval<T>())>>
     : std::true_type {};
 
-template <typename T> constexpr bool IsStreamable_v = IsStreamable<T>::value;
+template <typename T>
+constexpr bool IsStreamable_v = IsStreamable<T>::value;
 
-} // namespace meta
+}  // namespace meta
 
 /**
  *  \brief If possible, prints \a value to \a os, otherwise prints \a backup
@@ -52,10 +54,9 @@ template <typename T> constexpr bool IsStreamable_v = IsStreamable<T>::value;
  *  \return std::ostream& The ostream used
  */
 template <typename T>
-constexpr auto
-TryToPrintTo(T &&value, std::ostream &os,
-             std::string_view backup = "<Not Printable>") -> void {
-
+constexpr auto TryToPrintTo(T &&value, std::ostream &os,
+                            std::string_view backup = "<Not Printable>")
+    -> void {
   if constexpr (meta::IsStreamable_v<std::remove_cv_t<decltype(value)>>) {
     os << std::forward<T>(value);
   } else {
@@ -77,8 +78,8 @@ TryToPrintTo(T &&value, std::ostream &os,
  *
  *  \tparam ValueType The underlying type of the value we wish to mutate
  */
-template <typename _ValueType> struct Mutation {
-
+template <typename _ValueType>
+struct Mutation {
   /// Underlying ValueType stored inside the mutation
   using ValueType = _ValueType;
 
@@ -129,8 +130,8 @@ template <typename _ValueType> struct Mutation {
    *  \param[in] revert True if we wish to revert the previous data before
    */
   template <typename T>
-  constexpr auto Reset(ValueType &new_data, T &&tmp,
-                       bool revert = true) -> void {
+  constexpr auto Reset(ValueType &new_data, T &&tmp, bool revert = true)
+      -> void {
     if (revert) {
       Revert();
     }
@@ -174,7 +175,7 @@ template <typename _ValueType> struct Mutation {
    */
   constexpr auto GetOldValue() noexcept -> ValueType & { return old_value_; }
 
-private:
+ private:
   /// Private ctor (/!\ Assumes that \a ptr is NOT NULL /!\)
   template <typename T>
   constexpr Mutation(ValueType *ptr, T &&tmp) : ptr_(ptr), old_value_(*ptr_) {
@@ -200,8 +201,8 @@ private:
  *                              when going out of scope
  */
 template <typename ValueType, typename T>
-constexpr auto TemporaryMutate(ValueType &value,
-                               T &&tmp) -> Mutation<ValueType> {
+constexpr auto TemporaryMutate(ValueType &value, T &&tmp)
+    -> Mutation<ValueType> {
   return Mutation<ValueType>{value, std::forward<T>(tmp)};
 }
 
@@ -243,4 +244,4 @@ constexpr auto PrintTo(const Mutation<ValueType> &mutation,
     *os << "}";
   }
 }
-} // namespace test::utils
+}  // namespace test::utils

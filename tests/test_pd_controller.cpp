@@ -2,11 +2,9 @@
 #include <limits>
 #include <optional>
 
-#include "gtest/gtest.h"
-
-#include "linear_feedback_controller/pd_controller.hpp"
-
 #include "Utils.hpp"
+#include "gtest/gtest.h"
+#include "linear_feedback_controller/pd_controller.hpp"
 
 using test::utils::MakeArray;
 using test::utils::TemporaryMutate;
