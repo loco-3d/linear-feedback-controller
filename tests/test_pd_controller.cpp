@@ -3,42 +3,15 @@
 #include <optional>
 
 #include "gtest/gtest.h"
+
 #include "linear_feedback_controller/pd_controller.hpp"
 
+#include "Utils.hpp"
+
+using test::utils::MakeArray;
+using test::utils::TemporaryMutate;
+
 using namespace linear_feedback_controller;
-
-// Generate an array of a given type with its size deduced by the number of args
-//
-// This may be usefull when you don't want to specify by hand the number of
-// elements inside an array but want to force the value_type of the array (in
-// order to force conversion & co ...)
-template <typename ValueType, typename... T>
-constexpr auto MakeArray(T &&...values) -> std::array<ValueType, sizeof...(T)> {
-  return std::array<ValueType, sizeof...(T)>{std::forward<T>(values)...};
-}
-
-// RAII mutator, use to temporary modify a value given a reference and a tmp
-// value
-//
-// WARNING: Dangling references & co ...
-template <typename ValueType>
-struct TemporaryMutate {
-  TemporaryMutate() = delete;
-
-  template <typename T>
-  TemporaryMutate(ValueType &data, T &&tmp_value)
-      : data_(data), before_(data_) {
-    data_ = std::forward<T>(tmp_value);
-  }
-
-  virtual ~TemporaryMutate() { data_ = before_; }
-
-  constexpr auto GetOldValue() const -> const ValueType & { return before_; }
-
- private:
-  ValueType &data_;
-  ValueType before_;
-};
 
 TEST(PdControllerTest, Ctor) {
   EXPECT_NO_THROW({ const auto pd_ctrl = PDController(); });
@@ -79,19 +52,13 @@ TEST(PdControllerTest, SetGains) {
          }) {
       SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
 
-      {
-        SCOPED_TRACE("P");
-        auto _ = TemporaryMutate{requested_gains.p(0), special_value};
-        EXPECT_NO_THROW(
-            { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-      }
+      auto mutation = TemporaryMutate(requested_gains.p(0), special_value);
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
 
-      {
-        SCOPED_TRACE("D");
-        auto _ = TemporaryMutate{requested_gains.d(0), special_value};
-        EXPECT_NO_THROW(
-            { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-      }
+      mutation.Reset(requested_gains.d(0), special_value);
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
     }
   }
 
@@ -146,19 +113,13 @@ TEST(PdControllerTest, SetReferences) {
          }) {
       SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
 
-      {
-        SCOPED_TRACE("TAU");
-        auto _ = TemporaryMutate{requested_refs.tau(0), special_value};
-        EXPECT_NO_THROW(
-            { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-      }
+      auto mutation = TemporaryMutate(requested_refs.tau(0), special_value);
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
 
-      {
-        SCOPED_TRACE("Q");
-        auto _ = TemporaryMutate{requested_refs.q(0), special_value};
-        EXPECT_NO_THROW(
-            { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-      }
+      mutation.Reset(requested_refs.q(0), special_value);
+      EXPECT_NO_THROW(
+          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
     }
   }
 
