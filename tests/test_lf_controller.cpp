@@ -4,4 +4,6 @@
 
 using namespace linear_feedback_controller;
 
-TEST(LfControllerTest, TODO) {}
+TEST(LfControllerTest, Ctor) {
+  EXPECT_NO_THROW({ auto ctrl = LFController(); });
+}
