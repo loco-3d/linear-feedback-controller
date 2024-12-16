@@ -33,7 +33,8 @@ struct Gains {
 TEST(PdControllerTest, SetGains) {
   auto pd_ctrl = PDController();
 
-  EXPECT_NO_THROW({ pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+  EXPECT_ANY_THROW(
+      { pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
 
   for (const auto size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000)) {
     SCOPED_TRACE(::testing::Message() << "Same gains size: " << size);
@@ -51,11 +52,11 @@ TEST(PdControllerTest, SetGains) {
       SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
 
       auto mutation = TemporaryMutate(requested_gains.p(0), special_value);
-      EXPECT_NO_THROW(
+      EXPECT_ANY_THROW(
           { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
 
       mutation.Reset(requested_gains.d(0), special_value);
-      EXPECT_NO_THROW(
+      EXPECT_ANY_THROW(
           { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
     }
   }
@@ -68,7 +69,7 @@ TEST(PdControllerTest, SetGains) {
     const auto requested_gains = Gains::Random(p_size, d_size);
     // FIXME: I guess it should fail but set_gains doesn't provide any feedback
     // on failure
-    EXPECT_NO_THROW(
+    EXPECT_ANY_THROW(
         { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
   }
 }
@@ -112,11 +113,11 @@ TEST(PdControllerTest, SetReferences) {
       SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
 
       auto mutation = TemporaryMutate(requested_refs.tau(0), special_value);
-      EXPECT_NO_THROW(
+      EXPECT_ANY_THROW(
           { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
 
       mutation.Reset(requested_refs.q(0), special_value);
-      EXPECT_NO_THROW(
+      EXPECT_ANY_THROW(
           { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
     }
   }
@@ -129,7 +130,7 @@ TEST(PdControllerTest, SetReferences) {
     const auto requested_refs = References::Random(tau_size, q_size);
     // FIXME: I guess it should fail but set_ref doesn't provide any feedback on
     // failure
-    EXPECT_NO_THROW(
+    EXPECT_ANY_THROW(
         { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
   }
 }
@@ -160,6 +161,7 @@ TEST(PdControllerTest, ComputeControl) {
 
     EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
 
+    // NOTE: compute_control use asserts for errors handling
     EXPECT_DEBUG_DEATH(
         {
           const auto _ = pd_ctrl.compute_control(
