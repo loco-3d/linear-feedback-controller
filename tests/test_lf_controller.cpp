@@ -8,8 +8,8 @@ using namespace linear_feedback_controller;
 
 // EXAMPLE_ROBOT_DATA_MODEL_DIR is a compile definition imported when linking to
 // example-robot-data
-constexpr auto ROBOT_MODEL_DIR_PATH =
-    std::string_view{EXAMPLE_ROBOT_DATA_MODEL_DIR};
+// constexpr auto ROBOT_MODEL_DIR_PATH =
+//     std::string_view{EXAMPLE_ROBOT_DATA_MODEL_DIR};
 
 TEST(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
