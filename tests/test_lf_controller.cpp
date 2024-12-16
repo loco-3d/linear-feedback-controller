@@ -15,6 +15,14 @@ TEST(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
 }
 
+TEST(LfControllerTest, InitializeNullptr) {
+  auto ctrl = LFController();
+  EXPECT_ANY_THROW({
+    // Null ?
+    ctrl.initialize(nullptr);
+  });
+}
+
 TEST(LfControllerTest, InitializeEmptyModel) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({
