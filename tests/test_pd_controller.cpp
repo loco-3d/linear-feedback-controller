@@ -1,137 +1,173 @@
-#include <array>
-#include <limits>
-#include <optional>
+#include <limits>  // numeric_limits
 
-#include "Utils.hpp"
-#include "gtest/gtest.h"
+#include "Utils/Eigen.hpp"
+#include "Utils/Mutation.hpp"
+using tests::utils::TemporaryMutate;
+
+#include "Utils/PdController.hpp"
+using tests::utils::Gains;
+using tests::utils::References;
+
 #include "linear_feedback_controller/pd_controller.hpp"
+using linear_feedback_controller::PDController;
 
-using test::utils::MakeArray;
-using test::utils::TemporaryMutate;
-
-using namespace linear_feedback_controller;
+#include "gtest/gtest.h"
 
 TEST(PdControllerTest, Ctor) {
   EXPECT_NO_THROW({ const auto pd_ctrl = PDController(); });
 }
 
-struct Gains {
-  using IdxType = Eigen::Index;
-
-  Eigen::VectorXd p;
-  Eigen::VectorXd d;
-
-  static auto Random(IdxType p_size,
-                     std::optional<IdxType> d_size = std::nullopt) -> Gains {
-    return Gains{
-        .p = Eigen::VectorXd::Random(p_size),
-        .d = Eigen::VectorXd::Random(d_size.value_or(p_size)),
-    };
-  }
-};
-
-TEST(PdControllerTest, SetGains) {
+TEST(PdControllerTest, SetGainsEmpty) {
   auto pd_ctrl = PDController();
 
   EXPECT_ANY_THROW(
       { pd_ctrl.set_gains(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+}
 
-  for (const auto size : MakeArray<Gains::IdxType>(1, 3, 4, 50, 1000)) {
-    SCOPED_TRACE(::testing::Message() << "Same gains size: " << size);
-    auto requested_gains = Gains::Random(size);
-    EXPECT_NO_THROW(
-        { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-    // FIXME: How to test the validity ??
+TEST(PdControllerTest, SetGainsWithSpecialDouble) {
+  auto pd_ctrl = PDController();
 
-    // Test for special double values acceptance
-    for (const auto special_value : {
+  constexpr auto size = 3u;
+  auto requested_gains = Gains::Random(size);
+
+  // Test for special double values acceptance or not ?
+
+  // Note: for some reason auto& doesn't work with the operator()(Index) of
+  // Eigen Matrixes and return a const ref instead of a normal ref:
+  // -> for (auto &ref : {requested_gains.d(0), ...})
+  // -> ref type is evaluated to 'const double&' instead of 'double&' (bug ?)
+  // To bypass this, we use direct raw ptr
+  for (auto *const ptr : {
+           std::addressof(requested_gains.d(0)),
+           // std::addressof(requested_gains.d(size - 1)),
+
+           std::addressof(requested_gains.p(0)),
+           // std::addressof(requested_gains.p(size - 1)),
+       }) {
+    for (auto tmp_value : {
              std::numeric_limits<double>::infinity(),
              std::numeric_limits<double>::quiet_NaN(),
              std::numeric_limits<double>::signaling_NaN(),
          }) {
-      SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
+      auto mutation = TemporaryMutate(*ptr, tmp_value);
+      SCOPED_TRACE(::testing::Message() << '\n' << requested_gains);
 
-      auto mutation = TemporaryMutate(requested_gains.p(0), special_value);
-      EXPECT_ANY_THROW(
-          { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
-
-      mutation.Reset(requested_gains.d(0), special_value);
+      // TODO: Is it an error or not ?
       EXPECT_ANY_THROW(
           { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
     }
   }
+}
 
-  using SizePair = std::array<Gains::IdxType, 2>;
-  for (const auto [p_size, d_size] : MakeArray<SizePair>(
-           SizePair{1, 2}, SizePair{4, 3}, SizePair{50, 1000})) {
-    SCOPED_TRACE(::testing::Message()
-                 << "Different Sizes: P = " << p_size << ", D = " << d_size);
-    const auto requested_gains = Gains::Random(p_size, d_size);
-    // FIXME: I guess it should fail but set_gains doesn't provide any feedback
-    // on failure
+TEST(PdControllerTest, SetGainsWithDifferentSizes) {
+  auto pd_ctrl = PDController();
+
+  for (auto &&requested_gains :
+       {
+           Gains::Random(1, 2),
+           Gains::Random(4, 3),
+           Gains::Random(50, 1000),
+       })
+
+  {
+    SCOPED_TRACE(::testing::Message() << '\n' << requested_gains);
     EXPECT_ANY_THROW(
         { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
   }
 }
 
-struct References {
-  using IdxType = Eigen::Index;
-
-  Eigen::VectorXd tau;
-  Eigen::VectorXd q;
-
-  static auto Random(IdxType tau_size,
-                     std::optional<IdxType> q_size = std::nullopt)
-      -> References {
-    return References{
-        .tau = Eigen::VectorXd::Random(tau_size),
-        .q = Eigen::VectorXd::Random(q_size.value_or(tau_size)),
-    };
-  }
-};
-
-TEST(PdControllerTest, SetReferences) {
+TEST(PdControllerTest, SetGains) {
   auto pd_ctrl = PDController();
 
-  EXPECT_NO_THROW(
-      { pd_ctrl.set_reference(Eigen::VectorXd{}, Eigen::VectorXd{}); });
+  for (auto &&requested_gains :
+       {
+           Gains::Random(1),
+           Gains::Random(3),
+           Gains::Random(4),
+           Gains::Random(50),
+           Gains::Random(1000),
+       })
 
-  for (const auto size : MakeArray<References::IdxType>(1, 3, 4, 50, 1000)) {
-    SCOPED_TRACE(::testing::Message() << "Same gains size: " << size);
-
-    auto requested_refs = References::Random(size);
+  {
+    SCOPED_TRACE(::testing::Message() << '\n' << requested_gains);
     EXPECT_NO_THROW(
-        { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-    // FIXME: How to test the validity ??
+        { pd_ctrl.set_gains(requested_gains.p, requested_gains.d); });
+    // FIXME: How to confirm that it succeeded ?
+  }
+}
 
-    // Test for special double values acceptance
-    for (const auto special_value : {
+TEST(PdControllerTest, SetReferencesWithSpecialDouble) {
+  auto pd_ctrl = PDController();
+
+  constexpr auto size = 3u;
+  auto requested_references = References::Random(size);
+
+  // Test for special double values acceptance or not ?
+
+  // Note: for some reason auto& doesn't work with the operator()(Index) of
+  // Eigen Matrixes and return a const ref instead of a normal ref:
+  // -> for (auto &ref : {requested_references.tau(0), ...})
+  // -> ref type is evaluated to 'const double&' instead of 'double&' (bug ?)
+  // To bypass this, we use direct raw ptr
+  for (auto *const ptr : {
+           std::addressof(requested_references.tau(0)),
+           // std::addressof(requested_references.tau(size - 1)),
+
+           std::addressof(requested_references.q(0)),
+           // std::addressof(requested_references.q(size - 1)),
+       }) {
+    for (auto tmp_value : {
              std::numeric_limits<double>::infinity(),
              std::numeric_limits<double>::quiet_NaN(),
              std::numeric_limits<double>::signaling_NaN(),
          }) {
-      SCOPED_TRACE(::testing::Message() << "Special value: " << special_value);
+      auto mutation = TemporaryMutate(*ptr, tmp_value);
+      SCOPED_TRACE(::testing::Message() << '\n' << requested_references);
 
-      auto mutation = TemporaryMutate(requested_refs.tau(0), special_value);
-      EXPECT_ANY_THROW(
-          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
-
-      mutation.Reset(requested_refs.q(0), special_value);
-      EXPECT_ANY_THROW(
-          { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+      // TODO: Is it an error or not ?
+      EXPECT_ANY_THROW({
+        pd_ctrl.set_reference(requested_references.tau, requested_references.q);
+      });
     }
   }
+}
 
-  using SizePair = std::array<References::IdxType, 2>;
-  for (const auto [tau_size, q_size] : MakeArray<SizePair>(
-           SizePair{1, 2}, SizePair{4, 3}, SizePair{50, 1000})) {
-    SCOPED_TRACE(::testing::Message() << "Different Sizes: TAU = " << tau_size
-                                      << ", Q = " << q_size);
-    const auto requested_refs = References::Random(tau_size, q_size);
-    // FIXME: I guess it should fail but set_ref doesn't provide any feedback on
-    // failure
-    EXPECT_ANY_THROW(
-        { pd_ctrl.set_reference(requested_refs.tau, requested_refs.q); });
+TEST(PdControllerTest, SetReferencesWithDifferentSizes) {
+  auto pd_ctrl = PDController();
+
+  for (auto &&requested_references :
+       {
+           References::Random(1, 2),
+           References::Random(4, 3),
+           References::Random(50, 1000),
+       })
+
+  {
+    SCOPED_TRACE(::testing::Message() << '\n' << requested_references);
+    EXPECT_ANY_THROW({
+      pd_ctrl.set_reference(requested_references.tau, requested_references.q);
+    });
+  }
+}
+
+TEST(PdControllerTest, SetReferences) {
+  auto pd_ctrl = PDController();
+
+  for (auto &&requested_references :
+       {
+           References::Random(1),
+           References::Random(3),
+           References::Random(4),
+           References::Random(50),
+           References::Random(1000),
+       })
+
+  {
+    SCOPED_TRACE(::testing::Message() << '\n' << requested_references);
+    EXPECT_NO_THROW({
+      pd_ctrl.set_reference(requested_references.tau, requested_references.q);
+    });
+    // FIXME: How to confirm that it succeeded ?
   }
 }
 
@@ -139,26 +175,33 @@ TEST(PdControllerTest, ComputeControl) {
   auto pd_ctrl = PDController();
 
   for (const auto size : {1u, 2u, 5u, 20u}) {
-    SCOPED_TRACE(::testing::Message() << "Problem size = " << size);
-
     const auto gains = Gains::Random(size);
-    pd_ctrl.set_gains(gains.p, gains.d);
-
     const auto refs = References::Random(size);
-    pd_ctrl.set_reference(refs.tau, refs.q);
 
     const Eigen::VectorXd arg_q = Eigen::VectorXd::Random(size);
     const Eigen::VectorXd arg_v = Eigen::VectorXd::Random(size);
 
-    // o = tau_r - (p * (q - q_r)) - (d * v)
+    std::stringstream trace_log;
+    trace_log << '\n' << gains << '\n' << refs;
+
+    trace_log << "\nQ = ";
+    PrintTo(arg_q, &trace_log);
+
+    trace_log << "\nV = ";
+    PrintTo(arg_v, &trace_log);
+
+    SCOPED_TRACE(trace_log.str());
 
     // clang-format off
-  const Eigen::VectorXd expected_control =
-    (refs.tau.array()
-     - (gains.p.array() * (arg_q - refs.q).array())
-     - (gains.d.array() * arg_v.array()));
+    // o = tau_r - (p * (q - q_r)) - (d * v)
+    const Eigen::VectorXd expected_control =
+      (refs.tau.array()
+       - (gains.p.array() * (arg_q - refs.q).array())
+       - (gains.d.array() * arg_v.array()));
     // clang-format on
 
+    SetTo(pd_ctrl, gains);
+    SetTo(pd_ctrl, refs);
     EXPECT_EQ(pd_ctrl.compute_control(arg_q, arg_v), expected_control);
 
     // NOTE: compute_control use asserts for errors handling
