@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <ostream>
 #include <type_traits>
 #include <utility>  // std::forward
@@ -23,28 +22,6 @@ template <typename T>
 constexpr bool IsStreamable_v = IsStreamable<T>::value;
 
 }  // namespace details
-
-/**
- *  \brief Generate a std::array of variable size with a fixed type
- *
- *  This function may be used when people want to create let the compiler
- *  deduces the size of an array<> based on the number of argument provided at
- *  construction but force the type contained within the array since it
- *  cast of each values provided into the ValueType.
- *
- *  Example: https://godbolt.org/z/qE84bKrdx
- *
- *  \tparam ValueType The array value_type needed
- *  \tparam ...T Deduces types of the values forwarded
- *
- *  \param ...values Initial values used to construct the array
- *  \return std::array<ValueType, sizeof...(T)> The array initialized
- */
-template <typename ValueType, typename... T>
-constexpr auto MakeArray(T &&...values) -> std::array<ValueType, sizeof...(T)> {
-  return std::array<ValueType, sizeof...(T)>{
-      ValueType{std::forward<T>(values)}...};
-}
 
 /**
  *  \brief If possible, prints \a value to \a os, otherwise prints \a backup

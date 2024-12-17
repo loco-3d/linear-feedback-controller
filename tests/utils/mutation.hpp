@@ -2,7 +2,7 @@
 
 #include <ostream>
 
-#include "core.hpp"  // TryToPrintTo
+#include "print_to.hpp"  // TryToPrintTo
 
 namespace tests::utils {
 
