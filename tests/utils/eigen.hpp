@@ -11,6 +11,7 @@ namespace tests::utils {
 
 namespace details {
 
+/// Meta function checking that T is a Eigen::Vector<> (i.e. dimension is 1)
 template <typename T, typename = void>
 struct IsEigenVector : std::false_type {};
 
@@ -24,22 +25,45 @@ constexpr bool IsEigenVector_v = IsEigenVector<T>::value;
 
 }  // namespace details
 
+/// Inside a vector, represents a strip using the expected number of head/tail
+/// elements needed
 struct Strip {
-  std::size_t head;
-  std::size_t tail;
+  std::size_t head; /*!< Number of elements at the head of the vector */
+  std::size_t tail; /*!< Number of elements at the tail of the vector */
 };
 
+/// Print format data structure use to control formating of PrintTo
 struct VectorPrintFormat {
   Eigen::IOFormat io_fmt;  // This forwarded to Eigen::IOFormat
 
-  std::optional<Strip> strip;
-  bool with_size;
+  std::optional<Strip> strip; /*!< Shorten the number of elements printed */
+  bool with_size; /*!< Add the size of the vector at the beginning */
 };
 
 }  // namespace tests::utils
 
 // Inside Eigen namespace for ADL
 namespace Eigen {
+
+/**
+ *  \brief Print \a vector into \a os, given \a fmt
+ *
+ *  Prints the vector using 'Vector{.data = <...>}' format, with <...> begin the
+ *  result of the default eigen stream operator (given the io_fmt provided).
+ *
+ *  When adding '.with_size = true' to the format, it prepends '.data = <...>'
+ *  with '.size = N, '.
+ *
+ *  Striping shorten the number of elements printed and only prints the first
+ *  'strip.head' and last 'strip.tail' elements, separated by '...'.
+ *
+ *  The default format prints the vector with its size, in a row, separated by
+ *  white space and stiped in order to only show the first and last 2 elements.
+ *
+ *  \param[in] vector The vector we wish to print
+ *  \param[inout] os Ptr to the ostream we wish to print to
+ *  \param[in] fmt The vector format used when printing
+ */
 template <typename VectorType, typename...,
           std::enable_if_t<tests::utils::details::IsEigenVector_v<VectorType>,
                            bool> = true>
