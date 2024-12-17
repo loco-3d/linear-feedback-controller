@@ -1,10 +1,10 @@
 #include <limits>  // numeric_limits
 
-#include "Utils/Eigen.hpp"
-#include "Utils/Mutation.hpp"
+#include "utils/eigen.hpp"
+#include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
-#include "Utils/PdController.hpp"
+#include "utils/pd_controller.hpp"
 using tests::utils::Gains;
 using tests::utils::References;
 

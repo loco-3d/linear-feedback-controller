@@ -5,7 +5,7 @@
 #include <string_view>
 #include <tuple>
 
-#include "Eigen.hpp"  // PrintTo(DenseBase<>)
+#include "eigen.hpp"  // PrintTo(DenseBase<>)
 #include "linear_feedback_controller/pd_controller.hpp"
 
 namespace tests::utils {
