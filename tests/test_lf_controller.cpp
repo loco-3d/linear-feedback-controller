@@ -1,21 +1,29 @@
 #include <memory>
-#include <string_view>
+
+#include "linear_feedback_controller/robot_model_builder.hpp"
+using linear_feedback_controller::RobotModelBuilder;
+
+#include "linear_feedback_controller/lf_controller.hpp"
+using linear_feedback_controller::LFController;
 
 #include "gtest/gtest.h"
-#include "linear_feedback_controller/lf_controller.hpp"
 
-using namespace linear_feedback_controller;
+class LfControllerTest : public ::testing::Test {
+ protected:
+  static void SetUpTestSuite() {}
 
-// EXAMPLE_ROBOT_DATA_MODEL_DIR is a compile definition imported when linking to
-// example-robot-data
-// constexpr auto ROBOT_MODEL_DIR_PATH =
-//     std::string_view{EXAMPLE_ROBOT_DATA_MODEL_DIR};
+  void SetUp() override {}
 
-TEST(LfControllerTest, Ctor) {
+  void TearDown() override {}
+
+  static void TearDownTestSuite() {}
+};
+
+TEST_F(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
 }
 
-TEST(LfControllerTest, InitializeNullptr) {
+TEST_F(LfControllerTest, InitializeNullptr) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({
     // Null ?
@@ -23,7 +31,7 @@ TEST(LfControllerTest, InitializeNullptr) {
   });
 }
 
-TEST(LfControllerTest, InitializeEmptyModel) {
+TEST_F(LfControllerTest, InitializeEmptyModel) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({
     // Empty Robot model
