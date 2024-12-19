@@ -81,3 +81,8 @@ TEST(LfControllerTest, Initialize) {
   auto ctrl = LFController();
   EXPECT_NO_THROW({ ctrl.initialize(talos_model_ptr); });
 }
+
+TEST(LfControllerTest, ComputeControlNotInitialized) {
+  auto ctrl = LFController();
+  EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
+}
