@@ -9,9 +9,10 @@ namespace tests::utils {
 /**
  *  @brief Safely close any std::FILE ptr
  *
- *  We use a lambda here because of a caveat of using std::unique_ptr with
- *  custom deleter. When using a function, the unique_ptr store the function ptr
- *  alongside the ptr to watch for, therefore doubling its size...
+ *  Architecture Decision (AD): We use a lambda here because of a caveat of
+ *  using std::unique_ptr<> with custom deleter. When using a function, the
+ *  unique_ptr store the function ptr alongside the ptr to watch for, therefore
+ *  doubling its size...
  *
  *  See https://godbolt.org/z/vh8zE4bYo
  *
@@ -42,7 +43,7 @@ inline auto FileOpen(const char* name, char const* const mode) noexcept
 }
 
 /**
- *  @brief Copy the file content into a std::string
+ *  @brief Dump the file content into a std::string
  *
  *  @warning Reading ends until EOF or if any file operation error happens,
  *           those must be checked by hand afterwards (std::ferror/std::feof)
