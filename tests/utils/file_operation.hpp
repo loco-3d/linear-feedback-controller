@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <string>
+#include <system_error>
 
 namespace tests::utils {
 
@@ -70,6 +72,28 @@ inline auto FileToString(std::FILE& file,
   output.resize(output.size() - (chunks - read));
 
   return output;
+}
+
+/**
+ *  @brief Dump the file located at \a path into a std::string
+ *
+ *  @param[in] path File path we wish to read from
+ *
+ *  @return std::string The file content store within a string
+ *
+ *  @throw std::system_error{} When opening the file failed
+ */
+inline auto FileToString(const std::filesystem::path& path) -> std::string {
+  const auto file_ptr = FileOpen(path.c_str(), "r");
+  if (file_ptr == nullptr) {
+    throw std::system_error{
+        errno,
+        std::generic_category(),
+        path.c_str(),
+    };
+  }
+
+  return FileToString(*file_ptr);
 }
 
 }  // namespace tests::utils
