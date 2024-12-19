@@ -17,6 +17,11 @@ using linear_feedback_controller::LFController;
 
 #include "gtest/gtest.h"
 
+static auto GetTalosFilePath() noexcept -> std::filesystem::path {
+  return std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) / "talos_data" /
+         "robots" / "talos_reduced.urdf";
+}
+
 TEST(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
 }
@@ -34,9 +39,7 @@ TEST(LfControllerTest, InitializeEmptyModel) {
 TEST(LfControllerTest, Initialize) {
   const auto talos_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf =
-              FileToString(std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
-                           "talos_data" / "robots" / "talos_reduced.urdf"),
+          .urdf = FileToString(GetTalosFilePath()),
           .joints =
               {
                   // TBD
