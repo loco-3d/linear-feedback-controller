@@ -32,20 +32,11 @@ TEST(LfControllerTest, InitializeEmptyModel) {
 }
 
 TEST(LfControllerTest, Initialize) {
-  const auto talos_urdf_file_path =
-      std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) / "talos_data" /
-      "robots" / "talos_reduced.urdf";
-
-  const auto talos_urdf_file = FileOpen(talos_urdf_file_path.c_str(), "r");
-  ASSERT_NE(talos_urdf_file, nullptr) << std::system_error{
-      errno,
-      std::generic_category(),
-      talos_urdf_file_path.c_str(),
-  }.what();
-
   const auto talos_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = FileToString(*talos_urdf_file),
+          .urdf =
+              FileToString(std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
+                           "talos_data" / "robots" / "talos_reduced.urdf"),
           .joints =
               {
                   // TBD
@@ -82,7 +73,6 @@ TEST(LfControllerTest, Initialize) {
           .has_free_flyer = true,
       }),
   };
-
   ASSERT_NE(talos_model_ptr, nullptr);
 
   auto ctrl = LFController();
