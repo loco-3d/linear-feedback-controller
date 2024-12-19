@@ -17,9 +17,10 @@ using linear_feedback_controller::LFController;
 
 #include "gtest/gtest.h"
 
-static auto GetTalosFilePath() noexcept -> std::filesystem::path {
-  return std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) / "talos_data" /
-         "robots" / "talos_reduced.urdf";
+static auto GetTalosFilePath() noexcept -> const std::filesystem::path& {
+  static const auto path = std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
+                           "talos_data" / "robots" / "talos_reduced.urdf";
+  return path;
 }
 
 TEST(LfControllerTest, Ctor) {
@@ -84,5 +85,38 @@ TEST(LfControllerTest, Initialize) {
 
 TEST(LfControllerTest, ComputeControlNotInitialized) {
   auto ctrl = LFController();
+  EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
+}
+
+TEST(LfControllerTest, ComputeControlNoInput) {
+  const auto talos_model_ptr = std::shared_ptr{
+      MakeBuilderFrom({
+          .urdf = FileToString(GetTalosFilePath()),
+          .joints =
+              {
+                  // TBD
+                  {.name = "root_joint"},        {.name = "leg_left_1_joint"},
+                  {.name = "leg_left_2_joint"},  {.name = "leg_left_3_joint"},
+                  {.name = "leg_left_4_joint"},  {.name = "leg_left_5_joint"},
+                  {.name = "leg_left_6_joint"},  {.name = "leg_right_1_joint"},
+                  {.name = "leg_right_2_joint"}, {.name = "leg_right_3_joint"},
+                  {.name = "leg_right_4_joint"}, {.name = "leg_right_5_joint"},
+                  {.name = "leg_right_6_joint"}, {.name = "torso_1_joint"},
+                  {.name = "torso_2_joint"},     {.name = "arm_left_1_joint"},
+                  {.name = "arm_left_2_joint"},  {.name = "arm_left_3_joint"},
+                  {.name = "arm_left_4_joint"},  {.name = "arm_left_5_joint"},
+                  {.name = "arm_left_6_joint"},  {.name = "arm_left_7_joint"},
+                  {.name = "arm_right_1_joint"}, {.name = "arm_right_2_joint"},
+                  {.name = "arm_right_3_joint"}, {.name = "arm_right_4_joint"},
+                  {.name = "arm_right_5_joint"}, {.name = "arm_right_6_joint"},
+                  {.name = "arm_right_7_joint"},
+              },
+          .has_free_flyer = true,
+      }),
+  };
+  ASSERT_NE(talos_model_ptr, nullptr);
+
+  auto ctrl = LFController();
+  ctrl.initialize(talos_model_ptr);
   EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
