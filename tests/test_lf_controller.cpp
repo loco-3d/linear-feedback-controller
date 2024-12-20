@@ -15,6 +15,7 @@ using linear_feedback_controller::RobotModelBuilder;
 #include "linear_feedback_controller/lf_controller.hpp"
 using linear_feedback_controller::LFController;
 
+#include "example-robot-data/path.hpp"  // EXAMPLE_ROBOT_DATA_MODEL_DIR
 #include "gtest/gtest.h"
 
 static auto GetTalosFilePath() noexcept -> const std::filesystem::path& {
