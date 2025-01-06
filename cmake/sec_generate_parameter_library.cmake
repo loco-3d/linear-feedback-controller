@@ -111,7 +111,7 @@ function(sec_generate_parameter_library_markdown TARGET_NAME YAML_FILE)
 
   # Set the output parameter header file name
   get_filename_component(MARKDOWN_FILE ${YAML_FILE} NAME_WE)
-  set(MARKDOWN_FILE ${CMAKE_CURRENT_BINARY_DIR}/doc/${MARKDOWN_FILE}.md)
+  set(MARKDOWN_FILE ${CMAKE_CURRENT_BINARY_DIR}/${MARKDOWN_FILE}.md)
 
   # Generate the header for the library
   add_custom_target(
