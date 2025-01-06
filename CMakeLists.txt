@@ -31,7 +31,7 @@ sec_generate_parameter_library(
 add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
 # Joint estimator params
 sec_generate_parameter_library_markdown(joint_state_estimator_parameters_doc
-                                        src/linear_feedback_controller.yaml)
+                                        src/joint_state_estimator.yaml)
 sec_generate_parameter_library(
   joint_state_estimator_generated_parameters # Lib name
   joint_state_estimator_parameters # CMake target name for the parameter
