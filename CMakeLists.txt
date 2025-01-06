@@ -31,7 +31,7 @@ sec_generate_parameter_library(
 add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
 # Joint estimator params
 sec_generate_parameter_library_markdown(joint_state_estimator_parameters_doc
-                                        src/linear_feedback_controller.yaml)
+                                        src/joint_state_estimator.yaml)
 sec_generate_parameter_library(
   joint_state_estimator_generated_parameters # Lib name
   joint_state_estimator_parameters # CMake target name for the parameter
@@ -97,8 +97,10 @@ pluginlib_export_plugin_description_file(controller_interface
 #
 # Installation
 #
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
-        DESTINATION share/${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/linear_feedback_controller.md
+              ${CMAKE_CURRENT_BINARY_DIR}/joint_state_estimator.md
+        DESTINATION share/${PROJECT_NAME}/doc)
+
 install(
   PROGRAMS tests/pd_plus_controller.py
   DESTINATION lib/${PROJECT_NAME}
