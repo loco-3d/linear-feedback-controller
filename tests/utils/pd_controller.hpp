@@ -2,8 +2,6 @@
 
 #include <optional>
 #include <ostream>
-#include <string_view>
-#include <tuple>
 
 #include "eigen.hpp"  // PrintTo(DenseBase<>)
 #include "linear_feedback_controller/pd_controller.hpp"
@@ -57,14 +55,13 @@ constexpr auto PrintTo(const Gains &gains, std::ostream *os) -> void {
 
   *os << "Gains{";
 
-  for (auto &&[name, gain] : {
-           std::forward_as_tuple('p', gains.p),
-           std::forward_as_tuple('d', gains.d),
-       }) {
-    *os << '.' << name << " = ";
-    PrintTo(gain, os);
-    *os << ", ";
-  }
+  *os << ".p = ";
+  PrintTo(gains.p, os);
+  *os << ", ";
+
+  *os << ".d = ";
+  PrintTo(gains.d, os);
+  *os << ", ";
 
   *os << "}";
 }
@@ -122,15 +119,13 @@ constexpr auto PrintTo(const References &ref, std::ostream *os) -> void {
 
   *os << "References{";
 
-  using namespace std::string_view_literals;
-  for (auto &&[name, ref] : {
-           std::forward_as_tuple("tau"sv, ref.tau),
-           std::forward_as_tuple("q"sv, ref.q),
-       }) {
-    *os << '.' << name << " = ";
-    PrintTo(ref, os);
-    *os << ", ";
-  }
+  *os << ".tau = ";
+  PrintTo(ref.tau, os);
+  *os << ", ";
+
+  *os << ".q = ";
+  PrintTo(ref.q, os);
+  *os << ", ";
 
   *os << "}";
 }
