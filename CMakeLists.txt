@@ -108,8 +108,10 @@ pluginlib_export_plugin_description_file(controller_interface
 #
 # Installation
 #
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc
-        DESTINATION share/${PROJECT_NAME})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/linear_feedback_controller.md
+              ${CMAKE_CURRENT_BINARY_DIR}/joint_state_estimator.md
+        DESTINATION share/${PROJECT_NAME}/doc)
+
 install(
   PROGRAMS tests/pd_plus_controller.py
   DESTINATION lib/${PROJECT_NAME}
