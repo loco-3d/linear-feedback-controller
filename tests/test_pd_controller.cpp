@@ -31,25 +31,19 @@ TEST(PdControllerTest, SetGainsWithSpecialDouble) {
   auto requested_gains = Gains::Random(size);
 
   // Test for special double values acceptance or not ?
+  for (const auto &ref : {
+           std::ref(requested_gains.d(0)),
+           // std::ref(requested_gains.d(size - 1)),
 
-  // Note: for some reason auto& doesn't work with the operator()(Index) of
-  // Eigen Matrixes and return a const ref instead of a normal ref:
-  // -> for (auto &ref : {requested_gains.d(0), ...})
-  // -> ref type is evaluated to 'const double&' instead of 'double&' (bug ?)
-  // To bypass this, we use direct raw ptr
-  for (auto *const ptr : {
-           std::addressof(requested_gains.d(0)),
-           // std::addressof(requested_gains.d(size - 1)),
-
-           std::addressof(requested_gains.p(0)),
-           // std::addressof(requested_gains.p(size - 1)),
+           std::ref(requested_gains.p(0)),
+           // std::ref(requested_gains.p(size - 1)),
        }) {
     for (auto tmp_value : {
              std::numeric_limits<double>::infinity(),
              std::numeric_limits<double>::quiet_NaN(),
              std::numeric_limits<double>::signaling_NaN(),
          }) {
-      auto mutation = TemporaryMutate(*ptr, tmp_value);
+      auto mutation = TemporaryMutate(ref.get(), tmp_value);
       SCOPED_TRACE(::testing::Message() << '\n' << requested_gains);
 
       // TODO: Is it an error or not ?
@@ -103,25 +97,19 @@ TEST(PdControllerTest, SetReferencesWithSpecialDouble) {
   auto requested_references = References::Random(size);
 
   // Test for special double values acceptance or not ?
+  for (const auto &ref : {
+           std::ref(requested_references.tau(0)),
+           // std::ref(requested_references.tau(size - 1)),
 
-  // Note: for some reason auto& doesn't work with the operator()(Index) of
-  // Eigen Matrixes and return a const ref instead of a normal ref:
-  // -> for (auto &ref : {requested_references.tau(0), ...})
-  // -> ref type is evaluated to 'const double&' instead of 'double&' (bug ?)
-  // To bypass this, we use direct raw ptr
-  for (auto *const ptr : {
-           std::addressof(requested_references.tau(0)),
-           // std::addressof(requested_references.tau(size - 1)),
-
-           std::addressof(requested_references.q(0)),
-           // std::addressof(requested_references.q(size - 1)),
+           std::ref(requested_references.q(0)),
+           // std::ref(requested_references.q(size - 1)),
        }) {
     for (auto tmp_value : {
              std::numeric_limits<double>::infinity(),
              std::numeric_limits<double>::quiet_NaN(),
              std::numeric_limits<double>::signaling_NaN(),
          }) {
-      auto mutation = TemporaryMutate(*ptr, tmp_value);
+      auto mutation = TemporaryMutate(ref.get(), tmp_value);
       SCOPED_TRACE(::testing::Message() << '\n' << requested_references);
 
       // TODO: Is it an error or not ?
