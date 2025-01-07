@@ -128,3 +128,103 @@ TEST_F(LfControllerTest, ComputeControlNoInput) {
   ctrl.initialize(talos_model_ptr);
   EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
+
+TEST_F(LfControllerTest, ComputeControlUnknownJoints) {
+  const auto talos_model_ptr = std::shared_ptr{
+      MakeBuilderFrom({
+          .urdf = GetTalosUrdf(),
+          .joints =
+              {
+                  {.name = "root_joint"},
+                  {.name = "leg_left_1_joint"},
+              },
+          .has_free_flyer = true,
+      }),
+  };
+  ASSERT_NE(talos_model_ptr, nullptr);
+
+  auto ctrl = LFController();
+  ctrl.initialize(talos_model_ptr);
+
+  using linear_feedback_controller_msgs::Eigen::Control;
+  using linear_feedback_controller_msgs::Eigen::Sensor;
+
+  // TODO: Create function arguments with an unknown joint name
+  //  (not within the defined model)
+  EXPECT_ANY_THROW({
+    auto _ = ctrl.compute_control(
+        Sensor{
+            // TODO
+        },
+        Control{
+            // TODO
+        });
+  });
+}
+
+TEST_F(LfControllerTest, ComputeControlSizeMismatch) {
+  const auto talos_model_ptr = std::shared_ptr{
+      MakeBuilderFrom({
+          .urdf = GetTalosUrdf(),
+          .joints =
+              {
+                  {.name = "root_joint"},
+                  {.name = "leg_left_1_joint"},
+              },
+          .has_free_flyer = true,
+      }),
+  };
+  ASSERT_NE(talos_model_ptr, nullptr);
+
+  auto ctrl = LFController();
+  ctrl.initialize(talos_model_ptr);
+
+  using linear_feedback_controller_msgs::Eigen::Control;
+  using linear_feedback_controller_msgs::Eigen::Sensor;
+
+  // TODO: Create function arguments with an matrices/vectors size mismatch ?
+  //  (not within the defined model)
+  EXPECT_ANY_THROW({
+    auto _ = ctrl.compute_control(
+        Sensor{
+            // TODO
+        },
+        Control{
+            // TODO
+        });
+  });
+}
+
+TEST_F(LfControllerTest, ComputeControlValid) {
+  const auto talos_model_ptr = std::shared_ptr{
+      MakeBuilderFrom({
+          .urdf = GetTalosUrdf(),
+          .joints =
+              {
+                  {.name = "root_joint"},
+                  {.name = "leg_left_1_joint"},
+              },
+          .has_free_flyer = true,
+      }),
+  };
+  ASSERT_NE(talos_model_ptr, nullptr);
+
+  auto ctrl = LFController();
+  ctrl.initialize(talos_model_ptr);
+
+  using linear_feedback_controller_msgs::Eigen::Control;
+  using linear_feedback_controller_msgs::Eigen::Sensor;
+
+  // TODO: How to test it worked ?
+  EXPECT_EQ(
+      Eigen::VectorXd{
+          // TODO
+      },
+      ctrl.compute_control(
+          Sensor{
+              // TODO
+          },
+          Control{
+              // TODO
+          }));
+}
