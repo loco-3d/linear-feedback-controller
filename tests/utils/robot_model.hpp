@@ -38,7 +38,7 @@ constexpr auto ToString(JointType type) noexcept -> std::string_view {
  *  @param[in] type The JointType we wish to print
  *  @param[inout] os The output stream ptr we wish to print to
  */
-constexpr auto PrintTo(JointType type, std::ostream* os) noexcept -> void {
+constexpr auto PrintTo(JointType type, std::ostream *os) noexcept -> void {
   if (os == nullptr) return;
   *os << "JointType{ " << std::quoted(ToString(type)) << " }";
 }
@@ -81,7 +81,7 @@ struct Joint {
  *  @param[in] joint The jont we wish to print
  *  @param[inout] os The output stream ptr we wish to print to
  */
-constexpr auto PrintTo(const Joint& joint, std::ostream* os) noexcept -> void {
+constexpr auto PrintTo(const Joint &joint, std::ostream *os) noexcept -> void {
   if (os == nullptr) return;
 
   *os << "Joint{";
@@ -109,7 +109,7 @@ struct ModelPrintFormat {
  *  @param[inout] os The output stream ptr we wish to print to
  *  @param[in] fmt The format specifier use to print the model
  */
-constexpr auto PrintTo(const Model& model, std::ostream* os,
+constexpr auto PrintTo(const Model &model, std::ostream *os,
                        ModelPrintFormat fmt = {}) noexcept -> void {
   if (os == nullptr) return;
 
@@ -126,7 +126,7 @@ constexpr auto PrintTo(const Model& model, std::ostream* os,
   *os << ".has_free_flyer = " << model.has_free_flyer << ", ";
 
   *os << ".joints = {";
-  for (const auto& joint : model.joints) {
+  for (const auto &joint : model.joints) {
     PrintTo(joint, os);
     *os << ", ";
   }
@@ -142,17 +142,15 @@ constexpr auto PrintTo(const Model& model, std::ostream* os,
  *  @return std::unique_ptr<RobotModelBuilder> A valid RobotModelBuilder (i.e.
  *          build_model() returned true), nullptr otherwise
  */
-inline auto MakeBuilderFrom(const Model& model) noexcept
+inline auto MakeBuilderFrom(const Model &model) noexcept
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
-  auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
-
   auto controlled_joints = std::vector<std::string>{};
-  auto moving_joints = std::vector<std::string>{};
-
   controlled_joints.reserve(model.joints.size());
+
+  auto moving_joints = std::vector<std::string>{};
   moving_joints.reserve(model.joints.size());
 
-  for (const auto& joint : model.joints) {
+  for (const auto &joint : model.joints) {
     if (IsJointTypeControlled(joint.type)) {
       controlled_joints.emplace_back(joint.name);
     }
@@ -162,6 +160,7 @@ inline auto MakeBuilderFrom(const Model& model) noexcept
     }
   }
 
+  auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
   if (rmb->build_model(model.urdf, moving_joints, controlled_joints,
                        model.has_free_flyer)) {
     return rmb;
