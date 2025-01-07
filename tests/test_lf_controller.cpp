@@ -18,30 +18,37 @@ using linear_feedback_controller::LFController;
 #include "example-robot-data/path.hpp"  // EXAMPLE_ROBOT_DATA_MODEL_DIR
 #include "gtest/gtest.h"
 
-static auto GetTalosFilePath() noexcept -> const std::filesystem::path& {
-  static const auto path = std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
-                           "talos_data" / "robots" / "talos_reduced.urdf";
-  return path;
-}
+struct LfControllerTest : public ::testing::Test {
+ protected:
+  void SetUp() override {}
+  void TearDown() override {}
 
-TEST(LfControllerTest, Ctor) {
+  static auto GetTalosUrdf() -> const std::string& {
+    static const auto urdf =
+        FileToString(std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
+                     "talos_data" / "robots" / "talos_reduced.urdf");
+    return urdf;
+  }
+};
+
+TEST_F(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
 }
 
-TEST(LfControllerTest, InitializeNullptr) {
+TEST_F(LfControllerTest, InitializeNullptr) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ ctrl.initialize(nullptr); });
 }
 
-TEST(LfControllerTest, InitializeEmptyModel) {
+TEST_F(LfControllerTest, InitializeEmptyModel) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ ctrl.initialize(std::make_shared<RobotModelBuilder>()); });
 }
 
-TEST(LfControllerTest, Initialize) {
+TEST_F(LfControllerTest, Initialize) {
   const auto talos_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = FileToString(GetTalosFilePath()),
+          .urdf = GetTalosUrdf(),
           .joints =
               {
                   // TBD
@@ -84,15 +91,15 @@ TEST(LfControllerTest, Initialize) {
   EXPECT_NO_THROW({ ctrl.initialize(talos_model_ptr); });
 }
 
-TEST(LfControllerTest, ComputeControlNotInitialized) {
+TEST_F(LfControllerTest, ComputeControlNotInitialized) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
 
-TEST(LfControllerTest, ComputeControlNoInput) {
+TEST_F(LfControllerTest, ComputeControlNoInput) {
   const auto talos_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = FileToString(GetTalosFilePath()),
+          .urdf = GetTalosUrdf(),
           .joints =
               {
                   // TBD
