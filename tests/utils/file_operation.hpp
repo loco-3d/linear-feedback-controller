@@ -28,13 +28,14 @@ constexpr auto FileSafelyClose = [](std::FILE* const file) noexcept -> void {
 using FilePtr = std::unique_ptr<std::FILE, decltype(FileSafelyClose)>;
 
 /**
- *  @brief Wrapper around std::fopen in order to create a unique_ptr
+ *  @brief Wrapper around std::fopen in order to create a unique_ptr<std::FILE>
  *
  *  @param[in] name Name of the file, see std::fopen
  *  @param[in] mode File access flags (r, w, r+, w+, ...), see std::fopen
  *
- *  @return std::unique_ptr<> of an std::FILE with deleter to close the file
- *                            automatically
+ *  @return FilePtr containing a std::FILE on success, with a custom deleter to
+ *                  close the file automatically. Nullptr when the operation
+ *                  failed with errno set according to std::fopen().
  */
 inline auto FileOpen(const char* name, char const* const mode) noexcept
     -> FilePtr {
