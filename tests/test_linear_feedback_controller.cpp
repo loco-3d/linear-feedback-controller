@@ -7,3 +7,8 @@ using linear_feedback_controller::LinearFeedbackController;
 TEST(LinearFeedbackControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LinearFeedbackController{}; });
 }
+
+TEST(LinearFeedbackControllerTest, LoadEmptyParams) {
+  auto ctrl = LinearFeedbackController{};
+  EXPECT_FALSE(ctrl.load({}));
+}
