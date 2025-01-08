@@ -193,7 +193,7 @@ TEST_F(LfControllerTest, ComputeControlSizeMismatch) {
   });
 }
 
-TEST_F(LfControllerTest, ComputeControlValid) {
+TEST_F(LfControllerTest, ComputeControl) {
   const auto talos_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
           .urdf = GetTalosUrdf(),
