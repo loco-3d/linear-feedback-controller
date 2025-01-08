@@ -15,6 +15,10 @@ using linear_feedback_controller::RobotModelBuilder;
 #include "linear_feedback_controller/lf_controller.hpp"
 using linear_feedback_controller::LFController;
 
+#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
+using linear_feedback_controller_msgs::Eigen::Control;
+using linear_feedback_controller_msgs::Eigen::Sensor;
+
 #include "example-robot-data/path.hpp"  // EXAMPLE_ROBOT_DATA_MODEL_DIR
 #include "gtest/gtest.h"
 
@@ -146,9 +150,6 @@ TEST_F(LfControllerTest, ComputeControlUnknownJoints) {
   auto ctrl = LFController();
   ctrl.initialize(talos_model_ptr);
 
-  using linear_feedback_controller_msgs::Eigen::Control;
-  using linear_feedback_controller_msgs::Eigen::Sensor;
-
   // TODO: Create function arguments with an unknown joint name
   //  (not within the defined model)
   EXPECT_ANY_THROW({
@@ -179,9 +180,6 @@ TEST_F(LfControllerTest, ComputeControlSizeMismatch) {
   auto ctrl = LFController();
   ctrl.initialize(talos_model_ptr);
 
-  using linear_feedback_controller_msgs::Eigen::Control;
-  using linear_feedback_controller_msgs::Eigen::Sensor;
-
   // TODO: Create function arguments with an matrices/vectors size mismatch ?
   //  (not within the defined model)
   EXPECT_ANY_THROW({
@@ -211,9 +209,6 @@ TEST_F(LfControllerTest, ComputeControlValid) {
 
   auto ctrl = LFController();
   ctrl.initialize(talos_model_ptr);
-
-  using linear_feedback_controller_msgs::Eigen::Control;
-  using linear_feedback_controller_msgs::Eigen::Sensor;
 
   // TODO: How to test it worked ?
   EXPECT_EQ(
