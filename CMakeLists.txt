@@ -77,23 +77,26 @@ if(BUILD_TESTING)
 
   ament_auto_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
   target_link_libraries(test_averaging_filter ${PROJECT_NAME})
-  set_tests_properties(test_averaging_filter PROPERTIES
-      ENVIRONMENT_MODIFICATION
-      LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(
+    test_averaging_filter
+    PROPERTIES ENVIRONMENT_MODIFICATION
+               LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
 
   ament_auto_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
   target_link_libraries(test_min_jerk ${PROJECT_NAME})
-  set_tests_properties(test_min_jerk PROPERTIES
-      ENVIRONMENT_MODIFICATION
-      LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(
+    test_min_jerk
+    PROPERTIES ENVIRONMENT_MODIFICATION
+               LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
 
   ament_auto_add_gtest(test_robot_model_builder
                        tests/test_robot_model_builder.cpp)
   target_link_libraries(test_robot_model_builder ${PROJECT_NAME}
                         example-robot-data::example-robot-data)
-  set_tests_properties(test_robot_model_builder PROPERTIES
-      ENVIRONMENT_MODIFICATION
-      LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(
+    test_robot_model_builder
+    PROPERTIES ENVIRONMENT_MODIFICATION
+               LD_LIBRARY_PATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 #
