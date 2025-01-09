@@ -46,7 +46,7 @@ constexpr auto PrintTo(JointType type, std::ostream *os) noexcept -> void {
 /**
  *  @return True if the given type is 'Controlled'
  */
-constexpr auto IsJointTypeControlled(JointType type) noexcept -> bool {
+constexpr auto IsControlled(JointType type) noexcept -> bool {
   switch (type) {
     case JointType::Controlled:
     case JointType::Both:
@@ -59,7 +59,7 @@ constexpr auto IsJointTypeControlled(JointType type) noexcept -> bool {
 /**
  *  @return True if the given type is 'Moving'
  */
-constexpr auto IsJointTypeMoving(JointType type) noexcept -> bool {
+constexpr auto IsMoving(JointType type) noexcept -> bool {
   switch (type) {
     case JointType::Moving:
     case JointType::Both:
@@ -151,11 +151,11 @@ inline auto MakeBuilderFrom(const Model &model) noexcept
   moving_joints.reserve(model.joints.size());
 
   for (const auto &joint : model.joints) {
-    if (IsJointTypeControlled(joint.type)) {
+    if (IsControlled(joint.type)) {
       controlled_joints.emplace_back(joint.name);
     }
 
-    if (IsJointTypeMoving(joint.type)) {
+    if (IsMoving(joint.type)) {
       moving_joints.emplace_back(joint.name);
     }
   }
