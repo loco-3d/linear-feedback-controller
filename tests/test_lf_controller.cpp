@@ -117,16 +117,16 @@ TEST(LfControllerTest, ComputeControlUnknownJoints) {
   auto ctrl = LFController();
   ctrl.initialize(dummy_model_ptr);
 
-  // TODO: Create function arguments with an unknown joint name
-  //  (not within the defined model)
+  const auto name_begin =
+      std::cbegin(dummy_model_ptr->get_moving_joint_names());
+  const auto name_end = std::cend(dummy_model_ptr->get_moving_joint_names());
+
+  auto sensor = MakeRandomSensorForJoints(name_begin, name_end);
+  const auto control = MakeRandomControlForJoints(name_begin, name_end);
+
   EXPECT_ANY_THROW({
-    auto _ = ctrl.compute_control(
-        {
-            // TODO
-        },
-        {
-            // TODO
-        });
+    sensor.joint_state.name[0] = "this joint doesn't exist";
+    auto _ = ctrl.compute_control(sensor, control);
   });
 }
 
