@@ -34,10 +34,24 @@ struct Strip {
 
 /// Print format data structure use to control formating of PrintTo
 struct VectorPrintFormat {
-  Eigen::IOFormat io_fmt;  // This forwarded to Eigen::IOFormat
+  /// This is forwarded to Eigen::IOFormat
+  Eigen::IOFormat io_fmt = {
+      Eigen::StreamPrecision,  // precision
+      0,                       // flags
+      " ",                     // coeffSeparator
+      " ",                     // rowSeparator
+      "",                      // rowPrefix
+      "",                      // rowSuffix
+      "",                      // matPrefix
+      "",                      // matSuffix
+      ' ',                     // fill
+  };
 
-  std::optional<Strip> strip; /*!< Shorten the number of elements printed */
-  bool with_size; /*!< Add the size of the vector at the beginning */
+  /// Shorten the number of elements printed
+  std::optional<Strip> strip = std::nullopt;
+
+  /// Add the size of the vector at the beginning
+  bool with_size = true;
 };
 
 }  // namespace tests::utils
@@ -68,31 +82,16 @@ template <typename VectorType, typename...,
           std::enable_if_t<tests::utils::details::IsEigenVector_v<VectorType>,
                            bool> = true>
 auto PrintTo(const Eigen::DenseBase<VectorType> &vector, std::ostream *os,
-             tests::utils::VectorPrintFormat fmt = {
-                 .io_fmt =
-                     {
-                         Eigen::StreamPrecision,  // precision
-                         0,                       // flags
-                         " ",                     // coeffSeparator
-                         " ",                     // rowSeparator
-                         "",                      // rowPrefix
-                         "",                      // rowSuffix
-                         "",                      // matPrefix
-                         "",                      // matSuffix
-                         ' ',                     // fill
-                     },
-                 .strip = tests::utils::Strip{.head = 2, .tail = 2},
-                 .with_size = true,
-             }) -> void {
+             tests::utils::VectorPrintFormat fmt = {}) -> void {
   if (os == nullptr) return;
 
   *os << "Vector{";
 
   if (fmt.with_size) {
     *os << ".size() = " << vector.size() << ", ";
+    *os << ".data = ";
   }
 
-  *os << ".data = ";
   if (fmt.strip and (vector.size() > (fmt.strip->head + fmt.strip->tail))) {
     *os << vector.head(fmt.strip->head).format(fmt.io_fmt);
     *os << fmt.io_fmt.rowSeparator << "..." << fmt.io_fmt.rowSeparator;
