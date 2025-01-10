@@ -1,6 +1,3 @@
-#include <filesystem>
-#include <system_error>
-
 #include "utils/file_operation.hpp"
 using tests::utils::FileOpen;
 using tests::utils::FileToString;
@@ -8,6 +5,8 @@ using tests::utils::FileToString;
 #include "utils/robot_model.hpp"
 using tests::utils::JointType;
 using tests::utils::MakeBuilderFrom;
+using tests::utils::MakeValidRandomControlFor;
+using tests::utils::MakeValidRandomSensorFor;
 
 #include "linear_feedback_controller/robot_model_builder.hpp"
 using linear_feedback_controller::RobotModelBuilder;
@@ -207,19 +206,14 @@ TEST_F(LfControllerTest, ComputeControl) {
   };
   ASSERT_NE(talos_model_ptr, nullptr);
 
+  const auto sensor = MakeValidRandomSensorFor(*talos_model_ptr);
+  const auto control = MakeValidRandomControlFor(*talos_model_ptr);
+
+  // FIXME: Replace Random with the expected stuff...
+  const Eigen::VectorXd expected_control =
+      Eigen::VectorXd::Random(control.feedforward.size());
+
   auto ctrl = LFController();
   ctrl.initialize(talos_model_ptr);
-
-  // TODO: How to test it worked ?
-  EXPECT_EQ(
-      Eigen::VectorXd{
-          // TODO
-      },
-      ctrl.compute_control(
-          Sensor{
-              // TODO
-          },
-          Control{
-              // TODO
-          }));
+  EXPECT_EQ(expected_control, ctrl.compute_control(sensor, control));
 }
