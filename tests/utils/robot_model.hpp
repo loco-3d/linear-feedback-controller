@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "linear_feedback_controller/robot_model_builder.hpp"
+#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 namespace tests::utils {
 
@@ -167,6 +168,50 @@ inline auto MakeBuilderFrom(const Model &model) noexcept
   } else {
     return nullptr;
   }
+}
+
+/**
+ *  @brief Generate a Sensor data struct filled with Random value
+ *
+ *  @param[in] rmb The model used to generate valid (i.e. with same joints)
+ *  @return linear_feedback_controller_msgs::Eigen::Sensor Randomized
+ */
+inline auto MakeValidRandomSensorFor(
+    const linear_feedback_controller::RobotModelBuilder &rmb)
+    -> linear_feedback_controller_msgs::Eigen::Sensor {
+  linear_feedback_controller_msgs::Eigen::Sensor sensor;
+
+  sensor.base_pose = decltype(sensor.base_pose)::Random();
+  sensor.base_twist = decltype(sensor.base_twist)::Random();
+
+  sensor.joint_state.name = rmb.get_moving_joint_names();
+
+  const auto number_of_joints = sensor.joint_state.name.size();
+  sensor.joint_state.position = Eigen::VectorXd::Random(number_of_joints);
+  sensor.joint_state.velocity = Eigen::VectorXd::Random(number_of_joints);
+  sensor.joint_state.effort = Eigen::VectorXd::Random(number_of_joints);
+
+  return sensor;
+}
+
+/**
+ *  @brief TODO
+ *
+ *  @param[in] rmb TODO
+ *  @return linear_feedback_controller_msgs::Eigen::Control TODO
+ */
+inline auto MakeValidRandomControlFor(
+    const linear_feedback_controller::RobotModelBuilder &rmb)
+    -> linear_feedback_controller_msgs::Eigen::Control {
+  linear_feedback_controller_msgs::Eigen::Control control;
+
+  // FIXME: Size ???
+  control.feedforward = Eigen::VectorXd::Random(rmb.get_joint_nv());
+  control.feedback_gain =
+      Eigen::MatrixXd::Random(rmb.get_joint_nv(), rmb.get_joint_nq());
+
+  control.initial_state = MakeValidRandomSensorFor(rmb);
+  return control;
 }
 
 }  // namespace tests::utils
