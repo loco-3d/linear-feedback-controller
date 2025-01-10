@@ -1,12 +1,12 @@
-#include "utils/file_operation.hpp"
-using tests::utils::FileOpen;
-using tests::utils::FileToString;
+#include <string_view>
 
 #include "utils/robot_model.hpp"
 using tests::utils::JointType;
 using tests::utils::MakeBuilderFrom;
-using tests::utils::MakeValidRandomControlFor;
-using tests::utils::MakeValidRandomSensorFor;
+
+#include "utils/eigen_conversions.hpp"
+using tests::utils::MakeRandomControlForJoints;
+using tests::utils::MakeRandomSensorForJoints;
 
 #include "linear_feedback_controller/robot_model_builder.hpp"
 using linear_feedback_controller::RobotModelBuilder;
@@ -14,206 +14,178 @@ using linear_feedback_controller::RobotModelBuilder;
 #include "linear_feedback_controller/lf_controller.hpp"
 using linear_feedback_controller::LFController;
 
-#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
-using linear_feedback_controller_msgs::Eigen::Control;
-using linear_feedback_controller_msgs::Eigen::Sensor;
-
-#include "example-robot-data/path.hpp"  // EXAMPLE_ROBOT_DATA_MODEL_DIR
 #include "gtest/gtest.h"
 
-struct LfControllerTest : public ::testing::Test {
- protected:
-  void SetUp() override {}
-  void TearDown() override {}
+using namespace std::literals::string_view_literals;
 
-  static auto GetTalosUrdf() -> const std::string& {
-    static const auto urdf =
-        FileToString(std::filesystem::path(EXAMPLE_ROBOT_DATA_MODEL_DIR) /
-                     "talos_data" / "robots" / "talos_reduced.urdf");
-    return urdf;
-  }
-};
+constexpr auto dummy_urdf =
+    "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+    "<robot name=\"test\">"
+    "  <link name=\"link_0\"/>"
+    "  "
+    "  <joint name=\"l0_to_l1\" type=\"revolute\">"
+    "    <parent link=\"link_0\"/>"
+    "    <child link=\"link_1\"/>"
+    "    <origin xyz=\"0 0 1\" rpy=\"0 0 1\"/>"
+    "    <axis xyz=\"0 0 1\"/>"
+    "    <limit lower=\"0\" upper=\"3.14\" velocity=\"100\" effort=\"100\"/>"
+    "  </joint>"
+    "  "
+    "  <link name=\"link_1\"/>"
+    "  "
+    "  <joint name=\"l1_to_l2\" type=\"revolute\">"
+    "    <parent link=\"link_1\"/>"
+    "    <child link=\"link_2\"/>"
+    "    <origin xyz=\"0 1 0\" rpy=\"1 0 0\"/>"
+    "    <axis xyz=\"0 1 0\"/>"
+    "    <limit lower=\"-3.14\" upper=\"3.14\" velocity=\"100\" effort=\"10\"/>"
+    "  </joint>"
+    "  "
+    "  <link name=\"link_2\"/>"
+    "</robot>"sv;
 
-TEST_F(LfControllerTest, Ctor) {
+TEST(LfControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
 }
 
-TEST_F(LfControllerTest, InitializeNullptr) {
+TEST(LfControllerTest, InitializeNullptr) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ ctrl.initialize(nullptr); });
 }
 
-TEST_F(LfControllerTest, InitializeEmptyModel) {
+TEST(LfControllerTest, InitializeEmptyModel) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ ctrl.initialize(std::make_shared<RobotModelBuilder>()); });
 }
 
-TEST_F(LfControllerTest, Initialize) {
-  const auto talos_model_ptr = std::shared_ptr{
+TEST(LfControllerTest, Initialize) {
+  const auto dummy_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = GetTalosUrdf(),
+          .urdf = std::string{dummy_urdf},
           .joints =
               {
-                  // TBD
-                  {.name = "root_joint"},
-                  {.name = "leg_left_1_joint", .type = JointType::Controlled},
-                  {.name = "leg_left_2_joint", .type = JointType::Both},
-                  // {.name = "leg_left_3_joint"},
-                  // {.name = "leg_left_4_joint"},
-                  // {.name = "leg_left_5_joint"},
-                  // {.name = "leg_left_6_joint"},
-                  // {.name = "leg_right_1_joint"},
-                  // {.name = "leg_right_2_joint"},
-                  // {.name = "leg_right_3_joint"},
-                  // {.name = "leg_right_4_joint"},
-                  // {.name = "leg_right_5_joint"},
-                  // {.name = "leg_right_6_joint"},
-                  // {.name = "torso_1_joint"},
-                  // {.name = "torso_2_joint"},
-                  // {.name = "arm_left_1_joint"},
-                  // {.name = "arm_left_2_joint"},
-                  // {.name = "arm_left_3_joint"},
-                  // {.name = "arm_left_4_joint"},
-                  // {.name = "arm_left_5_joint"},
-                  // {.name = "arm_left_6_joint"},
-                  // {.name = "arm_left_7_joint"},
-                  // {.name = "arm_right_1_joint"},
-                  // {.name = "arm_right_2_joint"},
-                  // {.name = "arm_right_3_joint"},
-                  // {.name = "arm_right_4_joint"},
-                  // {.name = "arm_right_5_joint"},
-                  // {.name = "arm_right_6_joint"},
-                  // {.name = "arm_right_7_joint"},
+                  {.name = "l0_to_l1"},
+                  {.name = "l1_to_l2"},
               },
-          .has_free_flyer = true,
+          .has_free_flyer = false,
       }),
   };
-  ASSERT_NE(talos_model_ptr, nullptr);
+  ASSERT_NE(dummy_model_ptr, nullptr);
 
   auto ctrl = LFController();
-  EXPECT_NO_THROW({ ctrl.initialize(talos_model_ptr); });
+  EXPECT_NO_THROW({ ctrl.initialize(dummy_model_ptr); });
 }
 
-TEST_F(LfControllerTest, ComputeControlNotInitialized) {
+TEST(LfControllerTest, ComputeControlNotInitialized) {
   auto ctrl = LFController();
   EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
 
-TEST_F(LfControllerTest, ComputeControlNoInput) {
-  const auto talos_model_ptr = std::shared_ptr{
+TEST(LfControllerTest, ComputeControlNoInput) {
+  const auto dummy_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = GetTalosUrdf(),
+          .urdf = std::string{dummy_urdf},
           .joints =
               {
-                  // TBD
-                  {.name = "root_joint"},        {.name = "leg_left_1_joint"},
-                  {.name = "leg_left_2_joint"},  {.name = "leg_left_3_joint"},
-                  {.name = "leg_left_4_joint"},  {.name = "leg_left_5_joint"},
-                  {.name = "leg_left_6_joint"},  {.name = "leg_right_1_joint"},
-                  {.name = "leg_right_2_joint"}, {.name = "leg_right_3_joint"},
-                  {.name = "leg_right_4_joint"}, {.name = "leg_right_5_joint"},
-                  {.name = "leg_right_6_joint"}, {.name = "torso_1_joint"},
-                  {.name = "torso_2_joint"},     {.name = "arm_left_1_joint"},
-                  {.name = "arm_left_2_joint"},  {.name = "arm_left_3_joint"},
-                  {.name = "arm_left_4_joint"},  {.name = "arm_left_5_joint"},
-                  {.name = "arm_left_6_joint"},  {.name = "arm_left_7_joint"},
-                  {.name = "arm_right_1_joint"}, {.name = "arm_right_2_joint"},
-                  {.name = "arm_right_3_joint"}, {.name = "arm_right_4_joint"},
-                  {.name = "arm_right_5_joint"}, {.name = "arm_right_6_joint"},
-                  {.name = "arm_right_7_joint"},
+                  {.name = "l0_to_l1"},
+                  {.name = "l1_to_l2"},
               },
-          .has_free_flyer = true,
+          .has_free_flyer = false,
       }),
   };
-  ASSERT_NE(talos_model_ptr, nullptr);
+  ASSERT_NE(dummy_model_ptr, nullptr);
 
   auto ctrl = LFController();
-  ctrl.initialize(talos_model_ptr);
+  ctrl.initialize(dummy_model_ptr);
   EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
 
-TEST_F(LfControllerTest, ComputeControlUnknownJoints) {
-  const auto talos_model_ptr = std::shared_ptr{
+TEST(LfControllerTest, ComputeControlUnknownJoints) {
+  const auto dummy_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = GetTalosUrdf(),
+          .urdf = std::string{dummy_urdf},
           .joints =
               {
-                  {.name = "root_joint"},
-                  {.name = "leg_left_1_joint"},
+                  {.name = "l0_to_l1"},
+                  {.name = "l1_to_l2"},
               },
-          .has_free_flyer = true,
+          .has_free_flyer = false,
       }),
   };
-  ASSERT_NE(talos_model_ptr, nullptr);
+  ASSERT_NE(dummy_model_ptr, nullptr);
 
   auto ctrl = LFController();
-  ctrl.initialize(talos_model_ptr);
+  ctrl.initialize(dummy_model_ptr);
 
   // TODO: Create function arguments with an unknown joint name
   //  (not within the defined model)
   EXPECT_ANY_THROW({
     auto _ = ctrl.compute_control(
-        Sensor{
+        {
             // TODO
         },
-        Control{
+        {
             // TODO
         });
   });
 }
 
-TEST_F(LfControllerTest, ComputeControlSizeMismatch) {
-  const auto talos_model_ptr = std::shared_ptr{
+TEST(LfControllerTest, ComputeControlSizeMismatch) {
+  const auto dummy_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = GetTalosUrdf(),
+          .urdf = std::string{dummy_urdf},
           .joints =
               {
-                  {.name = "root_joint"},
-                  {.name = "leg_left_1_joint"},
+                  {.name = "l0_to_l1"},
+                  {.name = "l1_to_l2"},
               },
-          .has_free_flyer = true,
+          .has_free_flyer = false,
       }),
   };
-  ASSERT_NE(talos_model_ptr, nullptr);
+  ASSERT_NE(dummy_model_ptr, nullptr);
 
   auto ctrl = LFController();
-  ctrl.initialize(talos_model_ptr);
+  ctrl.initialize(dummy_model_ptr);
 
   // TODO: Create function arguments with an matrices/vectors size mismatch ?
   //  (not within the defined model)
   EXPECT_ANY_THROW({
     auto _ = ctrl.compute_control(
-        Sensor{
+        {
             // TODO
         },
-        Control{
+        {
             // TODO
         });
   });
 }
 
-TEST_F(LfControllerTest, ComputeControl) {
-  const auto talos_model_ptr = std::shared_ptr{
+TEST(LfControllerTest, ComputeControl) {
+  const auto dummy_model_ptr = std::shared_ptr{
       MakeBuilderFrom({
-          .urdf = GetTalosUrdf(),
+          .urdf = std::string{dummy_urdf},
           .joints =
               {
-                  {.name = "root_joint"},
-                  {.name = "leg_left_1_joint"},
+                  {.name = "l0_to_l1"},
+                  {.name = "l1_to_l2"},
               },
-          .has_free_flyer = true,
+          .has_free_flyer = false,
       }),
   };
-  ASSERT_NE(talos_model_ptr, nullptr);
+  ASSERT_NE(dummy_model_ptr, nullptr);
 
-  const auto sensor = MakeValidRandomSensorFor(*talos_model_ptr);
-  const auto control = MakeValidRandomControlFor(*talos_model_ptr);
+  const auto name_begin =
+      std::cbegin(dummy_model_ptr->get_moving_joint_names());
+  const auto name_end = std::cend(dummy_model_ptr->get_moving_joint_names());
+
+  const auto sensor = MakeRandomSensorForJoints(name_begin, name_end);
+  const auto control = MakeRandomControlForJoints(name_begin, name_end);
 
   // FIXME: Replace Random with the expected stuff...
   const Eigen::VectorXd expected_control =
       Eigen::VectorXd::Random(control.feedforward.size());
 
   auto ctrl = LFController();
-  ctrl.initialize(talos_model_ptr);
+  ctrl.initialize(dummy_model_ptr);
   EXPECT_EQ(expected_control, ctrl.compute_control(sensor, control));
 }
