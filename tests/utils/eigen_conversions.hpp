@@ -165,7 +165,7 @@ inline auto PushNewJointStateTo(
 
   Grow(joint_state.effort, 1);
   joint_state.effort.tail<1>()[0] = new_joint_state.effort;
-};
+}
 
 /**
  *  @brief Create a randomized Sensor struct for each joints name
