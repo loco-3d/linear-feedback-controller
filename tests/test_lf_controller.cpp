@@ -1,12 +1,12 @@
 #include <string_view>
 
 #include "utils/robot_model.hpp"
-using tests::utils::JointType;
 using tests::utils::MakeBuilderFrom;
 
 #include "utils/eigen_conversions.hpp"
 using tests::utils::MakeRandomControlForJoints;
 using tests::utils::MakeRandomSensorForJoints;
+using tests::utils::PushNewJointStateTo;
 
 #include "linear_feedback_controller/robot_model_builder.hpp"
 using linear_feedback_controller::RobotModelBuilder;
@@ -121,12 +121,13 @@ TEST(LfControllerTest, ComputeControlUnknownJoints) {
       std::cbegin(dummy_model_ptr->get_moving_joint_names());
   const auto name_end = std::cend(dummy_model_ptr->get_moving_joint_names());
 
-  auto sensor = MakeRandomSensorForJoints(name_begin, name_end);
+  const auto sensor = MakeRandomSensorForJoints(name_begin, name_end);
   const auto control = MakeRandomControlForJoints(name_begin, name_end);
 
   EXPECT_ANY_THROW({
-    sensor.joint_state.name[0] = "this joint doesn't exist";
-    auto _ = ctrl.compute_control(sensor, control);
+    auto wrong_sensor = sensor;
+    wrong_sensor.joint_state.name[0] = "this joint doesn't exist";
+    auto _ = ctrl.compute_control(wrong_sensor, control);
   });
 }
 
@@ -147,17 +148,25 @@ TEST(LfControllerTest, ComputeControlSizeMismatch) {
   auto ctrl = LFController();
   ctrl.initialize(dummy_model_ptr);
 
-  // TODO: Create function arguments with an matrices/vectors size mismatch ?
-  //  (not within the defined model)
+  const auto name_begin =
+      std::cbegin(dummy_model_ptr->get_moving_joint_names());
+  const auto name_end = std::cend(dummy_model_ptr->get_moving_joint_names());
+
+  const auto sensor = MakeRandomSensorForJoints(name_begin, name_end);
+  const auto control = MakeRandomControlForJoints(name_begin, name_end);
+
   EXPECT_ANY_THROW({
-    auto _ = ctrl.compute_control(
-        {
-            // TODO
-        },
-        {
-            // TODO
-        });
+    auto wrong_sensor = sensor;
+
+    // One more unknown joint
+    PushNewJointStateTo(
+        wrong_sensor.joint_state,
+        {.name = "foo", .position = 0.0, .velocity = 0.0, .effort = 0.0});
+
+    auto _ = ctrl.compute_control(wrong_sensor, control);
   });
+
+  // TODO: Other size mutation inside control ?
 }
 
 TEST(LfControllerTest, ComputeControl) {
