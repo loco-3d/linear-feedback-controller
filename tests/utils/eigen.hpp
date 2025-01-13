@@ -25,6 +25,20 @@ constexpr bool IsEigenVector_v = IsEigenVector<T>::value;
 
 }  // namespace details
 
+/**
+ *  @brief Grow a Dynamic sized Eigen::Vector by \a inc elements (uninitialized)
+ *
+ *  @param[inout] vector Eigen vector we wish to grow
+ *  @param[in] inc Number of elements we wish to add
+ */
+template <typename VectorType, typename...,
+          std::enable_if_t<tests::utils::details::IsEigenVector_v<VectorType>,
+                           bool> = true>
+constexpr auto Grow(Eigen::PlainObjectBase<VectorType> &vector,
+                    std::size_t inc) {
+  vector.conservativeResize(vector.size() + inc);
+}
+
 /// Inside a vector, represents a strip using the expected number of head/tail
 /// elements needed
 struct Strip {
