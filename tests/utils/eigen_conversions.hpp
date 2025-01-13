@@ -172,7 +172,7 @@ inline auto PushNewJointStateTo(
  *
  *  @tparam InputIt Input iterator of std::string compatible elements
  *
- *  @param[in] first, last Range of joints name
+ *  @param[in] first, last Range of joint name
  *  @return linear_feedback_controller_msgs::Eigen::Sensor Randomized
  */
 template <typename InputIt>
@@ -186,10 +186,10 @@ auto MakeRandomSensorForJoints(InputIt first, InputIt last)
 }
 
 /**
- *  @brief TODO
+ *  @brief Create a randomized Control struct for the given joints
  *
- *  @param[in] rmb TODO
- *  @return linear_feedback_controller_msgs::Eigen::Control TODO
+ *  @param[in] first, last Range of joint names
+ *  @return linear_feedback_controller_msgs::Eigen::Control Randomized
  */
 template <typename InputIt>
 auto MakeRandomControlForJoints(InputIt first, InputIt last)
