@@ -23,6 +23,18 @@ struct IsEigenVector<T, std::void_t<decltype(T::NumDimensions)>> {
 template <typename T>
 constexpr bool IsEigenVector_v = IsEigenVector<T>::value;
 
+/// Meta function checking that T is a Eigen::Matrix<> (i.e. dimension is 2)
+template <typename T, typename = void>
+struct IsEigenMatrix : std::false_type {};
+
+template <typename T>
+struct IsEigenMatrix<T, std::void_t<decltype(T::NumDimensions)>> {
+  static constexpr bool value = (T::NumDimensions == 2);
+};
+
+template <typename T>
+constexpr bool IsEigenMatrix_v = IsEigenMatrix<T>::value;
+
 }  // namespace details
 
 /**
@@ -37,6 +49,23 @@ template <typename VectorType, typename...,
 constexpr auto Grow(Eigen::PlainObjectBase<VectorType> &vector,
                     std::size_t inc) {
   vector.conservativeResize(vector.size() + inc);
+}
+
+/**
+ *  @brief Grow a Dynamic sized Eigen::Matrix
+ *
+ *  @param[inout] vector Eigen matrix (NumDimensions == 2) we wish to grow
+ *  @param[in] row_inc Number of rows we wish to add
+ *  @param[in] col_inc Number of cols we wish to add (default to row_inc)
+ */
+template <typename MatrixType, typename...,
+          std::enable_if_t<tests::utils::details::IsEigenMatrix_v<MatrixType>,
+                           bool> = true>
+constexpr auto Grow(Eigen::PlainObjectBase<MatrixType> &matrix,
+                    std::size_t row_inc,
+                    std::optional<std::size_t> col_inc = std::nullopt) {
+  matrix.conservativeResize(matrix.rows() + row_inc,
+                            matrix.cols() + col_inc.value_or(row_inc));
 }
 
 /// Inside a vector, represents a strip using the expected number of head/tail
