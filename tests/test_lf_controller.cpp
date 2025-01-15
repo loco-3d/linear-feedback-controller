@@ -214,22 +214,26 @@ constexpr auto dummy_urdf =
     "  <link name=\"link_2\"/>"
     "</robot>"sv;
 
-INSTANTIATE_TEST_SUITE_P(
-    DummyUrdf, LFControllerTest,
-    ::testing::Combine(::testing::Values(dummy_urdf), ::testing::Bool(),
-                       ::testing::Values(
-                           // JointListType{
-                           //     {.name = "l1_to_l2"},
-                           // },
-                           JointListType{
-                               {.name = "l0_to_l1"},
-                               {.name = "l1_to_l2"},
-                           })),
-    [](auto&& info) {
-      auto str = std::to_string(std::size(std::get<JointListType>(info.param)));
-      str.append("_Joints");
-      str.append((std::get<FreeFlyerType>(info.param) ? "_FreeFlyer"sv : ""sv));
-      return str;
-    });
+INSTANTIATE_TEST_SUITE_P(DummyUrdf, LFControllerTest,
+                         ::testing::Combine(::testing::Values(dummy_urdf),
+                                            ::testing::Bool(),
+                                            ::testing::Values(
+                                                // JointListType{
+                                                //     {.name = "l1_to_l2"},
+                                                // },
+                                                JointListType{
+                                                    {.name = "l0_to_l1"},
+                                                    {.name = "l1_to_l2"},
+                                                })),
+                         [](auto&& info) {
+                           auto str = std::to_string(
+                               std::size(std::get<JointListType>(info.param)));
+                           str.append("_Joints");
+                           if (std::get<FreeFlyerType>(info.param)) {
+                             str.append("_FreeFlyer");
+                           }
+
+                           return str;
+                         });
 
 }  // namespace
