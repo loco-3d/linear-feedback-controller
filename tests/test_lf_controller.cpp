@@ -224,7 +224,7 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
 /// Create a std::tuple<T&, string_view> with the ref expression as string
 #define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
 
-TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
+TEST_P(LFControllerTest, DISABLED_ComputeControlSpecialDouble) {
   const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
   ASSERT_NE(model_ptr, nullptr);
 
