@@ -7,7 +7,6 @@ using tests::utils::TemporaryMutate;
 #include "utils/robot_model.hpp"
 using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::JointDescription;
-using tests::utils::MakeRobotModelBuilderFrom;
 
 #include "utils/eigen_conversions.hpp"
 using linear_feedback_controller_msgs::Eigen::Control;
