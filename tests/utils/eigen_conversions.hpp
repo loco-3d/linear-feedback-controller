@@ -1,12 +1,9 @@
 #pragma once
 
-#include <iterator>  // std::distance, std::iterator_traits
 #include <ostream>
 #include <string_view>
-#include <utility>  // std::forward
 
-#include "Eigen/Geometry"  // Eigen::Quaternions
-#include "eigen.hpp"       // PrintTo(Eigen::Vector), Grow
+#include "eigen.hpp"  // PrintTo(Eigen::Vector), Grow
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 // Using this namesapce for ADL
