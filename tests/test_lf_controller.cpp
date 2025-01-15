@@ -8,11 +8,11 @@ using tests::utils::TemporaryMutate;
 using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::JointDescription;
 using tests::utils::MakeRobotModelBuilderFrom;
-using tests::utils::ModelDescription;
 
 #include "utils/eigen_conversions.hpp"
-using tests::utils::MakeRandomControlForJoints;
-using tests::utils::MakeRandomSensorForJoints;
+using linear_feedback_controller_msgs::Eigen::Control;
+using linear_feedback_controller_msgs::Eigen::JointState;
+using linear_feedback_controller_msgs::Eigen::Sensor;
 using tests::utils::PushNewJointStateTo;
 
 #include "linear_feedback_controller/lf_controller.hpp"
@@ -24,24 +24,79 @@ using namespace std::literals::string_view_literals;
 
 namespace {
 
-template <typename InputIt>
-auto MakeLFControllerFrom(ModelDescription model, InputIt first, InputIt last)
-    -> std::optional<LFController> {
-  std::optional<LFController> output = std::nullopt;
+/**
+ *  @brief Create a randomized JointState struct for each names inside a model
+ *
+ *  @param[in] model RobotModelBuilder use to create a valid set of Joint state
+ *
+ *  @return linear_feedback_controller_msgs::Eigen::JointState Randomized
+ */
+auto MakeValidRandomJointStateFor(const RobotModelBuilder& model)
+    -> JointState {
+  JointState joint_state;
 
-  if (auto rmb = MakeRobotModelBuilderFrom(model, first, last);
-      rmb.has_value()) {
-    output = LFController{};
-    output->initialize(std::make_shared<RobotModelBuilder>(std::move(*rmb)));
-  }
+  // deep copy
+  joint_state.name = model.get_moving_joint_names();
 
-  return output;
+  // NOTE: Since ::Random() doesn't return a VectorXd, but an operation (eigen
+  // stuff), using `auto` and assigning doesn't mean it copies the same vector
+  // but it generates a new randomized vector data everytime with assign it.
+  const auto generate_random_values =
+      Eigen::VectorXd::Random(joint_state.name.size());
+
+  joint_state.position = generate_random_values;
+  joint_state.velocity = generate_random_values;
+  joint_state.effort = generate_random_values;
+
+  return joint_state;
 }
 
-template <typename Range>
-auto MakeLFControllerFrom(ModelDescription model, Range&& range)
-    -> std::optional<LFController> {
-  return MakeLFControllerFrom(model, std::cbegin(range), std::cend(range));
+/**
+ *  @brief Create a randomized Sensor struct for a given model
+ *
+ *  @param[in] model RobotModelBuilder use to create a valid set of values
+ *
+ *  @return linear_feedback_controller_msgs::Eigen::Sensor Randomized
+ */
+auto MakeValidRandomSensorFor(const RobotModelBuilder& model) -> Sensor {
+  Sensor sensor;
+
+  // base_pose is composed of a 3D (x,y,z) vector followed by a normalized
+  // quaternion
+  sensor.base_pose.head<3>() = Eigen::Vector3d::Random();
+  sensor.base_pose.tail<4>() = Eigen::Quaterniond::UnitRandom().coeffs();
+  sensor.base_twist = decltype(sensor.base_twist)::Random();
+  sensor.joint_state = MakeValidRandomJointStateFor(model);
+
+  // TODO: Contacts ???
+  return sensor;
+}
+
+/**
+ *  @brief Create a randomized Sensor struct for each names provided
+ *
+ *  @tparam InputIt Input iterator containing the joints name
+ *  @tparam UnaryOp Unary operation transforming InputIt into a
+ *                  std::string_view compatible value
+ *
+ *  @param[in] [first, last) Range of names used as follow:
+ *                           std::string{std::string_view{get_name(*first)}}
+ *  @param[in] get_name Functor use to get a name from the dereferenced iterator
+ *
+ *  @return linear_feedback_controller_msgs::Eigen::Control Randomized
+ */
+auto MakeValidRandomControlFor(const RobotModelBuilder& model) -> Control {
+  Control control;
+
+  // get_n* function take into account the free flyer stuff
+  control.feedforward = Eigen::VectorXd::Random(model.get_nv());
+  control.feedback_gain = Eigen::MatrixXd::Random(
+      /* rows = */ model.get_nv(),
+      /* cols = */ model.get_nv() * 2);
+
+  control.initial_state = MakeValidRandomSensorFor(model);
+
+  return control;
 }
 
 using UrdfType = std::string_view;
@@ -50,31 +105,14 @@ using JointListType = std::vector<JointDescription>;
 
 using LFControllerParams = std::tuple<UrdfType, FreeFlyerType, JointListType>;
 
-auto MakeLFControllerFrom(const LFControllerParams& params)
-    -> std::optional<LFController> {
+auto MakeRobotModelBuilderFrom(const LFControllerParams& params) {
   const auto& [urdf, has_free_flyer, joint_list] = params;
-  return MakeLFControllerFrom(
+  return MakeRobotModelBuilderFrom(
       {
           .urdf = urdf,
           .has_free_flyer = has_free_flyer,
       },
       joint_list);
-}
-
-auto MakeRandomSensorFrom(const LFControllerParams& params) {
-  const auto& joint_list = std::get<JointListType>(params);
-  // TODO: take into account free flyer
-  return MakeRandomSensorForJoints(
-      std::cbegin(joint_list), std::cend(joint_list),
-      [](const auto& joint) { return joint.name; });
-}
-
-auto MakeRandomControlFrom(const LFControllerParams& params) {
-  const auto& joint_list = std::get<JointListType>(params);
-  // TODO: take into account free flyer
-  return MakeRandomControlForJoints(
-      std::cbegin(joint_list), std::cend(joint_list),
-      [](const auto& joint) { return joint.name; });
 }
 
 struct LFControllerTest : public ::testing::TestWithParam<LFControllerParams> {
@@ -95,15 +133,11 @@ TEST(LFControllerTest, DISABLED_InitializeEmptyModel) {
 }
 
 TEST_P(LFControllerTest, Initialize) {
-  // .value() will throw if any failure occured
-  const auto& [urdf, free_flyer, joint_list] = GetParam();
-  const auto dummy_model = std::make_shared<RobotModelBuilder>(
-      MakeRobotModelBuilderFrom({.urdf = urdf, .has_free_flyer = free_flyer},
-                                joint_list)
-          .value());
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
 
   auto ctrl = LFController();
-  EXPECT_NO_THROW({ ctrl.initialize(dummy_model); });
+  EXPECT_NO_THROW({ ctrl.initialize(model_ptr); });
 }
 
 TEST(LFControllerTest, DISABLED_ComputeControlNotInitialized) {
@@ -112,31 +146,41 @@ TEST(LFControllerTest, DISABLED_ComputeControlNotInitialized) {
 }
 
 TEST_P(LFControllerTest, DISABLED_ComputeControlNoInput) {
-  auto ctrl = MakeLFControllerFrom(GetParam());
-  ASSERT_TRUE(ctrl);
-  EXPECT_ANY_THROW({ auto _ = ctrl->compute_control({}, {}); });
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
+
+  auto ctrl = LFController();
+  ctrl.initialize(model_ptr);
+
+  EXPECT_ANY_THROW({ auto _ = ctrl.compute_control({}, {}); });
 }
 
 TEST_P(LFControllerTest, DISABLED_ComputeControlUnknownJoints) {
-  auto ctrl = MakeLFControllerFrom(GetParam());
-  ASSERT_TRUE(ctrl);
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
 
-  const auto sensor = MakeRandomSensorFrom(GetParam());
-  const auto control = MakeRandomControlFrom(GetParam());
+  auto ctrl = LFController();
+  ctrl.initialize(model_ptr);
+
+  const auto sensor = MakeValidRandomSensorFor(*model_ptr);
+  const auto control = MakeValidRandomControlFor(*model_ptr);
 
   EXPECT_ANY_THROW({
     auto wrong_sensor = sensor;
     wrong_sensor.joint_state.name[0] = "this joint doesn't exist";
-    auto _ = ctrl->compute_control(wrong_sensor, control);
+    auto _ = ctrl.compute_control(wrong_sensor, control);
   });
 }
 
 TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
-  auto ctrl = MakeLFControllerFrom(GetParam());
-  ASSERT_TRUE(ctrl);
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
 
-  const auto sensor = MakeRandomSensorFrom(GetParam());
-  const auto control = MakeRandomControlFrom(GetParam());
+  auto ctrl = LFController();
+  ctrl.initialize(model_ptr);
+
+  const auto sensor = MakeValidRandomSensorFor(*model_ptr);
+  const auto control = MakeValidRandomControlFor(*model_ptr);
 
   EXPECT_ANY_THROW({
     auto wrong_sensor = sensor;
@@ -146,7 +190,7 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
         wrong_sensor.joint_state,
         {.name = "foo", .position = 0.0, .velocity = 0.0, .effort = 0.0});
 
-    auto _ = ctrl->compute_control(wrong_sensor, control);
+    auto _ = ctrl.compute_control(wrong_sensor, control);
   });
 
   EXPECT_ANY_THROW({
@@ -156,7 +200,7 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
     tests::utils::Grow(wrong_control.feedforward, 1);
     wrong_control.feedforward.tail<1>()[0] = 0.0;
 
-    auto _ = ctrl->compute_control(sensor, wrong_control);
+    auto _ = ctrl.compute_control(sensor, wrong_control);
   });
 
   EXPECT_ANY_THROW({
@@ -171,7 +215,7 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
     wrong_control.feedforward.rightCols<1>() =
         ::Eigen::VectorXd::Random(wrong_control.feedforward.rows());
 
-    auto _ = ctrl->compute_control(sensor, wrong_control);
+    auto _ = ctrl.compute_control(sensor, wrong_control);
   });
 
   // TODO: Other size mutation... ?
@@ -181,11 +225,14 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
 #define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
 
 TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
-  auto ctrl = MakeLFControllerFrom(GetParam());
-  ASSERT_TRUE(ctrl);
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
 
-  auto sensor = MakeRandomSensorFrom(GetParam());
-  auto control = MakeRandomControlFrom(GetParam());
+  auto ctrl = LFController();
+  ctrl.initialize(model_ptr);
+
+  auto sensor = MakeValidRandomSensorFor(*model_ptr);
+  auto control = MakeValidRandomControlFor(*model_ptr);
 
   // Test for special double values acceptance or not ?
   for (const auto& [ref, str] : {
@@ -203,7 +250,7 @@ TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
              std::numeric_limits<double>::signaling_NaN(),
          }) {
       const auto mutation = TemporaryMutate(ref, tmp_value);
-      EXPECT_ANY_THROW({ auto _ = ctrl->compute_control(sensor, control); })
+      EXPECT_ANY_THROW({ auto _ = ctrl.compute_control(sensor, control); })
           << str << " = " << tmp_value << " (was " << mutation.OldValue()
           << ")";
     }
@@ -211,17 +258,20 @@ TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
 }
 
 TEST_P(LFControllerTest, ComputeControl) {
-  auto ctrl = MakeLFControllerFrom(GetParam());
-  ASSERT_TRUE(ctrl);
+  const auto model_ptr = std::shared_ptr{MakeRobotModelBuilderFrom(GetParam())};
+  ASSERT_NE(model_ptr, nullptr);
 
-  const auto sensor = MakeRandomSensorFrom(GetParam());
-  const auto control = MakeRandomControlFrom(GetParam());
+  auto ctrl = LFController();
+  ctrl.initialize(model_ptr);
+
+  const auto sensor = MakeValidRandomSensorFor(*model_ptr);
+  const auto control = MakeValidRandomControlFor(*model_ptr);
 
   // FIXME: Replace Random with the expected stuff...
   const Eigen::VectorXd expected_control =
       Eigen::VectorXd::Random(control.feedforward.size());
 
-  EXPECT_EQ(expected_control, ctrl->compute_control(sensor, control));
+  EXPECT_EQ(expected_control, ctrl.compute_control(sensor, control));
 }
 
 constexpr auto dummy_urdf =
