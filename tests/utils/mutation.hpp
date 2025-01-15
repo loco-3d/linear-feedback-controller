@@ -21,7 +21,7 @@ namespace tests::utils {
  *  \tparam ValueType The underlying type of the value we wish to mutate
  */
 template <typename _ValueType>
-struct Mutation final {
+struct [[nodiscard]] Mutation final {
   /// Underlying ValueType stored inside the mutation
   using ValueType = _ValueType;
 
@@ -92,7 +92,9 @@ struct Mutation final {
   /**
    *  \return True when the mutation is aborted
    */
-  constexpr auto IsAborted() const noexcept -> bool { return ptr_ == nullptr; }
+  [[nodiscard]] constexpr auto IsAborted() const noexcept -> bool {
+    return ptr_ == nullptr;
+  }
 
   /**
    *  \brief Triggers the assignement of the old value into data, if not aborted
@@ -104,21 +106,50 @@ struct Mutation final {
   }
 
   /**
-   *  \return ValueType * const Current data ptr being watched by the mutator
-   */
-  constexpr auto GetData() const noexcept -> ValueType *const { return ptr_; }
-
-  /**
    *  \return const ValueType& Old value memorized (use when reverting)
    */
-  constexpr auto GetOldValue() const noexcept -> const ValueType & {
+  constexpr auto OldValue() const noexcept -> const ValueType & {
     return old_value_;
   }
 
   /**
    *  \return ValueType& Old value memorized (use when reverting)
    */
-  constexpr auto GetOldValue() noexcept -> ValueType & { return old_value_; }
+  constexpr auto OldValue() noexcept -> ValueType & { return old_value_; }
+
+  /// Format specifier for the PrintTo function below
+  struct PrintFormat {
+    bool show_data = false;      /*!< Print the current mutated value */
+    bool show_old_value = false; /*!< Print the Old value */
+  };
+
+  /**
+   *  \brief Prints \a mutation to the provided \a os, given the format \a fmt
+   *  \note We use friend function here to access the private .ptr_ data member
+   */
+  friend constexpr auto PrintTo(const Mutation &mutation,
+                                std::ostream *const os, PrintFormat fmt = {})
+      -> void {
+    if (os == nullptr) return;
+
+    *os << "Mutation{";
+    if (mutation.IsAborted()) {
+      *os << " ABORTED ";
+    } else {
+      *os << ".ptr = " << (void *)mutation.ptr_;
+
+      if (fmt.show_data) {
+        *os << " -> ";
+        TryToPrintTo(*mutation.ptr_, *os);
+      }
+
+      if (fmt.show_old_value) {
+        *os << ", .old_value = ";
+        TryToPrintTo(mutation.OldValue(), *os);
+      }
+    }
+    *os << "}";
+  }
 
  private:
   /// Private ctor (/!\ Assumes that \a ptr is NOT NULL /!\)
@@ -149,43 +180,6 @@ template <typename ValueType, typename T>
 constexpr auto TemporaryMutate(ValueType &value, T &&tmp)
     -> Mutation<ValueType> {
   return Mutation<ValueType>{value, std::forward<T>(tmp)};
-}
-
-/// Format specifier for the PrintTo function below
-struct MutationPrintFormat {
-  unsigned show_data : 1;      /*!< Print the Mutation.GetData() value */
-  unsigned show_old_value : 1; /*!< Print the Old value */
-};
-
-/**
- *  \brief Prints \a mutation to the provided \a os, given the format \a fmt
- */
-template <typename ValueType>
-constexpr auto PrintTo(const Mutation<ValueType> &mutation,
-                       std::ostream *const os,
-                       MutationPrintFormat fmt = {
-                           .show_data = true,
-                           .show_old_value = true,
-                       }) -> void {
-  if (os == nullptr) return;
-
-  *os << "Mutation{";
-  if (mutation.IsAborted()) {
-    *os << " ABORTED ";
-  } else {
-    *os << ".ptr = " << (void *const)mutation.GetData();
-
-    if (fmt.show_data) {
-      *os << " -> ";
-      TryToPrintTo(*mutation.GetData(), *os);
-    }
-
-    if (fmt.show_old_value) {
-      *os << ", .old_value = ";
-      TryToPrintTo(mutation.GetOldValue(), *os);
-    }
-  }
-  *os << "}";
 }
 
 }  // namespace tests::utils
