@@ -1,6 +1,9 @@
 #include <string_view>
 #include <tuple>
 
+#include "utils/mutation.hpp"
+using tests::utils::TemporaryMutate;
+
 #include "utils/robot_model.hpp"
 using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::JointDescription;
@@ -172,6 +175,41 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
   });
 
   // TODO: Other size mutation... ?
+}
+
+/// Create a std::tuple<T&, string_view> with the ref expression as string
+#define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
+
+TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
+  auto ctrl = MakeLFControllerFrom(GetParam());
+  ASSERT_TRUE(ctrl);
+
+  auto sensor = MakeRandomSensorFrom(GetParam());
+  auto control = MakeRandomControlFrom(GetParam());
+
+  // Test for special double values acceptance or not ?
+  for (const auto& [ref, str] : {
+           MakeRefOf(sensor.base_pose(0)),
+           MakeRefOf(sensor.base_pose(3)),
+           MakeRefOf(sensor.base_twist(4)),
+           MakeRefOf(sensor.joint_state.position(0)),
+           MakeRefOf(sensor.joint_state.velocity(0)),
+           MakeRefOf(control.feedforward(0)),
+           MakeRefOf(control.feedback_gain(0, 0)),
+       }) {
+    for (auto tmp_value : {
+             std::numeric_limits<double>::infinity(),
+             std::numeric_limits<double>::quiet_NaN(),
+             std::numeric_limits<double>::signaling_NaN(),
+         }) {
+      SCOPED_TRACE(::testing::Message()
+                   << "\n"
+                   << str << " = " << tmp_value << " (was " << ref << ")");
+
+      auto mutation = TemporaryMutate(ref, tmp_value);
+      EXPECT_ANY_THROW({ auto _ = ctrl->compute_control(sensor, control); });
+    }
+  }
 }
 
 TEST_P(LFControllerTest, ComputeControl) {
