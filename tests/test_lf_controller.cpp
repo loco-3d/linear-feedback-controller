@@ -267,8 +267,10 @@ TEST_P(LFControllerTest, ComputeControl) {
   const auto control = MakeValidRandomControlFor(*model_ptr);
 
   // FIXME: Replace Random with the expected stuff...
+  const auto error = Eigen::VectorXd::Random(control.feedback_gain.cols());
+
   const Eigen::VectorXd expected_control =
-      Eigen::VectorXd::Random(control.feedforward.size());
+      control.feedforward + (control.feedback_gain * error);
 
   EXPECT_EQ(expected_control, ctrl.compute_control(sensor, control));
 }
