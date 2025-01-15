@@ -2,6 +2,7 @@
 
 #include <iomanip>   // std::quoted
 #include <iterator>  // std::distance
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string_view>
@@ -169,7 +170,7 @@ constexpr auto PrintTo(ModelDescription model, std::ostream *os,
 template <typename InputIt>
 auto MakeRobotModelBuilderFrom(ModelDescription model, InputIt first,
                                InputIt last)
-    -> std::optional<linear_feedback_controller::RobotModelBuilder> {
+    -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
   using Category = typename std::iterator_traits<InputIt>::iterator_category;
   static_assert(std::is_base_of_v<std::input_iterator_tag, Category>);
 
@@ -198,12 +199,13 @@ auto MakeRobotModelBuilderFrom(ModelDescription model, InputIt first,
     }
   }
 
-  if (auto rmb = linear_feedback_controller::RobotModelBuilder{};
-      rmb.build_model(std::string{model.urdf}, moving_joints, controlled_joints,
-                      model.has_free_flyer)) {
+  if (auto rmb =
+          std::make_unique<linear_feedback_controller::RobotModelBuilder>();
+      rmb->build_model(std::string{model.urdf}, moving_joints,
+                       controlled_joints, model.has_free_flyer)) {
     return rmb;
   } else {
-    return std::nullopt;
+    return nullptr;
   }
 }
 
