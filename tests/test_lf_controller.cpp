@@ -202,12 +202,10 @@ TEST_P(LFControllerTest, ComputeControlSpecialDouble) {
              std::numeric_limits<double>::quiet_NaN(),
              std::numeric_limits<double>::signaling_NaN(),
          }) {
-      SCOPED_TRACE(::testing::Message()
-                   << "\n"
-                   << str << " = " << tmp_value << " (was " << ref << ")");
-
-      auto mutation = TemporaryMutate(ref, tmp_value);
-      EXPECT_ANY_THROW({ auto _ = ctrl->compute_control(sensor, control); });
+      const auto mutation = TemporaryMutate(ref, tmp_value);
+      EXPECT_ANY_THROW({ auto _ = ctrl->compute_control(sensor, control); })
+          << str << " = " << tmp_value << " (was " << mutation.OldValue()
+          << ")";
     }
   }
 }
