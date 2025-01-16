@@ -140,12 +140,12 @@ struct [[nodiscard]] Mutation final {
 
       if (fmt.show_data) {
         *os << " -> ";
-        TryToPrintTo(*mutation.ptr_, *os);
+        TryToPrintTo(*mutation.ptr_, os);
       }
 
       if (fmt.show_old_value) {
         *os << ", .old_value = ";
-        TryToPrintTo(mutation.OldValue(), *os);
+        TryToPrintTo(mutation.OldValue(), os);
       }
     }
     *os << "}";
