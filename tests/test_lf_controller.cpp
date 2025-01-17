@@ -7,6 +7,9 @@ using tests::utils::TemporaryMutate;
 #include "utils/robot_model.hpp"
 using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::JointDescription;
+using tests::utils::JointType;
+using tests::utils::MakeAllModelDescriptionsFor;
+using tests::utils::ModelDescription;
 
 #include "utils/eigen_conversions.hpp"
 using linear_feedback_controller_msgs::Eigen::Control;
@@ -98,21 +101,8 @@ auto MakeValidRandomControlFor(const RobotModelBuilder& model) -> Control {
   return control;
 }
 
-using UrdfType = std::string_view;
-using FreeFlyerType = bool;
 using JointListType = std::vector<JointDescription>;
-
-using LFControllerParams = std::tuple<UrdfType, FreeFlyerType, JointListType>;
-
-auto MakeRobotModelBuilderFrom(const LFControllerParams& params) {
-  const auto& [urdf, has_free_flyer, joint_list] = params;
-  return MakeRobotModelBuilderFrom(
-      {
-          .urdf = urdf,
-          .has_free_flyer = has_free_flyer,
-      },
-      joint_list);
-}
+using LFControllerParams = ModelDescription<JointListType>;
 
 struct LFControllerTest : public ::testing::TestWithParam<LFControllerParams> {
 };
@@ -278,49 +268,60 @@ TEST_P(LFControllerTest, ComputeControl) {
 constexpr auto dummy_urdf =
     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     "<robot name=\"dummy\">"
-    "  <link name=\"link_0\"/>"
+    "  <link name=\"l0\"/>"
     "  "
-    "  <joint name=\"l0_to_l1\" type=\"revolute\">"
-    "    <parent link=\"link_0\"/>"
-    "    <child link=\"link_1\"/>"
+    "  <joint name=\"l01\" type=\"revolute\">"
+    "    <parent link=\"l0\"/>"
+    "    <child link=\"l1\"/>"
     "    <origin xyz=\"0 0 1\" rpy=\"0 0 1\"/>"
     "    <axis xyz=\"0 0 1\"/>"
     "    <limit lower=\"0\" upper=\"3.14\" velocity=\"100\" effort=\"100\"/>"
     "  </joint>"
     "  "
-    "  <link name=\"link_1\"/>"
+    "  <link name=\"l1\"/>"
     "  "
-    "  <joint name=\"l1_to_l2\" type=\"revolute\">"
-    "    <parent link=\"link_1\"/>"
-    "    <child link=\"link_2\"/>"
+    "  <joint name=\"l12\" type=\"revolute\">"
+    "    <parent link=\"l1\"/>"
+    "    <child link=\"l2\"/>"
     "    <origin xyz=\"0 1 0\" rpy=\"1 0 0\"/>"
     "    <axis xyz=\"0 1 0\"/>"
     "    <limit lower=\"-3.14\" upper=\"3.14\" velocity=\"100\" effort=\"10\"/>"
     "  </joint>"
     "  "
-    "  <link name=\"link_2\"/>"
+    "  <link name=\"l2\"/>"
     "</robot>"sv;
 
-INSTANTIATE_TEST_SUITE_P(DummyUrdf, LFControllerTest,
-                         ::testing::Combine(::testing::Values(dummy_urdf),
-                                            ::testing::Bool(),
-                                            ::testing::Values(
-                                                // JointListType{
-                                                //     {.name = "l1_to_l2"},
-                                                // },
-                                                JointListType{
-                                                    {.name = "l0_to_l1"},
-                                                    {.name = "l1_to_l2"},
-                                                })),
-                         [](auto&& info) {
-                           auto str = std::to_string(
-                               std::size(std::get<JointListType>(info.param)));
-                           str.append("_Joints");
-                           if (std::get<FreeFlyerType>(info.param)) {
-                             str.append("_FreeFlyer");
-                           }
+INSTANTIATE_TEST_SUITE_P(
+    DummyUrdf, LFControllerTest,
+    ::testing::ValuesIn(MakeAllModelDescriptionsFor<JointListType>(
+        dummy_urdf,
+        JointListType{
+            {.name = "l01", .type = JointType::Controlled},
+        },
+        JointListType{
+            {.name = "l01", .type = JointType::Moving},
+        },
+        JointListType{
+            {.name = "l01"},
+            {.name = "l12"},
+        })),
+    [](auto&& info) {
+      std::string str;
+      if (info.param.has_free_flyer) {
+        str.append("FreeFlyer_");
+      }
 
-                           return str;
-                         });
+      str.append(std::to_string(size(info.param.joint_list)));
+      str.append("_Joints");
+
+      for (const auto& [name, type] : info.param.joint_list) {
+        str.append("_");
+        str.append(name);
+        str.append("_");
+        str.append(ToString(type));
+      }
+
+      return str;
+    });
 
 }  // namespace
