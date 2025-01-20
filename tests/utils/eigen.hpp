@@ -68,8 +68,49 @@ constexpr auto Grow(Eigen::PlainObjectBase<MatrixType> &matrix,
                             matrix.cols() + col_inc.value_or(row_inc));
 }
 
-/// Inside a vector, represents a strip using the expected number of head/tail
-/// elements needed
+/**
+ *  @brief Creates an OutVector from the concatenation of all given \a vectors
+ *
+ *  @note SFINAE: Only available for Vectors (NumDimension equals to 1)
+ *
+ *  @tparam OutVector The output vector type returned
+ *  @tparam ...VectorTypes All input vectors
+ *
+ *  @param[in] ...vectors All vectors we wish to concatenates
+ *
+ *  @return OutVector With coefs set as the concatenation of all input vectors
+ */
+template <typename OutVector, typename... VectorTypes>
+constexpr auto ConcatenateAs(const Eigen::DenseBase<VectorTypes> &...vectors)
+    -> std::enable_if_t<details::IsEigenVector_v<OutVector> and
+                            (details::IsEigenVector_v<VectorTypes> and ...),
+                        OutVector> {
+  // NOTE: Couldn't find a way to use the fold expression with the Eigen
+  // stream + comma operators initialization shenanigans...
+  // 'out << (vectors, ...);' doesn't work ??
+  // Therefore we use the segment(i, n) with i begin updated through the comma
+  // operator, which should be the same as 'out << A, B, C, ...;'
+
+  OutVector out((0 + ... + vectors.size()));
+  std::size_t i = 0;
+
+  // NOTE: the void(...) here is just because of comma operator of Eigen...
+  ((void(out.segment(i, vectors.size()) = vectors), i += vectors.size()), ...);
+
+  // This evaluates to:
+  // out.segment(i, vectors[0].size());
+  // i += vectors[0].size();
+  // out.segment(i, vectors[1].size());
+  // i += vectors[1].size();
+  //  ...
+  // out.segment(i, vectors[N].size());
+  // i += vectors[N].size();
+
+  return out;
+}
+
+/// Inside a vector, represents a strip using the expected number of
+/// head/tail elements needed
 struct Strip {
   std::size_t head; /*!< Number of elements at the head of the vector */
   std::size_t tail; /*!< Number of elements at the tail of the vector */
