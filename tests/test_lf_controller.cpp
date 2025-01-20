@@ -4,17 +4,17 @@
 #include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
+#include "utils/lf_controller.hpp"
+using tests::utils::MakeValidRandomControlFor;
+using tests::utils::MakeValidRandomSensorFor;
+
 #include "utils/robot_model.hpp"
-using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::JointDescription;
 using tests::utils::JointType;
 using tests::utils::MakeAllModelDescriptionsFor;
 using tests::utils::ModelDescription;
 
 #include "utils/eigen_conversions.hpp"
-using linear_feedback_controller_msgs::Eigen::Control;
-using linear_feedback_controller_msgs::Eigen::JointState;
-using linear_feedback_controller_msgs::Eigen::Sensor;
 using tests::utils::GetCompleteStateFrom;
 using tests::utils::PushNewJointStateTo;
 
@@ -26,81 +26,6 @@ using linear_feedback_controller::LFController;
 using namespace std::literals::string_view_literals;
 
 namespace {
-
-/**
- *  @brief Create a randomized JointState struct for each names inside a model
- *
- *  @param[in] model RobotModelBuilder use to create a valid set of Joint state
- *
- *  @return linear_feedback_controller_msgs::Eigen::JointState Randomized
- */
-auto MakeValidRandomJointStateFor(const RobotModelBuilder& model)
-    -> JointState {
-  JointState joint_state;
-
-  // deep copy
-  joint_state.name = model.get_moving_joint_names();
-
-  // NOTE: Since ::Random() doesn't return a VectorXd, but an operation (eigen
-  // stuff), using `auto` and assigning doesn't mean it copies the same vector
-  // but it generates a new randomized vector data everytime with assign it.
-  const auto generate_random_values =
-      Eigen::VectorXd::Random(joint_state.name.size());
-
-  joint_state.position = generate_random_values;
-  joint_state.velocity = generate_random_values;
-  joint_state.effort = generate_random_values;
-
-  return joint_state;
-}
-
-/**
- *  @brief Create a randomized Sensor struct for a given model
- *
- *  @param[in] model RobotModelBuilder use to create a valid set of values
- *
- *  @return linear_feedback_controller_msgs::Eigen::Sensor Randomized
- */
-auto MakeValidRandomSensorFor(const RobotModelBuilder& model) -> Sensor {
-  Sensor sensor;
-
-  // base_pose is composed of a 3D (x,y,z) vector followed by a normalized
-  // quaternion
-  sensor.base_pose.head<3>() = Eigen::Vector3d::Random();
-  sensor.base_pose.tail<4>() = Eigen::Quaterniond::UnitRandom().coeffs();
-  sensor.base_twist = decltype(sensor.base_twist)::Random();
-  sensor.joint_state = MakeValidRandomJointStateFor(model);
-
-  // TODO: Contacts ???
-  return sensor;
-}
-
-/**
- *  @brief Create a randomized Sensor struct for each names provided
- *
- *  @tparam InputIt Input iterator containing the joints name
- *  @tparam UnaryOp Unary operation transforming InputIt into a
- *                  std::string_view compatible value
- *
- *  @param[in] [first, last) Range of names used as follow:
- *                           std::string{std::string_view{get_name(*first)}}
- *  @param[in] get_name Functor use to get a name from the dereferenced iterator
- *
- *  @return linear_feedback_controller_msgs::Eigen::Control Randomized
- */
-auto MakeValidRandomControlFor(const RobotModelBuilder& model) -> Control {
-  Control control;
-
-  // get_n* function take into account the free flyer stuff
-  control.feedforward = Eigen::VectorXd::Random(model.get_nv());
-  control.feedback_gain = Eigen::MatrixXd::Random(
-      /* rows = */ model.get_nv(),
-      /* cols = */ model.get_nv() + model.get_nq());
-
-  control.initial_state = MakeValidRandomSensorFor(model);
-
-  return control;
-}
 
 using JointListType = std::vector<JointDescription>;
 using LFControllerParams = ModelDescription<JointListType>;
@@ -119,7 +44,10 @@ TEST(LFControllerTest, DISABLED_InitializeNullptr) {
 
 TEST(LFControllerTest, DISABLED_InitializeEmptyModel) {
   auto ctrl = LFController();
-  EXPECT_ANY_THROW({ ctrl.initialize(std::make_shared<RobotModelBuilder>()); });
+  EXPECT_ANY_THROW({
+    ctrl.initialize(
+        std::make_shared<linear_feedback_controller::RobotModelBuilder>());
+  });
 }
 
 TEST_P(LFControllerTest, Initialize) {
