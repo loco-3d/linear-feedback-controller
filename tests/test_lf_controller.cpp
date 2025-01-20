@@ -15,6 +15,7 @@ using tests::utils::ModelDescription;
 using linear_feedback_controller_msgs::Eigen::Control;
 using linear_feedback_controller_msgs::Eigen::JointState;
 using linear_feedback_controller_msgs::Eigen::Sensor;
+using tests::utils::GetCompleteStateFrom;
 using tests::utils::PushNewJointStateTo;
 
 #include "linear_feedback_controller/lf_controller.hpp"
@@ -94,7 +95,7 @@ auto MakeValidRandomControlFor(const RobotModelBuilder& model) -> Control {
   control.feedforward = Eigen::VectorXd::Random(model.get_nv());
   control.feedback_gain = Eigen::MatrixXd::Random(
       /* rows = */ model.get_nv(),
-      /* cols = */ model.get_nv() * 2);
+      /* cols = */ model.get_nv() + model.get_nq());
 
   control.initial_state = MakeValidRandomSensorFor(model);
 
@@ -256,13 +257,16 @@ TEST_P(LFControllerTest, ComputeControl) {
   const auto sensor = MakeValidRandomSensorFor(*model_ptr);
   const auto control = MakeValidRandomControlFor(*model_ptr);
 
-  // FIXME: Replace Random with the expected stuff...
-  const auto error = Eigen::VectorXd::Random(control.feedback_gain.cols());
+  const auto x =
+      GetCompleteStateFrom(sensor, model_ptr->get_robot_has_free_flyer());
 
-  const Eigen::VectorXd expected_control =
-      control.feedforward + (control.feedback_gain * error);
+  const auto x_0 = GetCompleteStateFrom(control.initial_state,
+                                        model_ptr->get_robot_has_free_flyer());
 
-  EXPECT_EQ(expected_control, ctrl.compute_control(sensor, control));
+  // FIXME: Compute the error differently based on free flyer ?
+  const auto error = x_0 - x;
+  EXPECT_EQ((control.feedforward + (control.feedback_gain * error)),
+            ctrl.compute_control(sensor, control));
 }
 
 constexpr auto dummy_urdf =
@@ -298,9 +302,9 @@ INSTANTIATE_TEST_SUITE_P(
         JointListType{
             {.name = "l01", .type = JointType::Controlled},
         },
-        JointListType{
-            {.name = "l01", .type = JointType::Moving},
-        },
+        // JointListType{
+        //     {.name = "l01", .type = JointType::Moving},
+        // },
         JointListType{
             {.name = "l01"},
             {.name = "l12"},

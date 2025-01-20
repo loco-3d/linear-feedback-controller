@@ -132,4 +132,25 @@ inline auto PushNewJointStateTo(
   joint_state.effort.tail<1>()[0] = new_joint_state.effort;
 }
 
+/**
+ *  @brief Reconstruct the expected state X (= [q, v]) from the given sensor
+ *
+ *  @param[in] sensor The complete sensor data
+ *  @param[in] with_free_flyer Indicates if we have a free flyer or not
+ *
+ *  @return Eigen::VectorXd Containing the complete state X
+ */
+inline auto GetCompleteStateFrom(
+    const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
+    bool with_free_flyer) -> Eigen::VectorXd {
+  if (with_free_flyer) {
+    return ConcatenateAs<Eigen::VectorXd>(
+        sensor.base_pose, sensor.joint_state.position, sensor.base_twist,
+        sensor.joint_state.velocity);
+  } else {
+    return ConcatenateAs<Eigen::VectorXd>(sensor.joint_state.position,
+                                          sensor.joint_state.velocity);
+  }
+}
+
 }  // namespace tests::utils
