@@ -127,11 +127,11 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
     // One more row/col to feedback gain
     tests::utils::Grow(wrong_control.feedback_gain, 1);
 
-    wrong_control.feedforward.bottomRows<1>() =
-        ::Eigen::VectorXd::Random(wrong_control.feedforward.cols());
+    wrong_control.feedback_gain.bottomRows<1>() =
+        ::Eigen::VectorXd::Random(wrong_control.feedback_gain.cols());
 
-    wrong_control.feedforward.rightCols<1>() =
-        ::Eigen::VectorXd::Random(wrong_control.feedforward.rows());
+    wrong_control.feedback_gain.rightCols<1>() =
+        ::Eigen::VectorXd::Random(wrong_control.feedback_gain.rows());
 
     auto _ = ctrl.compute_control(sensor, wrong_control);
   });
