@@ -229,7 +229,7 @@ constexpr auto PrintTo(
  *          build_model() returned true), nullptr otherwise
  */
 template <typename T>
-auto MakeRobotModelBuilderFrom(ModelDescription<T> model)
+auto MakeRobotModelBuilderFrom(const ModelDescription<T> &model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
   const auto number_of_joints = ssize(View{model.joint_list});
   assert(number_of_joints >= 0 &&
