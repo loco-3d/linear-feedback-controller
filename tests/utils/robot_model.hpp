@@ -105,7 +105,7 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
 template <typename Range>
 struct ModelDescription {
   static_assert(
-      std::is_base_of_v<typename View<Range>::ValueType, JointDescription>,
+      std::is_base_of_v<JointDescription, typename View<Range>::ValueType>,
       "The Range provided to joint_list MUST contains JointDescription in it");
 
   /// PrintFormat used by PrintTo to format a Model
