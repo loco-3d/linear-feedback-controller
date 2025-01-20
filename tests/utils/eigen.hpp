@@ -132,7 +132,7 @@ struct VectorPrintFormat {
   };
 
   /// Shorten the number of elements printed
-  std::optional<Strip> strip = std::nullopt;
+  std::optional<Strip> strip = Strip{.head = 2, .tail = 2};
 
   /// Add the size of the vector at the beginning
   bool with_size = true;
