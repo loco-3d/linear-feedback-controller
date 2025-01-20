@@ -121,15 +121,9 @@ inline auto PushNewJointStateTo(
     linear_feedback_controller_msgs::Eigen::JointState& joint_state,
     const SingleJointState& new_joint_state) -> void {
   joint_state.name.emplace_back(new_joint_state.name);
-
-  Grow(joint_state.position, 1);
-  joint_state.position.tail<1>()[0] = new_joint_state.position;
-
-  Grow(joint_state.velocity, 1);
-  joint_state.velocity.tail<1>()[0] = new_joint_state.velocity;
-
-  Grow(joint_state.effort, 1);
-  joint_state.effort.tail<1>()[0] = new_joint_state.effort;
+  joint_state.position << joint_state.position, new_joint_state.position;
+  joint_state.velocity << joint_state.velocity, new_joint_state.velocity;
+  joint_state.effort << joint_state.effort, new_joint_state.effort;
 }
 
 /**
