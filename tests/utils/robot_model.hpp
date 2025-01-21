@@ -1,15 +1,15 @@
 #pragma once
 
 #include <array>
+#include <initializer_list>
 #include <iomanip>  // std::quoted
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <string_view>
-#include <type_traits>
+#include <vector>
 
 #include "linear_feedback_controller/robot_model_builder.hpp"
-#include "view.hpp"
 
 namespace tests::utils {
 
@@ -102,63 +102,49 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
 
 /// Global information about the model we wish to create
 /// IMPORTANT: Should not be used directly but as function argument
-template <typename Range>
 struct ModelDescription {
-  static_assert(
-      std::is_base_of_v<JointDescription, typename View<Range>::ValueType>,
-      "The Range provided to joint_list MUST contains JointDescription in it");
-
   /// PrintFormat used by PrintTo to format a Model
   struct PrintFormat;
 
   std::string_view urdf; /*!< Complete Robot URDF description */
-  Range joint_list;      /*!< Joint description list */
-  bool has_free_flyer;   /*!< Indicates if the model uses free flyer */
+  std::vector<JointDescription> joint_list; /*!< Joint description list */
+  bool has_free_flyer; /*!< Indicates if the model uses free flyer */
 };
-
-/// CTAD use to create a ModelDescription using the Range type
-template <typename Range>
-ModelDescription(std::string_view, Range, bool) -> ModelDescription<Range>;
 
 /**
  *  @brief Create an array of ModelDescription<> with and without free flyer,
  *         for each joint_list provided
  *
- *  @tparam ListType The joint_list type used by ModelDescription<ListType>
- *  @tparam Lists... All list arguments types
- *
  *  @param[in] urdf The common URDF used by every ModelDescription
- *  @param[in] joint_lists... All arguments forwarded to the '.joint_list = '
+ *  @param[in] all_joint_lists All arguments forwarded to the '.joint_list = '
  *                            constructor
  *
  *  @return std::array<ModelDescription<ListType>, 2 * sizeof...(Lists)>
  *          Containing all ModelDescriptions constructed
  */
-template <typename ListType, typename... Lists>
-constexpr auto MakeAllModelDescriptionsFor(std::string_view urdf,
-                                           Lists &&...joint_lists) noexcept
-    -> std::array<ModelDescription<ListType>, 2 * (sizeof...(Lists))> {
-  static_assert((... and std::is_constructible_v<ListType, Lists>));
+inline auto MakeAllModelDescriptionsFor(
+    std::string_view urdf, std::initializer_list<std::vector<JointDescription>>
+                               all_joint_lists) noexcept
+    -> std::vector<ModelDescription> {
+  std::vector<ModelDescription> out;
 
-  return {
-      // NOTE: do not forward the first joint_list, otherwise rvalue may be
-      // moved away
-      ModelDescription<ListType>{
+  out.reserve(2 * all_joint_lists.size());
+
+  for (auto has_free_flyer : {false, true}) {
+    for (const auto &joint_list : all_joint_lists) {
+      out.emplace_back(ModelDescription{
           .urdf = urdf,
-          .joint_list = joint_lists,
-          .has_free_flyer = false,
-      }...,
-      ModelDescription<ListType>{
-          .urdf = urdf,
-          .joint_list = std::forward<Lists>(joint_lists),
-          .has_free_flyer = true,
-      }...,
-  };
+          .joint_list = joint_list,
+          .has_free_flyer = has_free_flyer,
+      });
+    }
+  }
+
+  return out;
 }
 
 /// Declaration of the PrintFormat
-template <typename Range>
-struct ModelDescription<Range>::PrintFormat {
+struct ModelDescription::PrintFormat {
   bool full_urdf = false; /*!< Print the full URDF string */
 };
 
@@ -169,10 +155,9 @@ struct ModelDescription<Range>::PrintFormat {
  *  @param[inout] os The output stream ptr we wish to print to
  *  @param[in] fmt The format specifier use to print the model
  */
-template <typename T>
-constexpr auto PrintTo(
-    const ModelDescription<T> &model, std::ostream *os,
-    typename ModelDescription<T>::PrintFormat fmt = {}) noexcept -> void {
+inline auto PrintTo(const ModelDescription &model, std::ostream *os,
+                    typename ModelDescription::PrintFormat fmt = {}) noexcept
+    -> void {
   if (os == nullptr) return;
 
   *os << "ModelDescription{";
@@ -210,9 +195,12 @@ constexpr auto PrintTo(
   }
   *os << ", ";
 
-  *os << ".joint_list = ";
-  PrintTo(View{model.joint_list}, os);
-  *os << ", ";
+  *os << ".joint_list = [ ";
+  for (const auto &joint : model.joint_list) {
+    PrintTo(joint, os);
+    *os << ", ";
+  }
+  *os << "], ";
 
   *os << ".has_free_flyer = " << model.has_free_flyer;
 
@@ -228,12 +216,9 @@ constexpr auto PrintTo(
  *  @return std::unique_ptr<RobotModelBuilder> A valid RobotModelBuilder (i.e.
  *          build_model() returned true), nullptr otherwise
  */
-template <typename T>
-auto MakeRobotModelBuilderFrom(const ModelDescription<T> &model)
+inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
-  const auto number_of_joints = ssize(View{model.joint_list});
-  assert(number_of_joints >= 0 &&
-         "Wrong joint_list input range (negative size)");
+  const auto number_of_joints = size(model.joint_list);
 
   auto controlled_joints = std::vector<std::string>{};
   controlled_joints.reserve(number_of_joints);
