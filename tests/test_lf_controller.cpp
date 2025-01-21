@@ -9,7 +9,6 @@ using tests::utils::MakeValidRandomControlFor;
 using tests::utils::MakeValidRandomSensorFor;
 
 #include "utils/robot_model.hpp"
-using tests::utils::JointDescription;
 using tests::utils::JointType;
 using tests::utils::MakeAllModelDescriptionsFor;
 using tests::utils::ModelDescription;
@@ -27,11 +26,7 @@ using namespace std::literals::string_view_literals;
 
 namespace {
 
-using JointListType = std::vector<JointDescription>;
-using LFControllerParams = ModelDescription<JointListType>;
-
-struct LFControllerTest : public ::testing::TestWithParam<LFControllerParams> {
-};
+struct LFControllerTest : public ::testing::TestWithParam<ModelDescription> {};
 
 TEST(LFControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LFController(); });
@@ -225,17 +220,23 @@ constexpr auto dummy_urdf =
 
 INSTANTIATE_TEST_SUITE_P(
     DummyUrdf, LFControllerTest,
-    ::testing::ValuesIn(MakeAllModelDescriptionsFor<JointListType>(
+    ::testing::ValuesIn(MakeAllModelDescriptionsFor(
         dummy_urdf,
-        JointListType{
-            {.name = "l01", .type = JointType::Controlled},
-        },
-        // JointListType{
-        //     {.name = "l01", .type = JointType::Moving},
-        // },
-        JointListType{
-            {.name = "l01"},
-            {.name = "l12"},
+        {
+            {
+                {.name = "l01"},
+            },
+            {
+                {.name = "l02", .type = JointType::Controlled},
+            },
+            // FIXME: Do not work
+            {
+                {.name = "l01", .type = JointType::Moving},
+            },
+            {
+                {.name = "l01"},
+                {.name = "l12"},
+            },
         })),
     [](auto&& info) {
       std::string str;
