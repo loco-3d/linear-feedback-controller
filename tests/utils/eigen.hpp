@@ -91,19 +91,20 @@ constexpr auto ConcatenateAs(const Eigen::DenseBase<VectorTypes> &...vectors)
   // Therefore we use the segment(i, n) with i begin updated through the comma
   // operator, which should be the same as 'out << A, B, C, ...;'
 
-  OutVector out((0 + ... + vectors.size()));
-  std::size_t i = 0;
+  OutVector out;
+  out.resize((0 + ... + vectors.size()));
 
+  std::size_t i = 0;
   // NOTE: the void(...) here is just because of comma operator of Eigen...
   ((void(out.segment(i, vectors.size()) = vectors), i += vectors.size()), ...);
 
   // This evaluates to:
-  // out.segment(i, vectors[0].size());
+  // out.segment(i, vectors[0].size()) = vectors[0];
   // i += vectors[0].size();
-  // out.segment(i, vectors[1].size());
+  // out.segment(i, vectors[1].size()) = vectors[1];
   // i += vectors[1].size();
   //  ...
-  // out.segment(i, vectors[N].size());
+  // out.segment(i, vectors[N].size()) = vectors[N];
   // i += vectors[N].size();
 
   return out;
