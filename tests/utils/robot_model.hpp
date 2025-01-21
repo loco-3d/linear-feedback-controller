@@ -101,7 +101,6 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
 }
 
 /// Global information about the model we wish to create
-/// IMPORTANT: Should not be used directly but as function argument
 struct ModelDescription {
   /// PrintFormat used by PrintTo to format a Model
   struct PrintFormat;
@@ -112,15 +111,15 @@ struct ModelDescription {
 };
 
 /**
- *  @brief Create an array of ModelDescription<> with and without free flyer,
+ *  @brief Create a vector of ModelDescription with and without free flyer,
  *         for each joint_list provided
  *
  *  @param[in] urdf The common URDF used by every ModelDescription
  *  @param[in] all_joint_lists All arguments forwarded to the '.joint_list = '
- *                            constructor
+ *                             constructor
  *
- *  @return std::array<ModelDescription<ListType>, 2 * sizeof...(Lists)>
- *          Containing all ModelDescriptions constructed
+ *  @return std::vector<ModelDescription<ListType>> Containing all
+ *          ModelDescriptions constructed
  */
 inline auto MakeAllModelDescriptionsFor(
     std::string_view urdf, std::initializer_list<std::vector<JointDescription>>
