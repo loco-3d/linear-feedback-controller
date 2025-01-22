@@ -1,7 +1,6 @@
 #ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__ROBOT_MODEL_HPP_
 #define LINEAR_FEEDBACK_CONTROLLER_TESTS__ROBOT_MODEL_HPP_
 
-#include <array>
 #include <initializer_list>
 #include <iomanip>  // std::quoted
 #include <memory>
@@ -99,6 +98,40 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
   *os << ", ";
 
   *os << "}";
+}
+
+/// Return type of MakePairOfJointNamesFrom
+struct JointNamesPair {
+  std::vector<std::string> controlled;
+  std::vector<std::string> moving;
+};
+
+/**
+ *  @brief Create the controlled/moving list based on a list of JointDescription
+ *
+ *  @param[in] joint_list List of JointDescription
+ *
+ *  @return JointNamesPair Containing both controlled and moving joint names
+ */
+inline auto MakePairOfJointNamesFrom(
+    const std::vector<JointDescription> &joint_list) -> JointNamesPair {
+  const auto number_of_joints = size(joint_list);
+
+  JointNamesPair out;
+  out.controlled.reserve(number_of_joints);
+  out.moving.reserve(number_of_joints);
+
+  for (const auto &joint : joint_list) {
+    if (IsControlled(joint.type)) {
+      out.controlled.emplace_back(joint.name);
+    }
+
+    if (IsMoving(joint.type)) {
+      out.moving.emplace_back(joint.name);
+    }
+  }
+
+  return out;
 }
 
 /// Global information about the model we wish to create
@@ -209,36 +242,18 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
 
 /**
  *  @brief Helper function to create a RobotModelBuilder using a given \a model
- *         and a list of Joints to control
  *
  *  @param[in] model The model description (URDF) we wish to build
  *
- *  @return std::unique_ptr<RobotModelBuilder> A valid RobotModelBuilder (i.e.
- *          build_model() returned true), nullptr otherwise
+ *  @return std::unique_ptr<RobotModelBuilder> A valid RobotModelBuilder
+ *          (i.e. build_model() returned true), nullptr otherwise
  */
 inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
-  const auto number_of_joints = size(model.joint_list);
-
-  auto controlled_joints = std::vector<std::string>{};
-  controlled_joints.reserve(number_of_joints);
-
-  auto moving_joints = std::vector<std::string>{};
-  moving_joints.reserve(number_of_joints);
-
-  for (const auto &joint : model.joint_list) {
-    if (IsControlled(joint.type)) {
-      controlled_joints.emplace_back(joint.name);
-    }
-
-    if (IsMoving(joint.type)) {
-      moving_joints.emplace_back(joint.name);
-    }
-  }
-
+  const auto joint_lists = MakePairOfJointNamesFrom(model.joint_list);
   auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
-  if (rmb->build_model(std::string{model.urdf}, moving_joints,
-                       controlled_joints, model.has_free_flyer)) {
+  if (rmb->build_model(std::string{model.urdf}, joint_lists.moving,
+                       joint_lists.controlled, model.has_free_flyer)) {
     return rmb;
   } else {
     return nullptr;
