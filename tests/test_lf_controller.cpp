@@ -109,6 +109,17 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
   EXPECT_ANY_THROW({
     auto wrong_control = control;
 
+    // One more unknown joint inside control.initial_state
+    PushNewJointStateTo(
+        wrong_control.initial_state.joint_state,
+        {.name = "foo", .position = 0.0, .velocity = 0.0, .effort = 0.0});
+
+    auto _ = ctrl.compute_control(sensor, wrong_control);
+  });
+
+  EXPECT_ANY_THROW({
+    auto wrong_control = control;
+
     // One more feed forward term
     tests::utils::Grow(wrong_control.feedforward, 1);
     wrong_control.feedforward.tail<1>()[0] = 0.0;
