@@ -19,8 +19,6 @@ inline auto PrintTo(const JointState& joint_state, std::ostream* os) noexcept
   *os << number_of_joints << " joints: ";
 
   for (auto i = 0; i < number_of_joints; ++i) {
-    // *os << '[' << i << "] ";
-
     *os << std::quoted(joint_state.name[i]) << " = {";
     using tpl = std::tuple<std::string_view, const ::Eigen::VectorXd&>;
     for (auto&& [name, range] : {
