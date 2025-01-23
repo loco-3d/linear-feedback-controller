@@ -1,10 +1,11 @@
 #include <chrono>
 using namespace std::literals::chrono_literals;
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
 
 #include <string_view>
 using namespace std::literals::string_view_literals;
+
+#include <sstream>
+#include <vector>
 
 #include "utils/pd_controller.hpp"
 using tests::utils::Gains;
@@ -25,18 +26,78 @@ using linear_feedback_controller::LinearFeedbackController;
 
 namespace {
 
-using LinearFeedbackControllerTestParams =
-    std::tuple<ModelDescription, Duration>;
+struct TestParams {
+  ModelDescription model;
+  Gains gains;
+  Duration pd_to_lf_duration;
 
-auto MakeValidParamsFrom(const LinearFeedbackControllerTestParams& test_params)
+  struct PrintFormat;
+};
+
+struct TestParams::PrintFormat {
+  ModelDescription::PrintFormat model = {};
+  bool as_param_name = false;
+};
+
+auto PrintTo(const TestParams& params, std::ostream* os,
+             TestParams::PrintFormat fmt = {}) -> void {
+  using std::chrono::duration_cast;
+  using std::chrono::milliseconds;
+
+  if (os == nullptr) return;
+
+  if (not fmt.as_param_name) {
+    *os << "TestParams{";
+
+    *os << ".model = ";
+    PrintTo(params.model, os, fmt.model);
+    *os << ", ";
+
+    *os << ".gains = ";
+    PrintTo(params.gains, os);
+    *os << ", ";
+
+    *os << ".pd_to_lf_duration = "
+        << duration_cast<milliseconds>(params.pd_to_lf_duration).count()
+        << "ms ";
+
+    *os << "}";
+  } else {
+    fmt.model.as_param_name = true;
+    PrintTo(params.model, os, fmt.model_fmt);
+    *os << "_" << duration_cast<milliseconds>(params.pd_to_lf_duration).count()
+        << "ms";
+  }
+}
+
+auto MakeAllValidTestParamsFrom(const std::vector<ModelDescription>& models,
+                                std::initializer_list<Duration> durations)
+    -> std::vector<TestParams> {
+  std::vector<TestParams> out;
+  out.reserve(models.size() * durations.size());
+
+  for (const auto& model : models) {
+    const auto gains = Gains::Random(model.joint_list.size());
+    for (const auto& duration : durations) {
+      out.emplace_back(TestParams{
+          .model = model,
+          .gains = gains,
+          .pd_to_lf_duration = duration,
+      });
+    }
+  }
+
+  return out;
+}
+
+auto MakeValidParamsFrom(const TestParams& test_params)
     -> ControllerParameters {
-  const auto& [model, duration] = test_params;
+  const auto& [model, gains, duration] = test_params;
 
   ControllerParameters out;
 
   out.urdf = std::string{model.urdf};
   out.robot_has_free_flyer = model.has_free_flyer;
-
   {
     const auto joint_list = MakePairOfJointNamesFrom(model.joint_list);
     out.controlled_joint_names = std::move(joint_list.controlled);
@@ -44,9 +105,6 @@ auto MakeValidParamsFrom(const LinearFeedbackControllerTestParams& test_params)
   }
 
   {
-    // FIXME: Size ? number of moving joints ?
-    const auto gains = Gains::Random(out.moving_joint_names.size());
-
     out.d_gains.resize(gains.d.size());
     Eigen::Map<Eigen::VectorXd>(out.d_gains.data(), out.d_gains.size()) =
         gains.d;
@@ -62,7 +120,7 @@ auto MakeValidParamsFrom(const LinearFeedbackControllerTestParams& test_params)
 }
 
 struct LinearFeedbackControllerTest
-    : public ::testing::TestWithParam<LinearFeedbackControllerTestParams> {};
+    : public ::testing::TestWithParam<TestParams> {};
 
 TEST(LinearFeedbackControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LinearFeedbackController{}; });
@@ -127,47 +185,31 @@ constexpr std::string_view dummy_urdf =
 
 INSTANTIATE_TEST_SUITE_P(
     DummyUrdf, LinearFeedbackControllerTest,
-    ::testing::Combine(
-        ::testing::ValuesIn(MakeAllModelDescriptionsFor(
-            dummy_urdf,
-            {
-                {
-                    {.name = "l01"},
-                },
-                {
-                    {.name = "l02", .type = JointType::Controlled},
-                },
-                {
-                    {.name = "l01"},
-                    {.name = "l12"},
-                },
-            })),
-        ::testing::ValuesIn(std::vector<Duration>{500ms, 1s})),
+    ::testing::ValuesIn(MakeAllValidTestParamsFrom(
+        MakeAllModelDescriptionsFor(dummy_urdf,
+                                    {
+                                        {
+                                            {.name = "l01"},
+                                        },
+                                        {
+                                            {.name = "l02",
+                                             .type = JointType::Controlled},
+                                        },
+                                        {
+                                            {.name = "l01"},
+                                            {.name = "l12"},
+                                        },
+                                    }),
+        {
+            500ms,
+            1s,
+        })),
     [](const auto& info) {
-      // NOTE: Can't use structured binding inside GTest macros
-      const auto& model = std::get<ModelDescription>(info.param);
-      const auto& duration = std::get<Duration>(info.param);
+      std::stringstream stream;
+      PrintTo(info.param, &stream, {.as_param_name = true});
+      return stream.str();
+    }
 
-      std::string str;
-      if (model.has_free_flyer) {
-        str.append("FreeFlyer_");
-      }
-
-      str.append(std::to_string(size(model.joint_list)));
-      str.append("_Joints");
-
-      for (const auto& [name, type] : model.joint_list) {
-        str.append("_");
-        str.append(name);
-        str.append("_");
-        str.append(ToString(type));
-      }
-
-      str.append("_Duration_");
-      str.append(std::to_string(duration_cast<milliseconds>(duration).count()));
-      str.append("_ms");
-
-      return str;
-    });
+);
 
 }  // namespace
