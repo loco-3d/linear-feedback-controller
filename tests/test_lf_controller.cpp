@@ -1,3 +1,4 @@
+#include <sstream>
 #include <string_view>
 #include <tuple>
 
@@ -234,23 +235,10 @@ INSTANTIATE_TEST_SUITE_P(
                 {.name = "l12"},
             },
         })),
-    [](auto&& info) {
-      std::string str;
-      if (info.param.has_free_flyer) {
-        str.append("FreeFlyer_");
-      }
-
-      str.append(std::to_string(size(info.param.joint_list)));
-      str.append("_Joints");
-
-      for (const auto& [name, type] : info.param.joint_list) {
-        str.append("_");
-        str.append(name);
-        str.append("_");
-        str.append(ToString(type));
-      }
-
-      return str;
+    [](const auto& info) {
+      std::stringstream stream;
+      PrintTo(info.param, &stream, {.as_param_name = true});
+      return stream.str();
     });
 
 }  // namespace

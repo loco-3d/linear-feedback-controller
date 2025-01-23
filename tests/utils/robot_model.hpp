@@ -178,7 +178,8 @@ inline auto MakeAllModelDescriptionsFor(
 
 /// Declaration of the PrintFormat
 struct ModelDescription::PrintFormat {
-  bool full_urdf = false; /*!< Print the full URDF string */
+  bool as_param_name = false; /*!< Use the gtest param name paradigm */
+  bool full_urdf = false;     /*!< Print the full URDF string */
 };
 
 /**
@@ -192,8 +193,6 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
                     typename ModelDescription::PrintFormat fmt = {}) noexcept
     -> void {
   if (os == nullptr) return;
-
-  *os << "ModelDescription{";
 
   // Dumb function to retreive the robot name from the URDF
   constexpr auto GetRobotNameFromURDF =
@@ -214,30 +213,47 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
     return res;
   };
 
-  *os << ".urdf = ";
-  if (fmt.full_urdf) {
-    *os << std::quoted(model.urdf);
-  } else if (const auto robot_name = GetRobotNameFromURDF(model.urdf);
-             robot_name.has_value()) {
-    *os << *robot_name;
-  } else {
-    *os << "str{";
-    *os << ".data() = @ " << (void const *)model.urdf.data() << ", ";
-    *os << ".size() = " << model.urdf.size() << ", ";
-    *os << "}";
-  }
-  *os << ", ";
+  if (not fmt.as_param_name) {
+    *os << "ModelDescription{";
 
-  *os << ".joint_list = [ ";
-  for (const auto &joint : model.joint_list) {
-    PrintTo(joint, os);
+    *os << ".urdf = ";
+    if (fmt.full_urdf) {
+      *os << std::quoted(model.urdf);
+    } else if (const auto robot_name = GetRobotNameFromURDF(model.urdf);
+               robot_name.has_value()) {
+      *os << *robot_name;
+    } else {
+      *os << "str{";
+      *os << ".data() = @ " << (void const *)model.urdf.data() << ", ";
+      *os << ".size() = " << model.urdf.size() << ", ";
+      *os << "}";
+    }
     *os << ", ";
+
+    *os << ".joint_list = [ ";
+    for (const auto &joint : model.joint_list) {
+      PrintTo(joint, os);
+      *os << ", ";
+    }
+    *os << "], ";
+
+    *os << ".has_free_flyer = " << model.has_free_flyer;
+
+    *os << "}";
+  } else {
+    // GTest Param name forbids with space etc...
+
+    // TODO: Add URDF ?
+
+    if (model.has_free_flyer) {
+      *os << "FreeFlyer_";
+    }
+
+    *os << model.joint_list.size() << "_Joints";
+    for (const auto &[name, type] : model.joint_list) {
+      *os << "_" << name << "_" << ToString(type);
+    }
   }
-  *os << "], ";
-
-  *os << ".has_free_flyer = " << model.has_free_flyer;
-
-  *os << "}";
 }
 
 /**
