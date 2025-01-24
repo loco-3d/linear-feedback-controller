@@ -12,7 +12,6 @@ using tests::utils::Gains;
 // using tests::utils::References;
 
 #include "utils/robot_model.hpp"
-using tests::utils::JointType;
 using tests::utils::MakeAllModelDescriptionsFor;
 using tests::utils::MakePairOfJointNamesFrom;
 using tests::utils::ModelDescription;
@@ -64,7 +63,7 @@ auto PrintTo(const TestParams& params, std::ostream* os,
     *os << "}";
   } else {
     fmt.model.as_param_name = true;
-    PrintTo(params.model, os, fmt.model_fmt);
+    PrintTo(params.model, os, fmt.model);
     *os << "_" << duration_cast<milliseconds>(params.pd_to_lf_duration).count()
         << "ms";
   }
@@ -90,14 +89,13 @@ auto MakeAllValidTestParamsFrom(const std::vector<ModelDescription>& models,
   return out;
 }
 
-auto MakeValidParamsFrom(const TestParams& test_params)
-    -> ControllerParameters {
+auto MakeParamsFrom(const TestParams& test_params) -> ControllerParameters {
   const auto& [model, gains, duration] = test_params;
 
   ControllerParameters out;
-
   out.urdf = std::string{model.urdf};
   out.robot_has_free_flyer = model.has_free_flyer;
+
   {
     const auto joint_list = MakePairOfJointNamesFrom(model.joint_list);
     out.controlled_joint_names = std::move(joint_list.controlled);
@@ -154,7 +152,7 @@ TEST(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
 
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_TRUE(ctrl.load(MakeValidParamsFrom(GetParam())));
+  EXPECT_TRUE(ctrl.load(MakeParamsFrom(GetParam())));
 }
 
 constexpr std::string_view dummy_urdf =
@@ -188,22 +186,10 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(MakeAllValidTestParamsFrom(
         MakeAllModelDescriptionsFor(dummy_urdf,
                                     {
-                                        {
-                                            {.name = "l01"},
-                                        },
-                                        {
-                                            {.name = "l02",
-                                             .type = JointType::Controlled},
-                                        },
-                                        {
-                                            {.name = "l01"},
-                                            {.name = "l12"},
-                                        },
+                                        {{.name = "l01"}},
+                                        {{.name = "l01"}, {.name = "l12"}},
                                     }),
-        {
-            500ms,
-            1s,
-        })),
+        {500ms, 1s})),
     [](const auto& info) {
       std::stringstream stream;
       PrintTo(info.param, &stream, {.as_param_name = true});
