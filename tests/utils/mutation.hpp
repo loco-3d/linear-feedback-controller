@@ -39,9 +39,7 @@ struct [[nodiscard]] Mutation final {
    */
   template <typename T>
   constexpr Mutation(ValueType &value, T &&tmp)
-      : Mutation(std::addressof(value), std::forward<T>(tmp)) {
-    static_assert(not std::is_const_v<ValueType>);
-  }
+      : Mutation(std::addressof(value), std::forward<T>(tmp)) {}
 
   /// Move Ctor
   constexpr Mutation(Mutation &&other) {
