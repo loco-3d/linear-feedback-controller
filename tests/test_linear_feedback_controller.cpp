@@ -1,14 +1,9 @@
-#include <chrono>
-using namespace std::literals::chrono_literals;
-
-#include <string_view>
-using namespace std::literals::string_view_literals;
-
 #include <sstream>
+#include <string_view>
 
 #include "utils/linear_feedback_controller.hpp"
-using tests::utils::Gains;
 using tests::utils::MakeAllControllerParametersFrom;
+using tests::utils::References;
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 using linear_feedback_controller::ControllerParameters;
@@ -22,45 +17,73 @@ namespace {
 struct LinearFeedbackControllerTest
     : public ::testing::TestWithParam<ControllerParameters> {};
 
+template <typename Pred>
+constexpr auto Not(Pred&& pred) {
+  return [&pred](auto&&... val) {
+    return not pred(std::forward<decltype(val)>(val)...);
+  };
+}
+
+constexpr auto CorrectlyLoads(LinearFeedbackController& ctrl) {
+  return [&](const ControllerParameters& params) { return ctrl.load(params); };
+}
+
+constexpr auto FailsToLoad(LinearFeedbackController& ctrl) {
+  return Not(CorrectlyLoads(ctrl));
+}
+
+constexpr auto CorrectlySetInitialState(LinearFeedbackController& ctrl) {
+  return [&](const References& refs) {
+    return ctrl.set_initial_state(refs.tau, refs.q);
+  };
+}
+
+constexpr auto FailsToSetInitialState(LinearFeedbackController& ctrl) {
+  return Not(CorrectlySetInitialState(ctrl));
+}
+
 TEST(LinearFeedbackControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LinearFeedbackController{}; });
 }
 
 TEST(LinearFeedbackControllerTest, DISABLED_LoadEmptyParams) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_FALSE(ctrl.load({}));
+  EXPECT_PRED1(Not(CorrectlyLoads(ctrl)), ControllerParameters{});
 }
 
-TEST(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
+TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
   auto ctrl = LinearFeedbackController{};
-  auto params = ControllerParameters{};
+  auto no_urdf_param = GetParam();
+  no_urdf_param.urdf.clear();
+  EXPECT_PRED1(FailsToLoad(ctrl), no_urdf_param);
+}
+
+TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
+  auto ctrl = LinearFeedbackController{};
+  auto params = GetParam();
   // TODO
   EXPECT_FALSE(ctrl.load(params));
 }
 
-TEST(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
+TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
   auto ctrl = LinearFeedbackController{};
-  auto params = ControllerParameters{};
-  // TODO
-  EXPECT_FALSE(ctrl.load(params));
-}
 
-TEST(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
-  auto ctrl = LinearFeedbackController{};
-  auto params = ControllerParameters{};
-  // TODO
-  EXPECT_FALSE(ctrl.load(params));
+  auto negative_duration_params = GetParam();
+  negative_duration_params.pd_to_lf_transition_duration =
+      -negative_duration_params.pd_to_lf_transition_duration;
+
+  EXPECT_PRED1(FailsToLoad(ctrl), negative_duration_params);
 }
 
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_TRUE(ctrl.load(GetParam()));
+  EXPECT_PRED1(CorrectlyLoads(ctrl), GetParam());
 }
 
 TEST_P(LinearFeedbackControllerTest, SetInitialStateEmpty) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_TRUE(ctrl.load(GetParam()));
-  EXPECT_FALSE(ctrl.set_initial_state({}, {}));
+  ASSERT_PRED1(CorrectlyLoads(ctrl), GetParam());
+  EXPECT_PRED1(FailsToSetInitialState(ctrl), References{});
 }
 
 constexpr std::string_view dummy_urdf =
@@ -89,6 +112,7 @@ constexpr std::string_view dummy_urdf =
     "  <link name=\"l2\"/>"
     "</robot>";
 
+using namespace std::literals::chrono_literals;
 INSTANTIATE_TEST_SUITE_P(DummyUrdf, LinearFeedbackControllerTest,
                          ::testing::ValuesIn(MakeAllControllerParametersFrom(
                              dummy_urdf,
