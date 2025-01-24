@@ -78,8 +78,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateEmpty) {
   EXPECT_PRED1(DoNot(SetInitialState(ctrl)), References{});
 }
 
-TEST_P(LinearFeedbackControllerTest,
-       DISABLED_SetInitialStateSizeMismatchInternal) {
+TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
   auto ctrl = LinearFeedbackController{};
   ASSERT_PRED1(Loads(ctrl), GetParam());
   const auto good_refs = References::Random(GetParam().d_gains.size());
