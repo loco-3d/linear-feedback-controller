@@ -27,7 +27,7 @@ constexpr auto DoNot(Pred&& pred) {
   };
 }
 
-constexpr auto Loads(LinearFeedbackController& ctrl) {
+constexpr auto Load(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params) { return ctrl.load(params); };
 }
 
@@ -37,20 +37,26 @@ constexpr auto SetInitialState(LinearFeedbackController& ctrl) {
   };
 }
 
+constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
+  return [&](const ControllerParameters& params, const References& refs) {
+    return ctrl.load(params) and ctrl.set_initial_state(refs.tau, refs.q);
+  };
+}
+
 TEST(LinearFeedbackControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LinearFeedbackController{}; });
 }
 
 TEST(LinearFeedbackControllerTest, DISABLED_LoadEmptyParams) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_PRED1(DoNot(Loads(ctrl)), ControllerParameters{});
+  EXPECT_PRED1(DoNot(Load(ctrl)), ControllerParameters{});
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
   auto ctrl = LinearFeedbackController{};
   auto no_urdf_param = GetParam();
   no_urdf_param.urdf.clear();
-  EXPECT_PRED1(DoNot(Loads(ctrl)), no_urdf_param);
+  EXPECT_PRED1(DoNot(Load(ctrl)), no_urdf_param);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
@@ -67,23 +73,23 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
   negative_duration_params.pd_to_lf_transition_duration =
       -negative_duration_params.pd_to_lf_transition_duration;
 
-  EXPECT_PRED1(DoNot(Loads(ctrl)), negative_duration_params);
+  EXPECT_PRED1(DoNot(Load(ctrl)), negative_duration_params);
 }
 
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_PRED1(Loads(ctrl), GetParam());
+  EXPECT_PRED1(Load(ctrl), GetParam());
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateEmpty) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Loads(ctrl), GetParam());
+  ASSERT_PRED1(Load(ctrl), GetParam());
   EXPECT_PRED1(DoNot(SetInitialState(ctrl)), References{});
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Loads(ctrl), GetParam());
+  ASSERT_PRED1(Load(ctrl), GetParam());
   const auto good_refs = References::Random(GetParam().d_gains.size());
 
   {
@@ -115,7 +121,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
 
 TEST_P(LinearFeedbackControllerTest, SetInitialStateSpecialDouble) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Loads(ctrl), GetParam());
+  ASSERT_PRED1(Load(ctrl), GetParam());
   auto refs = References::Random(GetParam().d_gains.size());
 
   for (const auto& [ref, str] : {
@@ -138,9 +144,16 @@ TEST_P(LinearFeedbackControllerTest, SetInitialStateSpecialDouble) {
 
 TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Loads(ctrl), GetParam());
+  ASSERT_PRED1(Load(ctrl), GetParam());
   EXPECT_PRED1(SetInitialState(ctrl),
                References::Random(GetParam().d_gains.size()));
+}
+
+TEST_P(LinearFeedbackControllerTest, ComputeControl) {
+  auto ctrl = LinearFeedbackController{};
+  ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(),
+               References::Random(GetParam().d_gains.size()));
+  // TODO
 }
 
 constexpr std::string_view dummy_urdf =
