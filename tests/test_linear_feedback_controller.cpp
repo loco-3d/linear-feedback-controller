@@ -78,6 +78,37 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateEmpty) {
   EXPECT_PRED1(DoNot(SetInitialState(ctrl)), References{});
 }
 
+TEST_P(LinearFeedbackControllerTest,
+       DISABLED_SetInitialStateSizeMismatchInternal) {
+  auto ctrl = LinearFeedbackController{};
+  ASSERT_PRED1(Loads(ctrl), GetParam());
+  const auto good_refs = References::Random(GetParam().d_gains.size());
+
+  {
+    auto tau_bigger = good_refs;
+    tau_bigger.tau << tau_bigger.tau, 1.0;
+    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), tau_bigger);
+  }
+
+  {
+    auto tau_smaller = good_refs;
+    tau_smaller.tau.conservativeResize(tau_smaller.tau.size() - 1);
+    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), tau_smaller);
+  }
+
+  {
+    auto q_bigger = good_refs;
+    q_bigger.q << q_bigger.q, 1.0;
+    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), q_bigger);
+  }
+
+  {
+    auto q_smaller = good_refs;
+    q_smaller.q.conservativeResize(q_smaller.q.size() - 1);
+    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), q_smaller);
+  }
+}
+
 constexpr std::string_view dummy_urdf =
     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     "<robot name=\"dummy\">"
