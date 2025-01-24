@@ -100,34 +100,73 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
   *os << "}";
 }
 
-/// Return type of MakePairOfJointNamesFrom
 struct JointNamesPair {
   std::vector<std::string> controlled;
   std::vector<std::string> moving;
 };
 
 /**
- *  @brief Create the controlled/moving list based on a list of JointDescription
+ *  @brief Create a pair of names for each JointType
  *
- *  @param[in] joint_list List of JointDescription
+ *  @param[in] joint_desc_list List of JointDescription
  *
- *  @return JointNamesPair Containing both controlled and moving joint names
+ *  @return JointNamesPair Pair of name list
  */
-inline auto MakePairOfJointNamesFrom(
-    const std::vector<JointDescription> &joint_list) -> JointNamesPair {
-  const auto number_of_joints = size(joint_list);
-
+inline auto MakePairOfNamesFrom(
+    const std::vector<JointDescription> &joint_desc_list) -> JointNamesPair {
   JointNamesPair out;
-  out.controlled.reserve(number_of_joints);
-  out.moving.reserve(number_of_joints);
 
-  for (const auto &joint : joint_list) {
+  out.controlled.reserve(joint_desc_list.size());
+  out.moving.reserve(joint_desc_list.size());
+
+  for (const auto &joint : joint_desc_list) {
     if (IsControlled(joint.type)) {
       out.controlled.emplace_back(joint.name);
     }
 
     if (IsMoving(joint.type)) {
       out.moving.emplace_back(joint.name);
+    }
+  }
+
+  return out;
+}
+
+/**
+ *  @brief Create a list of JointDescription from the given lists
+ *
+ *  @param[in] controlled List of controlled joint names
+ *  @param[in] moving List of moving joint names
+ */
+inline auto MakeJointDescriptionListFrom(
+    const std::vector<std::string> &controlled,
+    const std::vector<std::string> &moving) -> std::vector<JointDescription> {
+  std::vector<JointDescription> out;
+
+  // The worst case would be that each names are differents
+  out.reserve(moving.size() + controlled.size());
+
+  for (std::string_view name : moving) {
+    out.emplace_back(JointDescription{
+        .name = name,
+        .type = JointType::Moving,
+    });
+  }
+
+  for (std::string_view name : controlled) {
+    // If the name has already been pushed into out, update the type to Both
+    auto found = std::find_if(out.begin(), out.end(),
+                              [name](const JointDescription &joint_desc) {
+                                return joint_desc.name == name;
+                              });
+
+    if (found != out.end()) {
+      found->type = JointType::Both;
+    } else {
+      out.emplace_back(JointDescription{
+          .name = name,
+          .type = JointType::Controlled,
+      });
     }
   }
 
@@ -149,28 +188,30 @@ struct ModelDescription {
  *         for each joint_list provided
  *
  *  @param[in] urdf The common URDF used by every ModelDescription
- *  @param[in] all_joint_lists All arguments forwarded to the '.joint_list = '
- *                             constructor
+ *  @param[in] all_joint_lists All arguments forwarded to the '.joint_list =
+ * ' constructor
  *
- *  @return std::vector<ModelDescription<ListType>> Containing all
+ *  @return std::vector<ModelDescription> Containing all
  *          ModelDescriptions constructed
  */
 inline auto MakeAllModelDescriptionsFor(
-    std::string_view urdf, std::initializer_list<std::vector<JointDescription>>
-                               all_joint_lists) noexcept
+    std::string_view urdf,
+    std::initializer_list<std::vector<JointDescription>> all_joint_lists)
     -> std::vector<ModelDescription> {
   std::vector<ModelDescription> out;
-
   out.reserve(2 * all_joint_lists.size());
 
-  for (auto has_free_flyer : {false, true}) {
-    for (const auto &joint_list : all_joint_lists) {
-      out.emplace_back(ModelDescription{
-          .urdf = urdf,
-          .joint_list = joint_list,
-          .has_free_flyer = has_free_flyer,
-      });
-    }
+  for (const auto &joint_list : all_joint_lists) {
+    out.emplace_back(ModelDescription{
+        .urdf = urdf,
+        .joint_list = joint_list,
+        .has_free_flyer = false,
+    });
+    out.emplace_back(ModelDescription{
+        .urdf = urdf,
+        .joint_list = std::move(joint_list),
+        .has_free_flyer = true,
+    });
   }
 
   return out;
@@ -266,10 +307,10 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
  */
 inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
-  const auto joint_lists = MakePairOfJointNamesFrom(model.joint_list);
+  auto [controlled, moving] = MakePairOfNamesFrom(model.joint_list);
   auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
-  if (rmb->build_model(std::string{model.urdf}, joint_lists.moving,
-                       joint_lists.controlled, model.has_free_flyer)) {
+  if (rmb->build_model(std::string{model.urdf}, std::move(moving),
+                       std::move(controlled), model.has_free_flyer)) {
     return rmb;
   } else {
     return nullptr;
