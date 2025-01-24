@@ -1,6 +1,9 @@
 #include <sstream>
 #include <string_view>
 
+#include "utils/mutation.hpp"
+using tests::utils::TemporaryMutate;
+
 #include "utils/linear_feedback_controller.hpp"
 using tests::utils::MakeAllControllerParametersFrom;
 using tests::utils::References;
@@ -105,6 +108,31 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
     auto q_smaller = good_refs;
     q_smaller.q.conservativeResize(q_smaller.q.size() - 1);
     EXPECT_PRED1(DoNot(SetInitialState(ctrl)), q_smaller);
+  }
+}
+
+#define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
+
+TEST_P(LinearFeedbackControllerTest, SetInitialStateSpecialDouble) {
+  auto ctrl = LinearFeedbackController{};
+  ASSERT_PRED1(Loads(ctrl), GetParam());
+  auto refs = References::Random(GetParam().d_gains.size());
+
+  for (const auto& [ref, str] : {
+           MakeRefOf(refs.q(0)),
+           MakeRefOf(refs.q.tail<1>()[0]),
+           MakeRefOf(refs.tau(0)),
+           MakeRefOf(refs.tau.tail<1>()[0]),
+       }) {
+    for (auto tmp_value : {
+             std::numeric_limits<double>::infinity(),
+             std::numeric_limits<double>::quiet_NaN(),
+             std::numeric_limits<double>::signaling_NaN(),
+         }) {
+      const auto mutation = TemporaryMutate(ref, tmp_value);
+      EXPECT_PRED1(DoNot(SetInitialState(ctrl)), refs)
+          << str << " = " << ref << " (was " << mutation.OldValue() << ")";
+    }
   }
 }
 
