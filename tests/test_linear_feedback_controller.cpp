@@ -48,7 +48,7 @@ TEST(LinearFeedbackControllerTest, Ctor) {
 
 TEST(LinearFeedbackControllerTest, DISABLED_LoadEmptyParams) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_PRED1(Not(CorrectlyLoads(ctrl)), ControllerParameters{});
+  EXPECT_PRED1(FailsToLoad(ctrl), ControllerParameters{});
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
