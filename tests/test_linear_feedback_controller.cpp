@@ -109,6 +109,13 @@ TEST_P(LinearFeedbackControllerTest,
   }
 }
 
+TEST_P(LinearFeedbackControllerTest, SetInitialState) {
+  auto ctrl = LinearFeedbackController{};
+  ASSERT_PRED1(Loads(ctrl), GetParam());
+  EXPECT_PRED1(SetInitialState(ctrl),
+               References::Random(GetParam().d_gains.size()));
+}
+
 constexpr std::string_view dummy_urdf =
     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
     "<robot name=\"dummy\">"
