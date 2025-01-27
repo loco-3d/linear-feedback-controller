@@ -4,6 +4,10 @@
 #include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
+#include "utils/lf_controller.hpp"
+using tests::utils::MakeValidRandomControlFor;
+using tests::utils::MakeValidRandomSensorFor;
+
 #include "utils/linear_feedback_controller.hpp"
 using tests::utils::MakeAllControllerParametersFrom;
 using tests::utils::References;
@@ -147,12 +151,25 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   ASSERT_PRED1(Load(ctrl), GetParam());
   EXPECT_PRED1(SetInitialState(ctrl),
                References::Random(GetParam().d_gains.size()));
+
+  ASSERT_NE(ctrl.get_robot_model(), nullptr);
+  EXPECT_EQ(ctrl.get_robot_model()->get_moving_joint_names(),
+            GetParam().moving_joint_names);
+
+  EXPECT_EQ(ctrl.get_robot_model()->get_robot_has_free_flyer(),
+            GetParam().robot_has_free_flyer);
+
+  // Other verifications based on RMB ? ...
 }
 
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
   ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(),
                References::Random(GetParam().d_gains.size()));
+
+  const auto control = MakeValidRandomControlFor(*ctrl.get_robot_model());
+  const auto sensor = MakeValidRandomSensorFor(*ctrl.get_robot_model());
+
   // TODO
 }
 

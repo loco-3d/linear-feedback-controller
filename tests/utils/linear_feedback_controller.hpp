@@ -2,7 +2,6 @@
 
 #include <chrono>  // duration_cast/milliseconds
 
-#include "lf_controller.hpp"
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 #include "pd_controller.hpp"
 #include "robot_model.hpp"
