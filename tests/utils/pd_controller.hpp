@@ -145,10 +145,9 @@ constexpr auto operator<<(std::ostream &os, const References &references)
  *  @param[in] q Expected input states
  *  @param[in] v Expected input velocities
  */
-inline auto ComputeExpectedControlFrom(const Gains &gains,
-                                       const References &refs,
-                                       const Eigen::VectorXd &q,
-                                       const Eigen::VectorXd &v) {
+inline auto ExpectedPDControlFrom(const Gains &gains, const References &refs,
+                                  const Eigen::VectorXd &q,
+                                  const Eigen::VectorXd &v) {
   // clang-format off
   // o = tau_r - (p * (q - q_r)) - (d * v)
   return (refs.tau.array()

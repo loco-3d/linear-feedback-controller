@@ -182,7 +182,7 @@ TEST(PdControllerTest, ComputeControl) {
     SCOPED_TRACE(trace_log.str());
 
     const Eigen::VectorXd expected_control =
-        ComputeExpectedControlFrom(gains, refs, arg_q, arg_v);
+        ExpectedPDControlFrom(gains, refs, arg_q, arg_v);
 
     SetTo(pd_ctrl, gains);
     SetTo(pd_ctrl, refs);
