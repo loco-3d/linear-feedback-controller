@@ -54,6 +54,7 @@ TEST(LinearFeedbackControllerTest, Ctor) {
 TEST(LinearFeedbackControllerTest, DISABLED_LoadEmptyParams) {
   auto ctrl = LinearFeedbackController{};
   EXPECT_PRED1(DoNot(Load(ctrl)), ControllerParameters{});
+  EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
@@ -61,6 +62,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
   auto no_urdf_param = GetParam();
   no_urdf_param.urdf.clear();
   EXPECT_PRED1(DoNot(Load(ctrl)), no_urdf_param);
+  EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
@@ -68,6 +70,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
   auto params = GetParam();
   // TODO
   EXPECT_FALSE(ctrl.load(params));
+  EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
@@ -78,11 +81,13 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
       -negative_duration_params.pd_to_lf_transition_duration;
 
   EXPECT_PRED1(DoNot(Load(ctrl)), negative_duration_params);
+  EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
   EXPECT_PRED1(Load(ctrl), GetParam());
+  EXPECT_NE(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateEmpty) {
