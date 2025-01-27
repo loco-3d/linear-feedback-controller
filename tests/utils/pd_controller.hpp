@@ -147,7 +147,7 @@ constexpr auto operator<<(std::ostream &os, const References &references)
  */
 inline auto ExpectedPDControlFrom(const Gains &gains, const References &refs,
                                   const Eigen::VectorXd &q,
-                                  const Eigen::VectorXd &v) {
+                                  const Eigen::VectorXd &v) -> Eigen::VectorXd {
   // clang-format off
   // o = tau_r - (p * (q - q_r)) - (d * v)
   return (refs.tau.array()
