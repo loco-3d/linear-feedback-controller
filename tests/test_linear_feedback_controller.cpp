@@ -213,10 +213,9 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
     return (((1.0 - weight) * pd) + (weight * lf));
   };
 
-  const linear_feedback_controller::TimePoint first_call =
-      std::chrono::high_resolution_clock::now();
-
-  const linear_feedback_controller::TimePoint transition =
+  using time_point = linear_feedback_controller::TimePoint;
+  const time_point first_call = time_point::clock::now();
+  const time_point transition =
       first_call + GetParam().pd_to_lf_transition_duration;
 
   // First call always calls PDController
