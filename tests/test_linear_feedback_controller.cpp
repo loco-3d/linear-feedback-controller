@@ -12,10 +12,6 @@ using tests::utils::ExpectedPDControlFrom;
 using tests::utils::Gains;
 using tests::utils::References;
 
-#include "utils/eigen_conversions.hpp"
-using linear_feedback_controller_msgs::Eigen::Control;
-using linear_feedback_controller_msgs::Eigen::Sensor;
-
 #include "utils/lf_controller.hpp"
 using tests::utils::ExpectedLFControlFrom;
 using tests::utils::MakeValidRandomControlFor;
@@ -51,6 +47,12 @@ constexpr auto SetInitialState(LinearFeedbackController& ctrl) {
 constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params, const References& refs) {
     return ctrl.load(params) and ctrl.set_initial_state(refs.tau, refs.q);
+  };
+}
+
+constexpr auto AreAlmostEquals(double error_absolute = 1e-6) {
+  return [=](const auto& lhs, const auto& rhs) {
+    return ((lhs.array() - rhs.array()).abs() <= error_absolute).all();
   };
 }
 
@@ -133,18 +135,19 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
   }
 }
 
-#define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
+#define MakeNamedRefOf(val) \
+  std::make_tuple(std::string_view{#val}, std::ref((val)))
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
   auto ctrl = LinearFeedbackController{};
   ASSERT_PRED1(Load(ctrl), GetParam());
   auto refs = References::Random(GetParam().d_gains.size());
 
-  for (const auto& [ref, str] : {
-           MakeRefOf(refs.q(0)),
-           MakeRefOf(refs.q.tail<1>()[0]),
-           MakeRefOf(refs.tau(0)),
-           MakeRefOf(refs.tau.tail<1>()[0]),
+  for (const auto& [str, ref] : {
+           MakeNamedRefOf(refs.q(0)),
+           MakeNamedRefOf(refs.q.tail<1>()[0]),
+           MakeNamedRefOf(refs.tau(0)),
+           MakeNamedRefOf(refs.tau.tail<1>()[0]),
        }) {
     for (auto tmp_value : {
              std::numeric_limits<double>::infinity(),
@@ -174,6 +177,8 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   // Other verifications based on RMB ? ...
 }
 
+#define MakeNamedValueOf(val) std::make_tuple(std::string_view{#val}, (val))
+
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
   const auto refs = References::Random(GetParam().d_gains.size());
@@ -192,23 +197,49 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   const auto control = MakeValidRandomControlFor(*ctrl.get_robot_model());
   const auto sensor = MakeValidRandomSensorFor(*ctrl.get_robot_model());
 
-  // First call always calls PDController
-  const auto first_call = std::chrono::high_resolution_clock::now();
-  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
-                                  sensor.joint_state.velocity));
+  const auto expected_pd_control = ExpectedPDControlFrom(
+      gains, refs, sensor.joint_state.position, sensor.joint_state.velocity);
 
-  EXPECT_EQ(
-      ctrl.compute_control(
-          (first_call + GetParam().pd_to_lf_transition_duration + 1us), sensor,
-          control, false),
-      ExpectedLFControlFrom(sensor, control, GetParam().robot_has_free_flyer));
+  const auto expected_lf_control =
+      ExpectedLFControlFrom(sensor, control, GetParam().robot_has_free_flyer);
+
+  constexpr auto ComputePercentOf = [](const auto& min, const auto& val,
+                                       const auto& max) {
+    return (val - min) / (max - min);
+  };
+
+  constexpr auto ApplyWeight = [](const auto& weight, const auto& pd,
+                                  const auto& lf) {
+    return (((1.0 - weight) * pd) + (weight * lf));
+  };
+
+  const auto first_call = linear_feedback_controller::TimePoint{
+      std::chrono::high_resolution_clock::now()};
+  const auto transition = first_call + GetParam().pd_to_lf_transition_duration;
+
+  // First call always calls PDController
+  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
+            expected_pd_control);
+
+  EXPECT_EQ(ctrl.compute_control(transition + 1ms, sensor, control, false),
+            expected_lf_control);
+
+  for (const auto& [str, when] : {
+           MakeNamedValueOf(first_call + 1ms),
+           MakeNamedValueOf(first_call + 5ms),
+           MakeNamedValueOf(transition - 1ms),
+       }) {
+    EXPECT_PRED2(AreAlmostEquals(),
+                 ctrl.compute_control(when, sensor, control, false),
+                 ApplyWeight(ComputePercentOf(first_call, when, transition),
+                             expected_pd_control, expected_lf_control))
+        << "when = " << std::quoted(str);
+  }
 
   // This test that time::now() is not used inside the controller an only
   // depends on the first_call
   EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
-                                  sensor.joint_state.velocity));
+            expected_pd_control);
 
   // TODO: Gravity compensation ????
 }
