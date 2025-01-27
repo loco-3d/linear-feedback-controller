@@ -5,7 +5,7 @@
 using tests::utils::TemporaryMutate;
 
 #include "utils/pd_controller.hpp"
-using tests::utils::ComputeExpectedControlFrom;
+using tests::utils::ExpectedPDControlFrom;
 using tests::utils::Gains;
 using tests::utils::References;
 
