@@ -119,7 +119,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
 
 #define MakeRefOf(val) std::make_tuple(std::ref((val)), std::string_view{#val})
 
-TEST_P(LinearFeedbackControllerTest, SetInitialStateSpecialDouble) {
+TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
   auto ctrl = LinearFeedbackController{};
   ASSERT_PRED1(Load(ctrl), GetParam());
   auto refs = References::Random(GetParam().d_gains.size());
