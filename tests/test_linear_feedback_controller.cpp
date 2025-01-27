@@ -63,9 +63,9 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
   auto ctrl = LinearFeedbackController{};
-  auto params = GetParam();
+  auto param_size_mismatch = GetParam();
   // TODO
-  EXPECT_FALSE(ctrl.load(params));
+  EXPECT_PRED1(DoNot(Load(ctrl)), param_size_mismatch);
   EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
