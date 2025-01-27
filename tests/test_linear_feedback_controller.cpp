@@ -1,6 +1,9 @@
 #include <sstream>
 #include <string_view>
 
+#include "utils/core.hpp"
+using tests::utils::DoNot;
+
 #include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
@@ -23,13 +26,6 @@ namespace {
 
 struct LinearFeedbackControllerTest
     : public ::testing::TestWithParam<ControllerParameters> {};
-
-template <typename Pred>
-constexpr auto DoNot(Pred&& pred) {
-  return [&pred](auto&&... val) {
-    return not pred(std::forward<decltype(val)>(val)...);
-  };
-}
 
 constexpr auto Load(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params) { return ctrl.load(params); };
