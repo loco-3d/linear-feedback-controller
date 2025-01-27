@@ -5,6 +5,7 @@
 using tests::utils::TemporaryMutate;
 
 #include "utils/lf_controller.hpp"
+using tests::utils::ExpectedLFControlFrom;
 using tests::utils::MakeValidRandomControlFor;
 using tests::utils::MakeValidRandomSensorFor;
 
@@ -190,16 +191,8 @@ TEST_P(LFControllerTest, ComputeControl) {
 
   const auto sensor = MakeValidRandomSensorFor(*model_ptr);
   const auto control = MakeValidRandomControlFor(*model_ptr);
-
-  const auto x =
-      GetCompleteStateFrom(sensor, model_ptr->get_robot_has_free_flyer());
-
-  const auto x_0 = GetCompleteStateFrom(control.initial_state,
-                                        model_ptr->get_robot_has_free_flyer());
-
-  // FIXME: Compute the error differently based on free flyer ?
-  const auto error = x_0 - x;
-  EXPECT_EQ((control.feedforward + (control.feedback_gain * error)),
+  EXPECT_EQ(ExpectedLFControlFrom(sensor, control,
+                                  model_ptr->get_robot_has_free_flyer()),
             ctrl.compute_control(sensor, control));
 }
 

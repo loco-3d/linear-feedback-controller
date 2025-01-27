@@ -1,9 +1,9 @@
 #ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__LF_CONTROLLER_HPP_
 #define LINEAR_FEEDBACK_CONTROLLER_TESTS__LF_CONTROLLER_HPP_
 
+#include "eigen_conversions.hpp"
 #include "linear_feedback_controller/lf_controller.hpp"
-#include "linear_feedback_controller/robot_model_builder.hpp"
-#include "linear_feedback_controller_msgs/eigen_conversions.hpp"
+#include "robot_model.hpp"
 
 namespace tests::utils {
 /**
@@ -84,6 +84,19 @@ inline auto MakeValidRandomControlFor(
   control.initial_state = MakeValidRandomSensorFor(model);
 
   return control;
+}
+
+inline auto ExpectedLFControlFrom(
+    const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
+    const linear_feedback_controller_msgs::Eigen::Control& control,
+    bool with_free_flyer) -> Eigen::VectorXd {
+  const auto x = GetCompleteStateFrom(sensor, with_free_flyer);
+  const auto x_0 = GetCompleteStateFrom(control.initial_state, with_free_flyer);
+
+  // FIXME: free flyer ?
+  const auto error = x_0 - x;
+
+  return (control.feedforward + (control.feedback_gain * error));
 }
 
 }  // namespace tests::utils
