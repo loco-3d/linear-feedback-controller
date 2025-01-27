@@ -76,10 +76,49 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
   auto ctrl = LinearFeedbackController{};
-  auto param_size_mismatch = GetParam();
-  // TODO
-  EXPECT_PRED1(DoNot(Load(ctrl)), param_size_mismatch);
-  EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  auto good_params = GetParam();
+
+  {
+    auto p_gains_too_big = good_params;
+    p_gains_too_big.p_gains.push_back(3.141592);
+
+    EXPECT_PRED1(DoNot(Load(ctrl)), p_gains_too_big);
+    EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  }
+
+  {
+    auto p_gains_smaller = good_params;
+    p_gains_smaller.p_gains.pop_back();
+
+    EXPECT_PRED1(DoNot(Load(ctrl)), p_gains_smaller);
+    EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  }
+
+  {
+    auto d_gains_too_big = good_params;
+    d_gains_too_big.d_gains.push_back(3.141592);
+
+    EXPECT_PRED1(DoNot(Load(ctrl)), d_gains_too_big);
+    EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  }
+
+  {
+    auto d_gains_smaller = good_params;
+    d_gains_smaller.d_gains.pop_back();
+
+    EXPECT_PRED1(DoNot(Load(ctrl)), d_gains_smaller);
+    EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  }
+
+  {
+    auto moving_joint_cleared = good_params;
+    moving_joint_cleared.moving_joint_names.clear();
+
+    EXPECT_PRED1(DoNot(Load(ctrl)), moving_joint_cleared);
+    EXPECT_EQ(ctrl.get_robot_model(), nullptr);
+  }
+
+  // Others ?? ...
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
