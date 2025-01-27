@@ -7,13 +7,22 @@ using tests::utils::DoNot;
 #include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
+#include "utils/pd_controller.hpp"
+using tests::utils::ExpectedPDControlFrom;
+using tests::utils::Gains;
+using tests::utils::References;
+
+#include "utils/eigen_conversions.hpp"
+using linear_feedback_controller_msgs::Eigen::Control;
+using linear_feedback_controller_msgs::Eigen::Sensor;
+
 #include "utils/lf_controller.hpp"
+using tests::utils::ExpectedLFControlFrom;
 using tests::utils::MakeValidRandomControlFor;
 using tests::utils::MakeValidRandomSensorFor;
 
 #include "utils/linear_feedback_controller.hpp"
 using tests::utils::MakeAllControllerParametersFrom;
-using tests::utils::References;
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 using linear_feedback_controller::ControllerParameters;
@@ -21,6 +30,8 @@ using linear_feedback_controller::Duration;
 using linear_feedback_controller::LinearFeedbackController;
 
 #include "gtest/gtest.h"
+
+using namespace std::literals::chrono_literals;
 
 namespace {
 
@@ -165,13 +176,41 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(),
-               References::Random(GetParam().d_gains.size()));
+  const auto refs = References::Random(GetParam().d_gains.size());
+
+  ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(), refs);
+
+  constexpr auto ToEigen = [](const std::vector<double>& v) {
+    return Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
+  };
+
+  const auto gains = Gains{
+      .p = ToEigen(GetParam().p_gains),
+      .d = ToEigen(GetParam().d_gains),
+  };
 
   const auto control = MakeValidRandomControlFor(*ctrl.get_robot_model());
   const auto sensor = MakeValidRandomSensorFor(*ctrl.get_robot_model());
 
-  // TODO
+  // First call always calls PDController
+  const auto first_call = std::chrono::high_resolution_clock::now();
+  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
+            ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
+                                  sensor.joint_state.velocity));
+
+  EXPECT_EQ(
+      ctrl.compute_control(
+          (first_call + GetParam().pd_to_lf_transition_duration + 1us), sensor,
+          control, false),
+      ExpectedLFControlFrom(sensor, control, GetParam().robot_has_free_flyer));
+
+  // This test that time::now() is not used inside the controller an only
+  // depends on the first_call
+  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
+            ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
+                                  sensor.joint_state.velocity));
+
+  // TODO: Gravity compensation ????
 }
 
 constexpr std::string_view dummy_urdf =
@@ -200,7 +239,6 @@ constexpr std::string_view dummy_urdf =
     "  <link name=\"l2\"/>"
     "</robot>";
 
-using namespace std::literals::chrono_literals;
 INSTANTIATE_TEST_SUITE_P(DummyUrdf, LinearFeedbackControllerTest,
                          ::testing::ValuesIn(MakeAllControllerParametersFrom(
                              dummy_urdf,
