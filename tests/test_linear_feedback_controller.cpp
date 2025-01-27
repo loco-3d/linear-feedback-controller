@@ -51,7 +51,7 @@ constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
 }
 
 constexpr auto AreAlmostEquals(double error_absolute = 1e-6) {
-  return [=](const auto& lhs, const auto& rhs) {
+  return [=](const auto& lhs, const auto& rhs) -> bool {
     return ((lhs.array() - rhs.array()).abs() <= error_absolute).all();
   };
 }
@@ -213,20 +213,26 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
     return (((1.0 - weight) * pd) + (weight * lf));
   };
 
-  const auto first_call = linear_feedback_controller::TimePoint{
-      std::chrono::high_resolution_clock::now()};
-  const auto transition = first_call + GetParam().pd_to_lf_transition_duration;
+  const linear_feedback_controller::TimePoint first_call =
+      std::chrono::high_resolution_clock::now();
+
+  const linear_feedback_controller::TimePoint transition =
+      first_call + GetParam().pd_to_lf_transition_duration;
 
   // First call always calls PDController
   EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
             expected_pd_control);
 
+  // When duration expired, always calls LFController
   EXPECT_EQ(ctrl.compute_control(transition + 1ms, sensor, control, false),
             expected_lf_control);
 
+  // In between, compute both and apply a weight based on the time elapsed from
+  // the first call and the expected transition
   for (const auto& [str, when] : {
            MakeNamedValueOf(first_call + 1ms),
            MakeNamedValueOf(first_call + 5ms),
+           MakeNamedValueOf(transition - 50ms),
            MakeNamedValueOf(transition - 1ms),
        }) {
     EXPECT_PRED2(AreAlmostEquals(),
@@ -283,8 +289,6 @@ INSTANTIATE_TEST_SUITE_P(DummyUrdf, LinearFeedbackControllerTest,
                            PrintTo(info.param, &stream,
                                    {.as_param_name = true});
                            return stream.str();
-                         }
-
-);
+                         });
 
 }  // namespace
