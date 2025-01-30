@@ -1,9 +1,6 @@
 #include <sstream>
 #include <string_view>
 
-#include "utils/core.hpp"
-using tests::utils::DoNot;
-
 #include "utils/mutation.hpp"
 using tests::utils::TemporaryMutate;
 
@@ -33,6 +30,19 @@ namespace {
 
 struct LinearFeedbackControllerTest
     : public ::testing::TestWithParam<ControllerParameters> {};
+
+/**
+ *  @return A predicate functor calling the underlying predicate and
+ *          returning it's negation
+ *
+ *  @param[in] pred A simple predicate taking any arguments and returning a bool
+ */
+template <typename Pred>
+constexpr auto DoNot(Pred&& pred) {
+  return [&](auto&&... arg) -> bool {
+    return not pred(std::forward<decltype(arg)>(arg)...);
+  };
+}
 
 constexpr auto Load(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params) { return ctrl.load(params); };
