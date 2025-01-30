@@ -250,7 +250,7 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 
 #define MakeNamedValueOf(val) std::make_tuple(std::string_view{#val}, (val))
 
-TEST_P(LinearFeedbackControllerTest, ComputeControl) {
+TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   auto ctrl = LinearFeedbackController{};
   const auto refs = References::Random(GetParam().d_gains.size());
   ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(), refs);
