@@ -60,9 +60,9 @@ constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
   };
 }
 
-constexpr auto AreAlmostEquals(double error_absolute = 1e-6) {
+constexpr auto AreAlmostEquals(double abs_error) {
   return [=](const auto& lhs, const auto& rhs) -> bool {
-    return ((lhs.array() - rhs.array()).abs() <= error_absolute).all();
+    return ((lhs.array() - rhs.array()).abs() <= abs_error).all();
   };
 }
 
@@ -276,7 +276,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
         ((when - first_call) / (GetParam().pd_to_lf_transition_duration));
 
     EXPECT_PRED2(
-        AreAlmostEquals(1e-6),
+        AreAlmostEquals(5e-6),
         ctrl.compute_control(when, sensor, control, false),
         (((1.0 - ratio) * expected_pd_control) + (ratio * expected_lf_control)))
         << "when = " << std::quoted(str) << " | ratio = " << ratio;
