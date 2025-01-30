@@ -125,32 +125,40 @@ inline auto PushNewJointStateTo(
   joint_state.effort << joint_state.effort, new_joint_state.effort;
 }
 
-/**
- *  @brief Reconstruct the expected state X (= [q, v]) from the given sensor
- *
- *  @param[in] sensor The complete sensor data
- *  @param[in] with_free_flyer Indicates if we have a free flyer or not
- *
- *  @return Eigen::VectorXd Containing the complete state X
- */
-inline auto GetCompleteStateFrom(
-    const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
-    bool with_free_flyer) -> Eigen::VectorXd {
-  Eigen::VectorXd out;
+struct RobotState {
+  Eigen::VectorXd position;
+  Eigen::VectorXd velocity;
 
-  if (with_free_flyer) {
-    out.resize(sensor.base_pose.size() + sensor.joint_state.position.size() +
-               sensor.base_twist.size() + sensor.joint_state.velocity.size());
-    out << sensor.base_pose, sensor.joint_state.position, sensor.base_twist,
-        sensor.joint_state.velocity;
-  } else {
-    out.resize(sensor.joint_state.position.size() +
-               sensor.joint_state.velocity.size());
-    out << sensor.joint_state.position, sensor.joint_state.velocity;
+  /**
+   *  @brief Reconstruct the expected state X (= [q, v]) from the given sensor
+   *
+   *  @param[in] sensor The complete sensor data
+   *  @param[in] with_free_flyer Indicates if we have a free flyer or not
+   *
+   *  @return RobotState Containing the complete state X
+   */
+  static inline auto From(
+      const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
+      bool with_free_flyer) noexcept -> RobotState {
+    RobotState out;
+    if (with_free_flyer) {
+      out.position.resize(sensor.base_pose.size() +
+                          sensor.joint_state.position.size());
+      out.velocity.resize(sensor.base_twist.size() +
+                          sensor.joint_state.velocity.size());
+
+      out.position << sensor.base_pose, sensor.joint_state.position;
+      out.velocity << sensor.base_twist, sensor.joint_state.velocity;
+    } else {
+      out.position.resize(sensor.joint_state.position.size());
+      out.velocity.resize(sensor.joint_state.velocity.size());
+
+      out.position = sensor.joint_state.position;
+      out.velocity = sensor.joint_state.velocity;
+    }
+    return out;
   }
-
-  return out;
-}
+};
 
 }  // namespace tests::utils
 
