@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__EIGEN_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__EIGEN_HPP_
 
 #include <cstddef>  // std::size_t
 #include <optional>
@@ -189,3 +190,5 @@ auto PrintTo(const Eigen::DenseBase<VectorType> &vector, std::ostream *os,
 }
 
 }  // namespace Eigen
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__EIGEN_HPP_

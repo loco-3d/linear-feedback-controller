@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__EIGEN_CONVERSION_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__EIGEN_CONVERSION_HPP_
 
 #include <ostream>
 #include <string_view>
@@ -146,3 +147,5 @@ inline auto GetCompleteStateFrom(
 }
 
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER__EIGEN_CONVERSION_HPP_

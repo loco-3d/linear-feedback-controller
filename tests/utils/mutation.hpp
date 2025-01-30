@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__MUTATION_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__MUTATION_HPP_
 
 #include <ostream>
 
@@ -183,3 +184,5 @@ constexpr auto TemporaryMutate(ValueType &value, T &&tmp)
 }
 
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__MUTATION_HPP_

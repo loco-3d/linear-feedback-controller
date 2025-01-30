@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__ROBOT_MODEL_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__ROBOT_MODEL_HPP_
 
 #include <array>
 #include <initializer_list>
@@ -244,3 +245,5 @@ inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
   }
 }
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__ROBOT_MODEL_HPP_
