@@ -235,9 +235,8 @@ inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
     }
   }
 
-  if (auto rmb =
-          std::make_unique<linear_feedback_controller::RobotModelBuilder>();
-      rmb->build_model(std::string{model.urdf}, moving_joints,
+  auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
+  if (rmb->build_model(std::string{model.urdf}, moving_joints,
                        controlled_joints, model.has_free_flyer)) {
     return rmb;
   } else {
