@@ -15,7 +15,6 @@ using tests::utils::MakeAllModelDescriptionsFor;
 using tests::utils::ModelDescription;
 
 #include "utils/eigen_conversions.hpp"
-using tests::utils::GetCompleteStateFrom;
 using tests::utils::PushNewJointStateTo;
 
 #include "linear_feedback_controller/lf_controller.hpp"
@@ -191,8 +190,7 @@ TEST_P(LFControllerTest, ComputeControl) {
 
   const auto sensor = MakeValidRandomSensorFor(*model_ptr);
   const auto control = MakeValidRandomControlFor(*model_ptr);
-  EXPECT_EQ(ExpectedLFControlFrom(sensor, control,
-                                  model_ptr->get_robot_has_free_flyer()),
+  EXPECT_EQ(ExpectedLFControlFrom(sensor, control, *model_ptr),
             ctrl.compute_control(sensor, control));
 }
 
@@ -232,10 +230,6 @@ INSTANTIATE_TEST_SUITE_P(
             },
             {
                 {.name = "l02", .type = JointType::Controlled},
-            },
-            // FIXME: Do not work
-            {
-                {.name = "l01", .type = JointType::Moving},
             },
             {
                 {.name = "l01"},

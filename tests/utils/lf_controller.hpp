@@ -3,6 +3,7 @@
 
 #include "eigen_conversions.hpp"
 #include "linear_feedback_controller/lf_controller.hpp"
+#include "pinocchio/algorithm/joint-configuration.hpp"  // pinocchio::difference
 #include "robot_model.hpp"
 
 namespace tests::utils {
@@ -76,10 +77,10 @@ inline auto MakeValidRandomControlFor(
   linear_feedback_controller_msgs::Eigen::Control control;
 
   // get_n* function take into account the free flyer stuff
-  control.feedforward = Eigen::VectorXd::Random(model.get_nv());
+  control.feedforward = Eigen::VectorXd::Random(model.get_joint_nv());
   control.feedback_gain = Eigen::MatrixXd::Random(
-      /* rows = */ model.get_nv(),
-      /* cols = */ model.get_nv() + model.get_nq());
+      /* rows = */ model.get_joint_nv(),
+      /* cols = */ model.get_nv() * 2);
 
   control.initial_state = MakeValidRandomSensorFor(model);
 
@@ -89,14 +90,21 @@ inline auto MakeValidRandomControlFor(
 inline auto ExpectedLFControlFrom(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
     const linear_feedback_controller_msgs::Eigen::Control& control,
-    bool with_free_flyer) -> Eigen::VectorXd {
-  const auto x = GetCompleteStateFrom(sensor, with_free_flyer);
-  const auto x_0 = GetCompleteStateFrom(control.initial_state, with_free_flyer);
+    const linear_feedback_controller::RobotModelBuilder& model)
+    -> Eigen::VectorXd {
+  Eigen::VectorXd out;
 
-  // FIXME: free flyer ?
-  const auto error = x_0 - x;
+  const auto x = RobotState::From(sensor, model.get_robot_has_free_flyer());
+  const auto x_0 =
+      RobotState::From(control.initial_state, model.get_robot_has_free_flyer());
 
-  return (control.feedforward + (control.feedback_gain * error));
+  auto error = Eigen::VectorXd{control.feedback_gain.cols()};
+  pinocchio::difference(model.get_model(), x.position, x_0.position,
+                        error.head(model.get_model().nv));
+  error.tail(model.get_model().nv) = x_0.velocity - x.velocity;
+
+  out = control.feedforward + (control.feedback_gain * error);
+  return out;
 }
 
 }  // namespace tests::utils
