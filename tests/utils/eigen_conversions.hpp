@@ -136,14 +136,20 @@ inline auto PushNewJointStateTo(
 inline auto GetCompleteStateFrom(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
     bool with_free_flyer) -> Eigen::VectorXd {
+  Eigen::VectorXd out;
+
   if (with_free_flyer) {
-    return ConcatenateAs<Eigen::VectorXd>(
-        sensor.base_pose, sensor.joint_state.position, sensor.base_twist,
-        sensor.joint_state.velocity);
+    out.resize(sensor.base_pose.size() + sensor.joint_state.position.size() +
+               sensor.base_twist.size() + sensor.joint_state.velocity.size());
+    out << sensor.base_pose, sensor.joint_state.position, sensor.base_twist,
+        sensor.joint_state.velocity;
   } else {
-    return ConcatenateAs<Eigen::VectorXd>(sensor.joint_state.position,
-                                          sensor.joint_state.velocity);
+    out.resize(sensor.joint_state.position.size() +
+               sensor.joint_state.velocity.size());
+    out << sensor.joint_state.position, sensor.joint_state.velocity;
   }
+
+  return out;
 }
 
 }  // namespace tests::utils
