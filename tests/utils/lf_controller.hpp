@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__LF_CONTROLLER_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__LF_CONTROLLER_HPP_
 
 #include "linear_feedback_controller/lf_controller.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
@@ -86,3 +87,5 @@ inline auto MakeValidRandomControlFor(
 }
 
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__LF_CONTROLLER_HPP_

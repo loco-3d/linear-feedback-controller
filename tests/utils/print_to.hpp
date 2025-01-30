@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__PRINT_TO_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__PRINT_TO_HPP_
 
 #include <ostream>
 #include <string_view>
@@ -99,3 +100,5 @@ constexpr auto TryToPrintTo(T &&value, std::ostream *os,
 }
 
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__PRINT_TO_HPP_
