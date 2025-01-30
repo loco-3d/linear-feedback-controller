@@ -221,7 +221,6 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
   const auto refs = References::Random(GetParam().d_gains.size());
-
   ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(), refs);
 
   constexpr auto ToEigen = [](const std::vector<double>& v) {
@@ -242,7 +241,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   const auto expected_lf_control =
       ExpectedLFControlFrom(sensor, control, GetParam().robot_has_free_flyer);
 
-  constexpr auto ComputePercentOf = [](const auto& min, const auto& val,
+  constexpr auto ComputePercentOf = [](const auto& val, const auto& min,
                                        const auto& max) {
     return (val - min) / (max - min);
   };
@@ -254,7 +253,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
 
   using time_point = linear_feedback_controller::TimePoint;
   const time_point first_call = time_point::clock::now();
-  const time_point transition =
+  const time_point pd_timeout =
       first_call + GetParam().pd_to_lf_transition_duration;
 
   // First call always calls PDController
@@ -262,7 +261,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
             expected_pd_control);
 
   // When duration expired, always calls LFController
-  EXPECT_EQ(ctrl.compute_control(transition + 1ms, sensor, control, false),
+  EXPECT_EQ(ctrl.compute_control(pd_timeout + 1ms, sensor, control, false),
             expected_lf_control);
 
   // In between, compute both and apply a weight based on the time elapsed from
@@ -270,12 +269,12 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   for (const auto& [str, when] : {
            MakeNamedValueOf(first_call + 1ms),
            MakeNamedValueOf(first_call + 5ms),
-           MakeNamedValueOf(transition - 50ms),
-           MakeNamedValueOf(transition - 1ms),
+           MakeNamedValueOf(pd_timeout - 50ms),
+           MakeNamedValueOf(pd_timeout - 1ms),
        }) {
     EXPECT_PRED2(AreAlmostEquals(),
                  ctrl.compute_control(when, sensor, control, false),
-                 ApplyWeight(ComputePercentOf(first_call, when, transition),
+                 ApplyWeight(ComputePercentOf(when, first_call, pd_timeout),
                              expected_pd_control, expected_lf_control))
         << "when = " << std::quoted(str);
   }
