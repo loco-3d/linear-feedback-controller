@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__CORE_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__CORE_HPP_
 
 #include <tuple>
 #include <utility>
@@ -59,3 +60,4 @@ constexpr auto WithArgs(Pred&& pred) {
 }
 
 }  // namespace tests::utils
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__CORE_HPP_

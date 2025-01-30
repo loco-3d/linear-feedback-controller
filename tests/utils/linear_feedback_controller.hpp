@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__LINEAR_FEEDBACK_CONTROLLER_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__LINEAR_FEEDBACK_CONTROLLER_HPP_
 
 #include <chrono>  // duration_cast/milliseconds
 
@@ -108,3 +109,5 @@ inline auto PrintTo(const ControllerParameters& params, std::ostream* os,
 }
 
 }  // namespace linear_feedback_controller
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__LINEAR_FEEDBACK_CONTROLLER_HPP_
