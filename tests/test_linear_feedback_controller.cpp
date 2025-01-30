@@ -239,17 +239,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
       gains, refs, sensor.joint_state.position, sensor.joint_state.velocity);
 
   const auto expected_lf_control =
-      ExpectedLFControlFrom(sensor, control, GetParam().robot_has_free_flyer);
-
-  constexpr auto ComputePercentOf = [](const auto& val, const auto& min,
-                                       const auto& max) {
-    return (val - min) / (max - min);
-  };
-
-  constexpr auto ApplyWeight = [](const auto& weight, const auto& pd,
-                                  const auto& lf) {
-    return (((1.0 - weight) * pd) + (weight * lf));
-  };
+      ExpectedLFControlFrom(sensor, control, *ctrl.get_robot_model());
 
   using time_point = linear_feedback_controller::TimePoint;
   const time_point first_call = time_point::clock::now();
@@ -272,11 +262,14 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
            MakeNamedValueOf(pd_timeout - 50ms),
            MakeNamedValueOf(pd_timeout - 1ms),
        }) {
-    EXPECT_PRED2(AreAlmostEquals(),
-                 ctrl.compute_control(when, sensor, control, false),
-                 ApplyWeight(ComputePercentOf(when, first_call, pd_timeout),
-                             expected_pd_control, expected_lf_control))
-        << "when = " << std::quoted(str);
+    const double ratio =
+        ((when - first_call) / (GetParam().pd_to_lf_transition_duration));
+
+    EXPECT_PRED2(
+        AreAlmostEquals(1e-6),
+        ctrl.compute_control(when, sensor, control, false),
+        (((1.0 - ratio) * expected_pd_control) + (ratio * expected_lf_control)))
+        << "when = " << std::quoted(str) << " | ratio = " << ratio;
   }
 
   // This test that time::now() is not used inside the controller an only
@@ -311,21 +304,33 @@ constexpr std::string_view dummy_urdf =
     "  </joint>"
     "  "
     "  <link name=\"l2\"/>"
+    "  "
+    "  <joint name=\"l23\" type=\"revolute\">"
+    "    <parent link=\"l2\"/>"
+    "    <child link=\"l3\"/>"
+    "    <origin xyz=\"0 1 0\" rpy=\"1 0 0\"/>"
+    "    <axis xyz=\"0 1 0\"/>"
+    "    <limit lower=\"-3.14\" upper=\"3.14\" velocity=\"10\" effort=\"100\"/>"
+    "  </joint>"
+    "  "
+    "  <link name=\"l3\"/>"
     "</robot>";
 
-INSTANTIATE_TEST_SUITE_P(DummyUrdf, LinearFeedbackControllerTest,
-                         ::testing::ValuesIn(MakeAllControllerParametersFrom(
-                             dummy_urdf,
-                             {
-                                 {{.name = "l01"}},
-                                 {{.name = "l01"}, {.name = "l12"}},
-                             },
-                             {500ms, 1s})),
-                         [](const auto& info) {
-                           std::stringstream stream;
-                           PrintTo(info.param, &stream,
-                                   {.as_param_name = true});
-                           return stream.str();
-                         });
+INSTANTIATE_TEST_SUITE_P(
+    DummyUrdf, LinearFeedbackControllerTest,
+    ::testing::ValuesIn(MakeAllControllerParametersFrom(
+        dummy_urdf,
+        {
+            {{.name = "l01"}},
+            {{.name = "l01"}, {.name = "l12"}},
+            {{.name = "l01"}, {.name = "l23"}},
+            {{.name = "l01"}, {.name = "l12"}, {.name = "l23"}},
+        },
+        {500ms, 1s})),
+    [](const auto& info) {
+      std::stringstream stream;
+      PrintTo(info.param, &stream, {.as_param_name = true});
+      return stream.str();
+    });
 
 }  // namespace
