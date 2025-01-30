@@ -44,22 +44,44 @@ constexpr auto DoNot(Pred&& pred) {
   };
 }
 
+/**
+ *  @return A predicate that returns true when ctrl.load() succeed
+ *
+ *  @param[in] ctrl A reference to the LFCController to load
+ */
 constexpr auto Load(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params) { return ctrl.load(params); };
 }
 
+/**
+ *  @return A predicate that returns true when ctrl.set_initial_state() succeed
+ *
+ *  @param[in] ctrl A reference to the LFCController to set the initial state
+ */
 constexpr auto SetInitialState(LinearFeedbackController& ctrl) {
   return [&](const References& refs) {
     return ctrl.set_initial_state(refs.tau, refs.q);
   };
 }
 
+/**
+ *  @return A predicate that returns true when both ctrl.load() and
+ *          ctrl.set_initial_state() succeed
+ *
+ *  @param[in] ctrl A reference to the LFCController to initialized
+ */
 constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
   return [&](const ControllerParameters& params, const References& refs) {
     return ctrl.load(params) and ctrl.set_initial_state(refs.tau, refs.q);
   };
 }
 
+/**
+ *  @return A predicate used to compare 2 double Eigen::Matrix returning true
+ *          when all elements follows |lhs - rhs| <= eps
+ *
+ *  @param[in] abs_error The max absolute error allowed when comparing doubles
+ */
 constexpr auto AreAlmostEquals(double abs_error) {
   return [=](const auto& lhs, const auto& rhs) -> bool {
     return ((lhs.array() - rhs.array()).abs() <= abs_error).all();
