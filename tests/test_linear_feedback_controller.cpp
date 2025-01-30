@@ -249,7 +249,7 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
       gains, refs, sensor.joint_state.position, sensor.joint_state.velocity);
 
   const auto expected_lf_control =
-      ExpectedLFControlFrom(sensor, control, *ctrl.get_robot_model());
+      ExpectedLFControlFrom(*ctrl.get_robot_model(), sensor, control);
 
   using time_point = linear_feedback_controller::TimePoint;
   const time_point first_call = time_point::clock::now();
