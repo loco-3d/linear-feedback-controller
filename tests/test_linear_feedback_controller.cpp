@@ -19,8 +19,8 @@ using tests::utils::MakeAllControllerParametersFrom;
 
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 using linear_feedback_controller::ControllerParameters;
-using linear_feedback_controller::Duration;
 using linear_feedback_controller::LinearFeedbackController;
+using linear_feedback_controller::TimePoint;
 
 #include "gtest/gtest.h"
 
@@ -272,9 +272,8 @@ TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   const auto expected_lf_control =
       ExpectedLFControlFrom(*ctrl.get_robot_model(), sensor, control);
 
-  using time_point = linear_feedback_controller::TimePoint;
-  const time_point first_call = time_point::clock::now();
-  const time_point pd_timeout =
+  const TimePoint first_call = TimePoint::clock::now();
+  const TimePoint pd_timeout =
       first_call + GetParam().pd_to_lf_transition_duration;
 
   // First call always calls PDController
