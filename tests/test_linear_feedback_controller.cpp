@@ -9,7 +9,12 @@ using tests::utils::ExpectedPDControlFrom;
 using tests::utils::Gains;
 using tests::utils::References;
 
+#include "utils/eigen_conversions.hpp"
+using linear_feedback_controller_msgs::Eigen::Control;
+using linear_feedback_controller_msgs::Eigen::Sensor;
+
 #include "utils/lf_controller.hpp"
+using linear_feedback_controller::RobotModelBuilder;
 using tests::utils::ExpectedLFControlFrom;
 using tests::utils::MakeValidRandomControlFor;
 using tests::utils::MakeValidRandomSensorFor;
@@ -31,9 +36,6 @@ using namespace std::literals::chrono_literals;
   std::make_tuple(std::string_view{#val}, std::ref((val)))
 
 namespace {
-
-struct LinearFeedbackControllerTest
-    : public ::testing::TestWithParam<ControllerParameters> {};
 
 /**
  *  @return A predicate functor calling the underlying predicate and
@@ -91,6 +93,70 @@ constexpr auto AreAlmostEquals(double abs_error) {
     return ((lhs.array() - rhs.array()).abs() <= abs_error).all();
   };
 }
+
+/// TODO
+struct PDParams {
+  Gains gains;
+  References refs;
+
+  static auto From(const ControllerParameters& params) -> PDParams {
+    constexpr auto ToEigen = [](const std::vector<double>& v) {
+      return Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
+    };
+
+    PDParams out;
+    out.gains.p = ToEigen(params.p_gains);
+    out.gains.d = ToEigen(params.d_gains);
+    out.refs = References::Random(params.d_gains.size());
+    return out;
+  }
+};
+
+/// TODO
+struct Timestamps {
+  TimePoint first_call;
+  TimePoint pd_timeout;
+
+  static auto From(const ControllerParameters& params) -> Timestamps {
+    Timestamps out;
+    out.first_call = TimePoint::clock::now();
+    out.first_call = TimePoint::clock::now();
+    out.pd_timeout = out.first_call + params.pd_to_lf_transition_duration;
+    return out;
+  }
+};
+
+/// TODO
+struct ControllerInputs {
+  Sensor sensor;
+  Control control;
+
+  static auto From(const RobotModelBuilder& model) -> ControllerInputs {
+    ControllerInputs out;
+    out.sensor = MakeValidRandomSensorFor(model);
+    out.control = MakeValidRandomControlFor(model);
+    return out;
+  }
+};
+
+/// TODO
+struct Expectations {
+  Eigen::VectorXd pd;
+  Eigen::VectorXd lf;
+
+  static auto From(const RobotModelBuilder& model, const Gains& gains,
+                   const References& refs, const Sensor& sensor,
+                   const Control& control) -> Expectations {
+    Expectations out;
+    out.pd = ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
+                                   sensor.joint_state.velocity);
+    out.lf = ExpectedLFControlFrom(model, sensor, control);
+    return out;
+  }
+};
+
+struct LinearFeedbackControllerTest
+    : public ::testing::TestWithParam<ControllerParameters> {};
 
 TEST(LinearFeedbackControllerTest, Ctor) {
   EXPECT_NO_THROW({ auto ctrl = LinearFeedbackController{}; });
@@ -267,38 +333,21 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongControl) {
 
 TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   auto ctrl = LinearFeedbackController{};
-  const auto refs = References::Random(GetParam().d_gains.size());
+  const auto [gains, refs] = PDParams::From(GetParam());
+  const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
   ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(), refs);
 
-  constexpr auto ToEigen = [](const std::vector<double>& v) {
-    return Eigen::Map<const Eigen::VectorXd>(v.data(), v.size());
-  };
-
-  const auto gains = Gains{
-      .p = ToEigen(GetParam().p_gains),
-      .d = ToEigen(GetParam().d_gains),
-  };
-
-  const auto control = MakeValidRandomControlFor(*ctrl.get_robot_model());
-  const auto sensor = MakeValidRandomSensorFor(*ctrl.get_robot_model());
-
-  const auto expected_pd_control = ExpectedPDControlFrom(
-      gains, refs, sensor.joint_state.position, sensor.joint_state.velocity);
-
-  const auto expected_lf_control =
-      ExpectedLFControlFrom(*ctrl.get_robot_model(), sensor, control);
-
-  const TimePoint first_call = TimePoint::clock::now();
-  const TimePoint pd_timeout =
-      first_call + GetParam().pd_to_lf_transition_duration;
+  const auto& model = *ctrl.get_robot_model();
+  const auto [sensor, control] = ControllerInputs::From(model);
+  const auto expected = Expectations::From(model, gains, refs, sensor, control);
 
   // First call always calls PDController
   EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            expected_pd_control);
+            expected.pd);
 
   // When duration expired, always calls LFController
   EXPECT_EQ(ctrl.compute_control(pd_timeout + 1ms, sensor, control, false),
-            expected_lf_control);
+            expected.lf);
 
   // In between, compute both and apply a weight based on the time elapsed from
   // the first call and the expected transition
@@ -311,17 +360,16 @@ TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
     const double ratio =
         ((when - first_call) / (GetParam().pd_to_lf_transition_duration));
 
-    EXPECT_PRED2(
-        AreAlmostEquals(5e-6),
-        ctrl.compute_control(when, sensor, control, false),
-        (((1.0 - ratio) * expected_pd_control) + (ratio * expected_lf_control)))
+    EXPECT_PRED2(AreAlmostEquals(5e-6),
+                 ctrl.compute_control(when, sensor, control, false),
+                 (((1.0 - ratio) * expected.pd) + (ratio * expected.lf)))
         << "when = " << std::quoted(str) << " | ratio = " << ratio;
   }
 
   // This test that time::now() is not used inside the controller an only
   // depends on the first_call
   EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            expected_pd_control);
+            expected.pd);
 
   // TODO: Gravity compensation ????
 }
