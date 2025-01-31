@@ -26,6 +26,10 @@ using linear_feedback_controller::LinearFeedbackController;
 
 using namespace std::literals::chrono_literals;
 
+#define MakeNamedValueOf(val) std::make_tuple(std::string_view{#val}, (val))
+#define MakeNamedRefOf(val) \
+  std::make_tuple(std::string_view{#val}, std::ref((val)))
+
 namespace {
 
 struct LinearFeedbackControllerTest
@@ -206,9 +210,6 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
   }
 }
 
-#define MakeNamedRefOf(val) \
-  std::make_tuple(std::string_view{#val}, std::ref((val)))
-
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
   auto ctrl = LinearFeedbackController{};
   ASSERT_PRED1(Load(ctrl), GetParam());
@@ -247,8 +248,6 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 
   // Other verifications based on RMB ? ...
 }
-
-#define MakeNamedValueOf(val) std::make_tuple(std::string_view{#val}, (val))
 
 TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   auto ctrl = LinearFeedbackController{};
