@@ -81,6 +81,14 @@ inline auto MakeValidRandomControlFor(
   return control;
 }
 
+/**
+ *  @brief Compute the expected LFController output
+ *
+ *  @param[in] model RobotModelBuilder use to create a valid set of values
+ *  @param[in] sensor, control Set of values forwarded to the LFController
+ *
+ *  @return Eigen::VectorXd The expected set of values
+ */
 inline auto ExpectedLFControlFrom(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
     const linear_feedback_controller_msgs::Eigen::Control& control,
