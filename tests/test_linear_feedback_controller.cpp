@@ -319,18 +319,6 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   // Other verifications based on RMB ? ...
 }
 
-TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongTimestamp) {
-  FAIL() << "Not implemented";
-}
-
-TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongSensor) {
-  FAIL() << "Not implemented";
-}
-
-TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongControl) {
-  FAIL() << "Not implemented";
-}
-
 TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   auto ctrl = LinearFeedbackController{};
   const auto [gains, refs] = PDParams::From(GetParam());
