@@ -90,9 +90,9 @@ inline auto MakeValidRandomControlFor(
  *  @return Eigen::VectorXd The expected set of values
  */
 inline auto ExpectedLFControlFrom(
+    const linear_feedback_controller::RobotModelBuilder& model,
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
-    const linear_feedback_controller_msgs::Eigen::Control& control,
-    const linear_feedback_controller::RobotModelBuilder& model)
+    const linear_feedback_controller_msgs::Eigen::Control& control)
     -> Eigen::VectorXd {
   Eigen::VectorXd out;
 

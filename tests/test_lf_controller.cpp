@@ -190,7 +190,7 @@ TEST_P(LFControllerTest, ComputeControl) {
 
   const auto sensor = MakeValidRandomSensorFor(*model_ptr);
   const auto control = MakeValidRandomControlFor(*model_ptr);
-  EXPECT_EQ(ExpectedLFControlFrom(sensor, control, *model_ptr),
+  EXPECT_EQ(ExpectedLFControlFrom(*model_ptr, sensor, control),
             ctrl.compute_control(sensor, control));
 }
 
