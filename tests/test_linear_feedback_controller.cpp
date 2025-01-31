@@ -168,6 +168,10 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
   EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
+TEST_P(LinearFeedbackControllerTest, DISABLED_LoadMismatchSize) {
+  FAIL() << "Not implemented";
+}
+
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
   EXPECT_PRED1(Load(ctrl), GetParam());
@@ -249,6 +253,18 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   // Other verifications based on RMB ? ...
 }
 
+TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongTimestamp) {
+  FAIL() << "Not implemented";
+}
+
+TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongSensor) {
+  FAIL() << "Not implemented";
+}
+
+TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWrongControl) {
+  FAIL() << "Not implemented";
+}
+
 TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   auto ctrl = LinearFeedbackController{};
   const auto refs = References::Random(GetParam().d_gains.size());
@@ -308,6 +324,10 @@ TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
             expected_pd_control);
 
   // TODO: Gravity compensation ????
+}
+
+TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWithGravity) {
+  FAIL() << "Not implemented";
 }
 
 constexpr std::string_view dummy_urdf =
