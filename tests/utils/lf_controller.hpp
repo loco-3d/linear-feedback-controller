@@ -59,15 +59,9 @@ inline auto MakeValidRandomSensorFor(
 }
 
 /**
- *  @brief Create a randomized Sensor struct for each names provided
+ *  @brief Create a randomized Control struct for each names provided
  *
- *  @tparam InputIt Input iterator containing the joints name
- *  @tparam UnaryOp Unary operation transforming InputIt into a
- *                  std::string_view compatible value
- *
- *  @param[in] [first, last) Range of names used as follow:
- *                           std::string{std::string_view{get_name(*first)}}
- *  @param[in] get_name Functor use to get a name from the dereferenced iterator
+ *  @param[in] model RobotModelBuilder use to create a valid set of values
  *
  *  @return linear_feedback_controller_msgs::Eigen::Control Randomized
  */
