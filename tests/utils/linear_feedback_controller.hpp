@@ -27,19 +27,19 @@ inline auto MakeAllControllerParametersFrom(
 
   out.reserve(2 * all_joint_lists.size() * durations.size());
   for (const auto& joint_list : all_joint_lists) {
-    const auto joint_names = MakePairOfNamesFrom(joint_list);
+    const auto [controlled, moving] = JointNamesPair::From(joint_list);
 
-    // FIXME : Controlled size ?
-    const auto gains = Gains::Random(joint_names.controlled.size());
+    // FIXME : Controlled or moving size ?
+    const auto gains = Gains::Random(controlled.size());
 
     for (const auto& duration : durations) {
       for (auto has_free_flyer : {false, true}) {
         out.emplace_back(ControllerParameters{
             .urdf = std::string{urdf},
-            .moving_joint_names = joint_names.moving,
+            .moving_joint_names = moving,
             .p_gains = FromEigen(gains.p),
             .d_gains = FromEigen(gains.d),
-            .controlled_joint_names = joint_names.controlled,
+            .controlled_joint_names = controlled,
             .robot_has_free_flyer = has_free_flyer,
             .pd_to_lf_transition_duration = duration,
         });

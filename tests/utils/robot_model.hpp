@@ -103,34 +103,34 @@ constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
 struct JointNamesPair {
   std::vector<std::string> controlled;
   std::vector<std::string> moving;
-};
 
-/**
- *  @brief Create a pair of names for each JointType
- *
- *  @param[in] joint_desc_list List of JointDescription
- *
- *  @return JointNamesPair Pair of name list
- */
-inline auto MakePairOfNamesFrom(
-    const std::vector<JointDescription> &joint_desc_list) -> JointNamesPair {
-  JointNamesPair out;
+  /**
+   *  @brief Create a pair of names for each JointType
+   *
+   *  @param[in] joint_desc_list List of JointDescription
+   *
+   *  @return JointNamesPair Pair of name list
+   */
+  static inline auto From(const std::vector<JointDescription> &joint_desc_list)
+      -> JointNamesPair {
+    JointNamesPair out;
 
-  out.controlled.reserve(joint_desc_list.size());
-  out.moving.reserve(joint_desc_list.size());
+    out.controlled.reserve(joint_desc_list.size());
+    out.moving.reserve(joint_desc_list.size());
 
-  for (const auto &joint : joint_desc_list) {
-    if (IsControlled(joint.type)) {
-      out.controlled.emplace_back(joint.name);
+    for (const auto &joint : joint_desc_list) {
+      if (IsControlled(joint.type)) {
+        out.controlled.emplace_back(joint.name);
+      }
+
+      if (IsMoving(joint.type)) {
+        out.moving.emplace_back(joint.name);
+      }
     }
 
-    if (IsMoving(joint.type)) {
-      out.moving.emplace_back(joint.name);
-    }
+    return out;
   }
-
-  return out;
-}
+};
 
 /**
  *  @brief Create a list of JointDescription from the given lists
@@ -307,7 +307,7 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
  */
 inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
-  auto [controlled, moving] = MakePairOfNamesFrom(model.joint_list);
+  auto [controlled, moving] = JointNamesPair::From(model.joint_list);
   auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
   if (rmb->build_model(std::string{model.urdf}, std::move(moving),
                        std::move(controlled), model.has_free_flyer)) {
