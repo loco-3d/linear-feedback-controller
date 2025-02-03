@@ -319,7 +319,7 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   // Other verifications based on RMB ? ...
 }
 
-TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
+TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
   const auto [gains, refs] = PDParams::From(GetParam());
   const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
@@ -329,41 +329,44 @@ TEST_P(LinearFeedbackControllerTest, ComputeControlWithoutGravity) {
   const auto [sensor, control] = ControllerInputs::From(model);
   const auto expected = Expectations::From(model, gains, refs, sensor, control);
 
-  // First call always calls PDController
-  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            expected.pd);
+  for (auto gravity_compensation : {false, true}) {
+    SCOPED_TRACE(::testing::Message()
+                 << "\n gravity_compensation = " << gravity_compensation);
 
-  // When duration expired, always calls LFController
-  EXPECT_EQ(ctrl.compute_control(pd_timeout + 1ms, sensor, control, false),
-            expected.lf);
+    // First call always calls PDController
+    EXPECT_EQ(
+        ctrl.compute_control(first_call, sensor, control, gravity_compensation),
+        expected.pd);
 
-  // In between, compute both and apply a weight based on the time elapsed from
-  // the first call and the expected transition
-  for (const auto& [str, when] : {
-           MakeNamedValueOf(first_call + 1ms),
-           MakeNamedValueOf(first_call + 5ms),
-           MakeNamedValueOf(pd_timeout - 50ms),
-           MakeNamedValueOf(pd_timeout - 1ms),
-       }) {
-    const double ratio =
-        ((when - first_call) / (GetParam().pd_to_lf_transition_duration));
+    // When duration expired, always calls LFController
+    EXPECT_EQ(ctrl.compute_control(pd_timeout + 1ms, sensor, control,
+                                   gravity_compensation),
+              expected.lf);
 
-    EXPECT_PRED2(AreAlmostEquals(5e-6),
-                 ctrl.compute_control(when, sensor, control, false),
-                 (((1.0 - ratio) * expected.pd) + (ratio * expected.lf)))
-        << "when = " << std::quoted(str) << " | ratio = " << ratio;
+    // In between, compute both and apply a weight based on the time elapsed
+    // from the first call and the expected transition
+    for (const auto& [str, when] : {
+             MakeNamedValueOf(first_call + 1ms),
+             MakeNamedValueOf(first_call + 5ms),
+             MakeNamedValueOf(pd_timeout - 50ms),
+             MakeNamedValueOf(pd_timeout - 1ms),
+         }) {
+      const double ratio =
+          ((when - first_call) / (GetParam().pd_to_lf_transition_duration));
+
+      EXPECT_PRED2(
+          AreAlmostEquals(5e-6),
+          ctrl.compute_control(when, sensor, control, gravity_compensation),
+          (((1.0 - ratio) * expected.pd) + (ratio * expected.lf)))
+          << "when = " << std::quoted(str) << " | ratio = " << ratio;
+    }
+
+    // This test that time::now() is not used inside the controller an only
+    // depends on the first_call
+    EXPECT_EQ(
+        ctrl.compute_control(first_call, sensor, control, gravity_compensation),
+        expected.pd);
   }
-
-  // This test that time::now() is not used inside the controller an only
-  // depends on the first_call
-  EXPECT_EQ(ctrl.compute_control(first_call, sensor, control, false),
-            expected.pd);
-
-  // TODO: Gravity compensation ????
-}
-
-TEST_P(LinearFeedbackControllerTest, DISABLED_ComputeControlWithGravity) {
-  FAIL() << "Not implemented";
 }
 
 constexpr std::string_view dummy_urdf =
