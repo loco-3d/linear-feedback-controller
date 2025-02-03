@@ -30,6 +30,7 @@ using linear_feedback_controller::TimePoint;
 #include "gtest/gtest.h"
 
 using namespace std::literals::chrono_literals;
+using namespace std::literals::string_view_literals;
 
 #define MakeNamedValueOf(val) std::make_tuple(std::string_view{#val}, (val))
 #define MakeNamedRefOf(val) \
@@ -329,9 +330,13 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   const auto [sensor, control] = ControllerInputs::From(model);
   const auto expected = Expectations::From(model, gains, refs, sensor, control);
 
-  for (auto gravity_compensation : {false, true}) {
+  for (auto gravity_compensation : {
+           false,
+           true,
+       }) {
     SCOPED_TRACE(::testing::Message()
-                 << "\n gravity_compensation = " << gravity_compensation);
+                 << "\n gravity_compensation = "
+                 << (gravity_compensation ? "TRUE"sv : "FALSE"sv));
 
     // First call always calls PDController
     EXPECT_EQ(
