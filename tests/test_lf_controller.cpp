@@ -141,8 +141,6 @@ TEST_P(LFControllerTest, DISABLED_ComputeControlSizeMismatch) {
 
     auto _ = ctrl.compute_control(sensor, wrong_control);
   });
-
-  // TODO: Other size mutation... ?
 }
 
 /// Create a std::tuple<T&, string_view> with the ref expression as string
