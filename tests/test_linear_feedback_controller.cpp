@@ -39,51 +39,6 @@ using namespace std::literals::string_view_literals;
 namespace {
 
 /**
- *  @return A predicate functor calling the underlying predicate and
- *          returning it's negation
- *
- *  @param[in] pred A simple predicate taking any arguments and returning a bool
- */
-template <typename Pred>
-constexpr auto DoNot(Pred&& pred) {
-  return [&](auto&&... arg) -> bool {
-    return not pred(std::forward<decltype(arg)>(arg)...);
-  };
-}
-
-/**
- *  @return A predicate that returns true when ctrl.load() succeed
- *
- *  @param[in] ctrl A reference to the LFCController to load
- */
-constexpr auto Load(LinearFeedbackController& ctrl) {
-  return [&](const ControllerParameters& params) { return ctrl.load(params); };
-}
-
-/**
- *  @return A predicate that returns true when ctrl.set_initial_state() succeed
- *
- *  @param[in] ctrl A reference to the LFCController to set the initial state
- */
-constexpr auto SetInitialState(LinearFeedbackController& ctrl) {
-  return [&](const References& refs) {
-    return ctrl.set_initial_state(refs.tau, refs.q);
-  };
-}
-
-/**
- *  @return A predicate that returns true when both ctrl.load() and
- *          ctrl.set_initial_state() succeed
- *
- *  @param[in] ctrl A reference to the LFCController to initialized
- */
-constexpr auto SuccesfullyInitialized(LinearFeedbackController& ctrl) {
-  return [&](const ControllerParameters& params, const References& refs) {
-    return ctrl.load(params) and ctrl.set_initial_state(refs.tau, refs.q);
-  };
-}
-
-/**
  *  @return A predicate used to compare 2 double Eigen::Matrix returning true
  *          when all elements follows |lhs - rhs| <= eps
  *
@@ -95,7 +50,6 @@ constexpr auto AreAlmostEquals(double abs_error) {
   };
 }
 
-/// TODO
 struct PDParams {
   Gains gains;
   References refs;
@@ -113,7 +67,6 @@ struct PDParams {
   }
 };
 
-/// TODO
 struct Timestamps {
   TimePoint first_call;
   TimePoint pd_timeout;
@@ -121,13 +74,11 @@ struct Timestamps {
   static auto From(const ControllerParameters& params) -> Timestamps {
     Timestamps out;
     out.first_call = TimePoint::clock::now();
-    out.first_call = TimePoint::clock::now();
     out.pd_timeout = out.first_call + params.pd_to_lf_transition_duration;
     return out;
   }
 };
 
-/// TODO
 struct ControllerInputs {
   Sensor sensor;
   Control control;
@@ -140,7 +91,6 @@ struct ControllerInputs {
   }
 };
 
-/// TODO
 struct Expectations {
   Eigen::VectorXd pd;
   Eigen::VectorXd lf;
@@ -165,7 +115,7 @@ TEST(LinearFeedbackControllerTest, Ctor) {
 
 TEST(LinearFeedbackControllerTest, DISABLED_LoadEmptyParams) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_PRED1(DoNot(Load(ctrl)), ControllerParameters{});
+  EXPECT_FALSE(ctrl.load(ControllerParameters{}));
   EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
@@ -173,7 +123,8 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNoURDF) {
   auto ctrl = LinearFeedbackController{};
   auto no_urdf_param = GetParam();
   no_urdf_param.urdf.clear();
-  EXPECT_PRED1(DoNot(Load(ctrl)), no_urdf_param);
+
+  EXPECT_FALSE(ctrl.load(no_urdf_param));
   EXPECT_EQ(ctrl.get_robot_model(), nullptr);
 }
 
@@ -185,7 +136,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
     auto p_gains_too_big = good_params;
     p_gains_too_big.p_gains.push_back(3.141592);
 
-    EXPECT_PRED1(DoNot(Load(ctrl)), p_gains_too_big);
+    EXPECT_FALSE(ctrl.load(p_gains_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
@@ -193,7 +144,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
     auto p_gains_smaller = good_params;
     p_gains_smaller.p_gains.pop_back();
 
-    EXPECT_PRED1(DoNot(Load(ctrl)), p_gains_smaller);
+    EXPECT_FALSE(ctrl.load(p_gains_smaller));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
@@ -201,7 +152,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
     auto d_gains_too_big = good_params;
     d_gains_too_big.d_gains.push_back(3.141592);
 
-    EXPECT_PRED1(DoNot(Load(ctrl)), d_gains_too_big);
+    EXPECT_FALSE(ctrl.load(d_gains_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
@@ -209,7 +160,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
     auto d_gains_smaller = good_params;
     d_gains_smaller.d_gains.pop_back();
 
-    EXPECT_PRED1(DoNot(Load(ctrl)), d_gains_smaller);
+    EXPECT_FALSE(ctrl.load(d_gains_smaller));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
@@ -217,11 +168,9 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
     auto moving_joint_cleared = good_params;
     moving_joint_cleared.moving_joint_names.clear();
 
-    EXPECT_PRED1(DoNot(Load(ctrl)), moving_joint_cleared);
+    EXPECT_FALSE(ctrl.load(moving_joint_cleared));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
-
-  // Others ?? ...
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
@@ -231,59 +180,57 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadNegativeDuration) {
   negative_duration_params.pd_to_lf_transition_duration =
       -negative_duration_params.pd_to_lf_transition_duration;
 
-  EXPECT_PRED1(DoNot(Load(ctrl)), negative_duration_params);
+  EXPECT_FALSE(ctrl.load(negative_duration_params));
   EXPECT_EQ(ctrl.get_robot_model(), nullptr);
-}
-
-TEST_P(LinearFeedbackControllerTest, DISABLED_LoadMismatchSize) {
-  FAIL() << "Not implemented";
 }
 
 TEST_P(LinearFeedbackControllerTest, Load) {
   auto ctrl = LinearFeedbackController{};
-  EXPECT_PRED1(Load(ctrl), GetParam());
+  EXPECT_TRUE(ctrl.load(GetParam()));
   EXPECT_NE(ctrl.get_robot_model(), nullptr);
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateEmpty) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Load(ctrl), GetParam());
-  EXPECT_PRED1(DoNot(SetInitialState(ctrl)), References{});
+  ASSERT_TRUE(ctrl.load(GetParam()));
+  EXPECT_FALSE(ctrl.set_initial_state({}, {}));
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSizeMismatch) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Load(ctrl), GetParam());
+  ASSERT_TRUE(ctrl.load(GetParam()));
+
   const auto good_refs = References::Random(GetParam().d_gains.size());
 
   {
     auto tau_bigger = good_refs;
     tau_bigger.tau << tau_bigger.tau, 1.0;
-    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), tau_bigger);
+    EXPECT_FALSE(ctrl.set_initial_state(tau_bigger.tau, tau_bigger.q));
   }
 
   {
     auto tau_smaller = good_refs;
     tau_smaller.tau.conservativeResize(tau_smaller.tau.size() - 1);
-    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), tau_smaller);
+    EXPECT_FALSE(ctrl.set_initial_state(tau_smaller.tau, tau_smaller.q));
   }
 
   {
     auto q_bigger = good_refs;
     q_bigger.q << q_bigger.q, 1.0;
-    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), q_bigger);
+    EXPECT_FALSE(ctrl.set_initial_state(q_bigger.tau, q_bigger.q));
   }
 
   {
     auto q_smaller = good_refs;
     q_smaller.q.conservativeResize(q_smaller.q.size() - 1);
-    EXPECT_PRED1(DoNot(SetInitialState(ctrl)), q_smaller);
+    EXPECT_FALSE(ctrl.set_initial_state(q_smaller.tau, q_smaller.q));
   }
 }
 
 TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Load(ctrl), GetParam());
+  ASSERT_TRUE(ctrl.load(GetParam()));
+
   auto refs = References::Random(GetParam().d_gains.size());
 
   for (const auto& [str, ref] : {
@@ -298,7 +245,7 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
              std::numeric_limits<double>::signaling_NaN(),
          }) {
       const auto mutation = TemporaryMutate(ref, tmp_value);
-      EXPECT_PRED1(DoNot(SetInitialState(ctrl)), refs)
+      EXPECT_FALSE(ctrl.set_initial_state(refs.tau, refs.q))
           << str << " = " << ref << " (was " << mutation.OldValue() << ")";
     }
   }
@@ -306,9 +253,10 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_SetInitialStateSpecialDouble) {
 
 TEST_P(LinearFeedbackControllerTest, SetInitialState) {
   auto ctrl = LinearFeedbackController{};
-  ASSERT_PRED1(Load(ctrl), GetParam());
-  EXPECT_PRED1(SetInitialState(ctrl),
-               References::Random(GetParam().d_gains.size()));
+  ASSERT_TRUE(ctrl.load(GetParam()));
+
+  const auto refs = References::Random(GetParam().d_gains.size());
+  EXPECT_TRUE(ctrl.set_initial_state(refs.tau, refs.q));
 
   ASSERT_NE(ctrl.get_robot_model(), nullptr);
   EXPECT_EQ(ctrl.get_robot_model()->get_moving_joint_names(),
@@ -316,15 +264,15 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 
   EXPECT_EQ(ctrl.get_robot_model()->get_robot_has_free_flyer(),
             GetParam().robot_has_free_flyer);
-
-  // Other verifications based on RMB ? ...
 }
 
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
   auto ctrl = LinearFeedbackController{};
   const auto [gains, refs] = PDParams::From(GetParam());
+  ASSERT_TRUE(ctrl.load(GetParam()) and
+              ctrl.set_initial_state(refs.tau, refs.q));
+
   const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
-  ASSERT_PRED2(SuccesfullyInitialized(ctrl), GetParam(), refs);
 
   const auto& model = *ctrl.get_robot_model();
   const auto [sensor, control] = ControllerInputs::From(model);
