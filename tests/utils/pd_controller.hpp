@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LINEAR_FEEDBACK_CONTROLLER_TESTS__PD_CONTROLLER_HPP_
+#define LINEAR_FEEDBACK_CONTROLLER_TESTS__PD_CONTROLLER_HPP_
 
 #include <optional>
 #include <ostream>
@@ -137,3 +138,5 @@ constexpr auto operator<<(std::ostream &os, const References &references)
 }
 
 }  // namespace tests::utils
+
+#endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__PD_CONTROLLER_HPP_
