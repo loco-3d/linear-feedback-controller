@@ -81,9 +81,13 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   if (remove_gravity_compensation_effort) {
     robot_model_builder_->construct_robot_state(sensor, robot_configuration_,
                                                 robot_velocity_);
-    control_ -= pinocchio::rnea(
-        robot_model_builder_->get_model(), robot_model_builder_->get_data(),
-        robot_configuration_, robot_velocity_null_, robot_velocity_null_);
+
+    // NOTE: .tail() is used to remove the freeflyer components
+    control_ -=
+        pinocchio::rnea(robot_model_builder_->get_model(),
+                        robot_model_builder_->get_data(), robot_configuration_,
+                        robot_velocity_null_, robot_velocity_null_)
+            .tail(control_.size());
   }
 
   return control_;
