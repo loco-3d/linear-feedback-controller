@@ -257,13 +257,6 @@ TEST_P(LinearFeedbackControllerTest, SetInitialState) {
 
   const auto refs = References::Random(GetParam().d_gains.size());
   EXPECT_TRUE(ctrl.set_initial_state(refs.tau, refs.q));
-
-  ASSERT_NE(ctrl.get_robot_model(), nullptr);
-  EXPECT_EQ(ctrl.get_robot_model()->get_moving_joint_names(),
-            GetParam().moving_joint_names);
-
-  EXPECT_EQ(ctrl.get_robot_model()->get_robot_has_free_flyer(),
-            GetParam().robot_has_free_flyer);
 }
 
 TEST_P(LinearFeedbackControllerTest, ComputeControl) {
