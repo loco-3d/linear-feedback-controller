@@ -133,34 +133,34 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
   auto good_params = GetParam();
 
   {
-    auto p_gains_too_big = good_params;
-    p_gains_too_big.p_gains.push_back(3.141592);
+    auto p_gains_vector_too_big = good_params;
+    p_gains_vector_too_big.p_gains.push_back(3.141592);
 
-    EXPECT_FALSE(ctrl.load(p_gains_too_big));
+    EXPECT_FALSE(ctrl.load(p_gains_vector_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
   {
-    auto p_gains_smaller = good_params;
-    p_gains_smaller.p_gains.pop_back();
+    auto p_gains_vector_smaller = good_params;
+    p_gains_vector_smaller.p_gains.pop_back();
 
-    EXPECT_FALSE(ctrl.load(p_gains_smaller));
+    EXPECT_FALSE(ctrl.load(p_gains_vector_smaller));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
   {
-    auto d_gains_too_big = good_params;
-    d_gains_too_big.d_gains.push_back(3.141592);
+    auto d_gains_vector_too_big = good_params;
+    d_gains_vector_too_big.d_gains.push_back(3.141592);
 
-    EXPECT_FALSE(ctrl.load(d_gains_too_big));
+    EXPECT_FALSE(ctrl.load(d_gains_vector_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
   {
-    auto d_gains_smaller = good_params;
-    d_gains_smaller.d_gains.pop_back();
+    auto d_gains_vector_smaller = good_params;
+    d_gains_vector_smaller.d_gains.pop_back();
 
-    EXPECT_FALSE(ctrl.load(d_gains_smaller));
+    EXPECT_FALSE(ctrl.load(d_gains_vector_smaller));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
   }
 
