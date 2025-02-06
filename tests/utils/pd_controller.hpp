@@ -137,6 +137,24 @@ constexpr auto operator<<(std::ostream &os, const References &references)
   return os;
 }
 
+/**
+ *  @return The expected control vector that should return a PDController
+ *
+ *  @param[in] gains Expected gains
+ *  @param[in] refs Expected references
+ *  @param[in] q Expected input states
+ *  @param[in] v Expected input velocities
+ */
+inline auto ExpectedPDControlFrom(const Gains &gains, const References &refs,
+                                  const Eigen::VectorXd &q,
+                                  const Eigen::VectorXd &v) -> Eigen::VectorXd {
+  // clang-format off
+  // o = tau_r - (p * (q - q_r)) - (d * v)
+  return (refs.tau.array()
+          - (gains.p.array() * (q - refs.q).array())
+          - (gains.d.array() * v.array()));
+  // clang-format on
+}
 }  // namespace tests::utils
 
 #endif  // LINEAR_FEEDBACK_CONTROLLER_TESTS__PD_CONTROLLER_HPP_

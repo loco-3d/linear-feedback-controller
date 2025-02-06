@@ -5,6 +5,7 @@
 using tests::utils::TemporaryMutate;
 
 #include "utils/pd_controller.hpp"
+using tests::utils::ExpectedPDControlFrom;
 using tests::utils::Gains;
 using tests::utils::References;
 
@@ -180,13 +181,8 @@ TEST(PdControllerTest, ComputeControl) {
 
     SCOPED_TRACE(trace_log.str());
 
-    // clang-format off
-    // o = tau_r - (p * (q - q_r)) - (d * v)
     const Eigen::VectorXd expected_control =
-      (refs.tau.array()
-       - (gains.p.array() * (arg_q - refs.q).array())
-       - (gains.d.array() * arg_v.array()));
-    // clang-format on
+        ExpectedPDControlFrom(gains, refs, arg_q, arg_v);
 
     SetTo(pd_ctrl, gains);
     SetTo(pd_ctrl, refs);
