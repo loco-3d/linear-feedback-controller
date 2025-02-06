@@ -28,9 +28,7 @@ inline auto MakeAllControllerParametersFrom(
   for (const auto& joint_list : all_joint_lists) {
     const auto [controlled, moving] = JointNamesPair::From(joint_list);
 
-    // FIXME : Controlled or moving size ?
     const auto gains = Gains::Random(controlled.size());
-
     for (const auto& duration : durations) {
       for (auto has_free_flyer : {false, true}) {
         out.emplace_back(ControllerParameters{
