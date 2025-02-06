@@ -134,7 +134,8 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
 
   {
     auto p_gains_vector_too_big = good_params;
-    p_gains_vector_too_big.p_gains.push_back(3.141592);
+    p_gains_vector_too_big.p_gains.push_back(
+        Eigen::Vector<double, 1>::Random()[0]);
 
     EXPECT_FALSE(ctrl.load(p_gains_vector_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
@@ -150,7 +151,8 @@ TEST_P(LinearFeedbackControllerTest, DISABLED_LoadSizeMismatch) {
 
   {
     auto d_gains_vector_too_big = good_params;
-    d_gains_vector_too_big.d_gains.push_back(3.141592);
+    d_gains_vector_too_big.d_gains.push_back(
+        Eigen::Vector<double, 1>::Random()[0]);
 
     EXPECT_FALSE(ctrl.load(d_gains_vector_too_big));
     EXPECT_EQ(ctrl.get_robot_model(), nullptr);
