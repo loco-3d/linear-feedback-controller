@@ -17,8 +17,7 @@ inline auto MakeAllControllerParametersFrom(
   using linear_feedback_controller::ControllerParameters;
 
   const auto FromEigen = [](const Eigen::VectorXd& val) -> std::vector<double> {
-    std::vector<double> out;
-    out.resize(val.size());
+    std::vector<double> out(val.size());
     Eigen::Map<Eigen::VectorXd>(out.data(), out.size()) = val;
     return out;
   };
