@@ -30,7 +30,7 @@ inline auto MakeAllControllerParametersFrom(
 
     const auto gains = Gains::Random(controlled.size());
     for (const auto& duration : durations) {
-      for (auto has_free_flyer : {false, true}) {
+      for (const auto has_free_flyer : {false, true}) {
         out.emplace_back(ControllerParameters{
             .urdf = std::string{urdf},
             .moving_joint_names = moving,
