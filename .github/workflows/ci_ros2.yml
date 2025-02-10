@@ -33,7 +33,7 @@ jobs:
         with:
           required-ros-distributions: ${{ matrix.ros_version }}
 
-       #
+      #
       # Build and test the repo
       #
       - uses: ros-tooling/action-ros-ci@0.3.14
