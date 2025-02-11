@@ -3,7 +3,7 @@ name: update-flake-lock
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 11 10 * *'
+    - cron: '0 11 8 * *'
 
 jobs:
   lockfile:
