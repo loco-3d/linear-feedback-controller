@@ -16,7 +16,7 @@ class AveragingFilter {
   /**
    * @brief Destroy the Averaging Filter object
    */
-  ~AveragingFilter(){};
+  ~AveragingFilter() {};
 
   /**
    * @brief Add another data in the buffer in a FIFO manner;
