@@ -25,11 +25,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1736861149,
-        "narHash": "sha256-hLkVVXJ1QP3W+9rhv2x6SNM182UHXOKMTog7w5wugjk=",
+        "lastModified": 1738075082,
+        "narHash": "sha256-X3SHjw9FBs/Z8M11P9SSUZf/o2FpR8ttzs7vdEwq8yk=",
         "owner": "loco-3d",
         "repo": "linear-feedback-controller-msgs",
-        "rev": "7629ddcda11ab063c6d1aa926b047f7a22c481d1",
+        "rev": "e7a1db1c1a2024978116af29db568606046fe547",
         "type": "github"
       },
       "original": {
