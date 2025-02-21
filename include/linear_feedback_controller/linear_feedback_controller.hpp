@@ -11,7 +11,6 @@
 
 // local include
 #include "linear_feedback_controller/lf_controller.hpp"
-#include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/pd_controller.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
 #include "linear_feedback_controller/time.hpp"
@@ -90,8 +89,6 @@ class LinearFeedbackController {
   PDController pd_controller_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
   LFController lf_controller_;
-  /// @brief Smoother for the switch between the PD and the LFC.
-  MinJerk min_jerk_;
   /// @brief Time at which we received the first control.
   TimePoint first_control_received_time_;
   /// @brief Robot generalized coordinates.
