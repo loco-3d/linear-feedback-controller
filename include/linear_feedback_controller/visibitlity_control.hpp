@@ -1,10 +1,6 @@
 #ifndef LINEAR_FEEDBACK_CONTROLLER__VISIBILITY_CONTROL_HPP_
 #define LINEAR_FEEDBACK_CONTROLLER__VISIBILITY_CONTROL_HPP_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // This logic was borrowed (then namespaced) from the examples on the gcc wiki:
 //     https://gcc.gnu.org/wiki/Visibility
 
@@ -34,10 +30,6 @@ extern "C" {
 #define LINEAR_FEEDBACK_CONTROLLER_LOCAL
 #endif
 #define LINEAR_FEEDBACK_CONTROLLER_PUBLIC_TYPE
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif  // LINEAR_FEEDBACK_CONTROLLER__VISIBILITY_CONTROL_HPP_
