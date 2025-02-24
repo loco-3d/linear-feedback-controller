@@ -29,6 +29,7 @@
 
 // Auto-generated header by the `generate_parameter_library` package.
 #include "linear_feedback_controller/generated_parameters.hpp"
+#include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
 
@@ -46,21 +47,22 @@ using sensor_msgs::msg::JointState;
 using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
 using ControlMsg = linear_feedback_controller_msgs::msg::Control;
 
-struct StateMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE StateMsg {
   Odometry msg_odom;
   JointState msg_joint_state;
 };
 
-struct ProtectedStateMsg : StateMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedStateMsg : StateMsg {
   std::mutex mutex;
 };
 
-struct ProtectedControlMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedControlMsg {
   ControlMsg msg;
   std::mutex mutex;
 };
 
-class LinearFeedbackControllerRos : public ChainableControllerInterface {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
+    : public ChainableControllerInterface {
  public:
   /// @brief The interfaces are defined as the types in
   /// 'allowed_interface_types_'

@@ -3,10 +3,11 @@
 
 #include "Eigen/Core"
 #include "linear_feedback_controller/robot_model_builder.hpp"
+#include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
 
-class PDController {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC PDController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
