@@ -47,16 +47,16 @@ using sensor_msgs::msg::JointState;
 using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
 using ControlMsg = linear_feedback_controller_msgs::msg::Control;
 
-struct LINEAR_FEEDBACK_CONTROLLER_PUBLIC StateMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE StateMsg {
   Odometry msg_odom;
   JointState msg_joint_state;
 };
 
-struct LINEAR_FEEDBACK_CONTROLLER_PUBLIC ProtectedStateMsg : StateMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedStateMsg : StateMsg {
   std::mutex mutex;
 };
 
-struct LINEAR_FEEDBACK_CONTROLLER_PUBLIC ProtectedControlMsg {
+struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedControlMsg {
   ControlMsg msg;
   std::mutex mutex;
 };
