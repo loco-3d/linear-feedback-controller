@@ -45,6 +45,7 @@ add_dependencies(joint_state_estimator_parameters
 # Main Library
 #
 set(${PROJECT_NAME}_headers
+    include/${PROJECT_NAME}/visibility.hpp
     include/${PROJECT_NAME}/joint_state_estimator.hpp
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
@@ -60,6 +61,12 @@ set(${PROJECT_NAME}_sources
     src/robot_model_builder.cpp)
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
+
+target_compile_definitions(
+  ${PROJECT_NAME}
+  PUBLIC -DLINEAR_FEEDBACK_CONTROLLER_IS_SHARED
+  PRIVATE -DLINEAR_FEEDBACK_CONTROLLER_EXPORT)
+
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
