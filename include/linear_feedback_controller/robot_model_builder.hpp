@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "linear_feedback_controller/visibility.hpp"
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 // Rigid body dynamics
@@ -13,7 +14,7 @@
 
 namespace linear_feedback_controller {
 
-class RobotModelBuilder {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 

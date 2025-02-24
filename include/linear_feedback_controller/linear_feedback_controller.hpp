@@ -14,10 +14,11 @@
 #include "linear_feedback_controller/pd_controller.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
 #include "linear_feedback_controller/time.hpp"
+#include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
 
-struct ControllerParameters {
+struct LINEAR_FEEDBACK_CONTROLLER_PUBLIC ControllerParameters {
   std::string urdf;
   std::vector<std::string> moving_joint_names;
   std::vector<double> p_gains;
@@ -49,7 +50,7 @@ struct ControllerParameters {
  * Hence it's the \f$ x_0 \f$ of the optimal control problem.
  *
  */
-class LinearFeedbackController {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
