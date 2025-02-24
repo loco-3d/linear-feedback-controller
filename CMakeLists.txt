@@ -62,6 +62,8 @@ set(${PROJECT_NAME}_sources
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
                        ${${PROJECT_NAME}_headers})
 
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
 target_compile_definitions(
   ${PROJECT_NAME}
   PUBLIC -DLINEAR_FEEDBACK_CONTROLLER_IS_SHARED
