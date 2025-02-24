@@ -45,13 +45,10 @@ add_dependencies(joint_state_estimator_parameters
 # Main Library
 #
 set(${PROJECT_NAME}_headers
-    include/${PROJECT_NAME}/averaging_filter.hpp
-    include/${PROJECT_NAME}/averaging_filter.hxx
     include/${PROJECT_NAME}/joint_state_estimator.hpp
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
-    include/${PROJECT_NAME}/min_jerk.hpp
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
@@ -59,7 +56,6 @@ set(${PROJECT_NAME}_sources
     src/lf_controller.cpp #
     src/linear_feedback_controller.cpp #
     src/linear_feedback_controller_ros.cpp #
-    src/min_jerk.cpp #
     src/pd_controller.cpp #
     src/robot_model_builder.cpp)
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
@@ -75,12 +71,6 @@ include(CTest)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_auto_find_test_dependencies()
-
-  ament_auto_add_gtest(test_averaging_filter tests/test_averaging_filter.cpp)
-  target_link_libraries(test_averaging_filter ${PROJECT_NAME})
-
-  ament_auto_add_gtest(test_min_jerk tests/test_min_jerk.cpp)
-  target_link_libraries(test_min_jerk ${PROJECT_NAME})
 
   ament_auto_add_gtest(test_robot_model_builder
                        tests/test_robot_model_builder.cpp)
