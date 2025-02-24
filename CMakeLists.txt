@@ -65,7 +65,7 @@ ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
 target_compile_definitions(
   ${PROJECT_NAME}
   PUBLIC -DLINEAR_FEEDBACK_CONTROLLER_IS_SHARED
-  PRIVATE -DLINEAR_FEEDBACK_CONTROLLER_EXPORT)
+  PRIVATE -DLINEAR_FEEDBACK_CONTROLLER_DO_EXPORT)
 
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
