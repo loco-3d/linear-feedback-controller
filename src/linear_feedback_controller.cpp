@@ -20,9 +20,6 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
     return false;
   }
 
-  // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.set_parameters(params_.pd_to_lf_transition_duration.count(), 1.0);
-
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
 
@@ -81,9 +78,13 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   if (remove_gravity_compensation_effort) {
     robot_model_builder_->construct_robot_state(sensor, robot_configuration_,
                                                 robot_velocity_);
-    control_ -= pinocchio::rnea(
-        robot_model_builder_->get_model(), robot_model_builder_->get_data(),
-        robot_configuration_, robot_velocity_null_, robot_velocity_null_);
+
+    // NOTE: .tail() is used to remove the freeflyer components
+    control_ -=
+        pinocchio::rnea(robot_model_builder_->get_model(),
+                        robot_model_builder_->get_data(), robot_configuration_,
+                        robot_velocity_null_, robot_velocity_null_)
+            .tail(control_.size());
   }
 
   return control_;

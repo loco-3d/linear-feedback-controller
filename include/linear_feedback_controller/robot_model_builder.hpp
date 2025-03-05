@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "linear_feedback_controller/visibility.hpp"
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 // Rigid body dynamics
@@ -13,7 +14,7 @@
 
 namespace linear_feedback_controller {
 
-class RobotModelBuilder {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
@@ -135,7 +136,7 @@ class RobotModelBuilder {
    * @param moving_joint_ids
    * @param locked_joint_ids
    */
-  bool parse_moving_joint_names(
+  LINEAR_FEEDBACK_CONTROLLER_PRIVATE bool parse_moving_joint_names(
       const pinocchio::Model& pinocchio_model_complete,
       const std::vector<std::string>& moving_joint_names,
       const std::vector<std::string>& controlled_joint_names);

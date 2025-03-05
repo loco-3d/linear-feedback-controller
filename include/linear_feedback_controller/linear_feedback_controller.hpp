@@ -11,14 +11,14 @@
 
 // local include
 #include "linear_feedback_controller/lf_controller.hpp"
-#include "linear_feedback_controller/min_jerk.hpp"
 #include "linear_feedback_controller/pd_controller.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
 #include "linear_feedback_controller/time.hpp"
+#include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
 
-struct ControllerParameters {
+struct LINEAR_FEEDBACK_CONTROLLER_PUBLIC ControllerParameters {
   std::string urdf;
   std::vector<std::string> moving_joint_names;
   std::vector<double> p_gains;
@@ -50,7 +50,7 @@ struct ControllerParameters {
  * Hence it's the \f$ x_0 \f$ of the optimal control problem.
  *
  */
-class LinearFeedbackController {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
@@ -90,8 +90,6 @@ class LinearFeedbackController {
   PDController pd_controller_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
   LFController lf_controller_;
-  /// @brief Smoother for the switch between the PD and the LFC.
-  MinJerk min_jerk_;
   /// @brief Time at which we received the first control.
   TimePoint first_control_received_time_;
   /// @brief Robot generalized coordinates.
