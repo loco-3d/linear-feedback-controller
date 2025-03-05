@@ -35,6 +35,7 @@
   <depend>pal_statistics</depend>
   <depend>generate_parameter_library</depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>example-robot-data</test_depend>
   <test_depend>gtest</test_depend>
 
