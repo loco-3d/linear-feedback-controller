@@ -20,9 +20,6 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
     return false;
   }
 
-  // Min jerk to smooth the control when we switch from pd to lfc.
-  min_jerk_.set_parameters(params_.pd_to_lf_transition_duration.count(), 1.0);
-
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
 

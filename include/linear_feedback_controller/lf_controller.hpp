@@ -3,11 +3,12 @@
 
 #include "Eigen/Core"
 #include "linear_feedback_controller/robot_model_builder.hpp"
+#include "linear_feedback_controller/visibility.hpp"
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 
 namespace linear_feedback_controller {
 
-class LFController {
+class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LFController {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
