@@ -70,6 +70,7 @@ target_compile_definitions(
   PRIVATE -DLINEAR_FEEDBACK_CONTROLLER_DO_EXPORT)
 
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
+
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
 
