@@ -53,6 +53,12 @@ stdenv.mkDerivation {
     rosPackages.humble.rclcpp-lifecycle
   ];
 
+  # revert https://github.com/lopsided98/nix-ros-overlay/blob/develop/distros/rosidl-generator-py-setup-hook.sh
+  # as they break tests
+  postConfigure = ''
+    cmake $cmakeDir -DCMAKE_SKIP_BUILD_RPATH:BOOL=OFF
+  '';
+
   doCheck = true;
 
   # generate_parameter_library_markdown complains that build/doc exists
