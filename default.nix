@@ -34,7 +34,7 @@ stdenv.mkDerivation {
     rosPackages.jazzy.ament-cmake
     rosPackages.jazzy.ament-cmake-auto
     rosPackages.jazzy.ament-lint-auto
-    rosPackages.jazzy.eigen3-cmake-module # this is a mistake on humble
+    rosPackages.jazzy.eigen3-cmake-module # this is a mistake on jazzy
     rosPackages.jazzy.generate-parameter-library-py
     rosPackages.jazzy.pluginlib
   ];
@@ -44,13 +44,13 @@ stdenv.mkDerivation {
     linear-feedback-controller-msgs
     python3Packages.pinocchio
     python3Packages.example-robot-data
-    rosPackages.humble.control-toolbox
-    rosPackages.humble.controller-interface
-    rosPackages.humble.nav-msgs
-    rosPackages.humble.pal-statistics
-    rosPackages.humble.parameter-traits
-    rosPackages.humble.realtime-tools
-    rosPackages.humble.rclcpp-lifecycle
+    rosPackages.jazzy.control-toolbox
+    rosPackages.jazzy.controller-interface
+    rosPackages.jazzy.nav-msgs
+    rosPackages.jazzy.pal-statistics
+    rosPackages.jazzy.parameter-traits
+    rosPackages.jazzy.realtime-tools
+    rosPackages.jazzy.rclcpp-lifecycle
   ];
 
   # revert https://github.com/lopsided98/nix-ros-overlay/blob/develop/distros/rosidl-generator-py-setup-hook.sh
