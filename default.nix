@@ -31,12 +31,12 @@ stdenv.mkDerivation {
     cmake
     fmt
     python3Packages.python
-    rosPackages.humble.ament-cmake
-    rosPackages.humble.ament-cmake-auto
-    rosPackages.humble.ament-lint-auto
-    rosPackages.humble.eigen3-cmake-module # this is a mistake on humble
-    rosPackages.humble.generate-parameter-library-py
-    rosPackages.humble.pluginlib
+    rosPackages.jazzy.ament-cmake
+    rosPackages.jazzy.ament-cmake-auto
+    rosPackages.jazzy.ament-lint-auto
+    rosPackages.jazzy.eigen3-cmake-module # this is a mistake on humble
+    rosPackages.jazzy.generate-parameter-library-py
+    rosPackages.jazzy.pluginlib
   ];
 
   propagatedBuildInputs = [
