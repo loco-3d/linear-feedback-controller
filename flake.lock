@@ -25,16 +25,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1738075082,
-        "narHash": "sha256-X3SHjw9FBs/Z8M11P9SSUZf/o2FpR8ttzs7vdEwq8yk=",
+        "lastModified": 1739270095,
+        "narHash": "sha256-Qz99AM39QSrG0n5SoF32YdjIVKWixOgQkwaHezbrmzY=",
         "owner": "loco-3d",
         "repo": "linear-feedback-controller-msgs",
-        "rev": "e7a1db1c1a2024978116af29db568606046fe547",
+        "rev": "cf9d1d249f9ffd80d9092847eb7a298f7ce0f49c",
         "type": "github"
       },
       "original": {
         "owner": "loco-3d",
-        "ref": "humble-devel",
+        "ref": "jazzy",
         "repo": "linear-feedback-controller-msgs",
         "type": "github"
       }
