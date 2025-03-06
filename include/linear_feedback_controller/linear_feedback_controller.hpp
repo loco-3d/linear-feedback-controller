@@ -88,7 +88,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   RobotModelBuilder::SharedPtr robot_model_builder_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
   PDController pd_controller_;
-  /// @brief A simple PD controller to hold the robot still at the beginning.
+  /// @brief The actual linear feedback controller.
   LFController lf_controller_;
   /// @brief Time at which we received the first control.
   TimePoint first_control_received_time_;
