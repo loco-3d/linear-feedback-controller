@@ -1,6 +1,14 @@
 name: Ubuntu20.04, ROS2 Continuous Integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - jazzy
+    - jazzy-devel
+  pull_request:
+    branches:
+    - jazzy
+    - jazzy-devel
 
 jobs:
   build:
