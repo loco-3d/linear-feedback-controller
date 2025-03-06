@@ -333,12 +333,6 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
   }
 
   for (Eigen::Index i = 0; i < joint_nv; ++i) {
-    input_sensor_.joint_state.velocity[i] = filters::exponentialSmoothing(
-        new_joint_velocity_[i], input_sensor_.joint_state.velocity[i],
-        parameters_.joint_velocity_filter_coefficient);
-  }
-
-  for (Eigen::Index i = 0; i < joint_nv; ++i) {
     input_sensor_.joint_state.velocity(i) = filters::exponentialSmoothing(
         new_joint_velocity_(i), input_sensor_.joint_state.velocity(i),
         parameters_.joint_velocity_filter_coefficient);
