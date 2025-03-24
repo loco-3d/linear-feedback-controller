@@ -49,8 +49,9 @@ stdenv.mkDerivation {
     rosPackages.jazzy.nav-msgs
     rosPackages.jazzy.pal-statistics
     rosPackages.jazzy.parameter-traits
-    rosPackages.jazzy.realtime-tools
     rosPackages.jazzy.rclcpp-lifecycle
+    rosPackages.jazzy.realtime-tools
+    rosPackages.jazzy.rosidl-dynamic-typesupport
   ];
 
   # revert https://github.com/lopsided98/nix-ros-overlay/blob/develop/distros/rosidl-generator-py-setup-hook.sh
