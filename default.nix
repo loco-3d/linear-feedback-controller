@@ -65,6 +65,9 @@ stdenv.mkDerivation {
   # ref. https://github.com/PickNikRobotics/generate_parameter_library/pull/212
   enableParallelBuilding = false;
 
+  # some dependency started to leak qtPreHook
+  dontWrapQtApps = true;
+
   meta = {
     description = "RosControl linear feedback controller with pal base estimator and RosTopics external interface.";
     homepage = "https://github.com/loco-3d/linear-feedback-controller";
