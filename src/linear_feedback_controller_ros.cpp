@@ -202,7 +202,7 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
 // master (jazzy) version 01/03/2025
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
-    const rclcpp::Time& time, const rclcpp::Duration& period)
+    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
 #else  // humble version
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers()
 #endif
