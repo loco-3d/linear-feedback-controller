@@ -4,7 +4,7 @@
   inputs = {
     nix-ros-overlay.url = "github:lopsided98/nix-ros-overlay/develop";
     linear-feedback-controller-msgs = {
-      url = "github:loco-3d/linear-feedback-controller-msgs/bugfix/nix";
+      url = "github:loco-3d/linear-feedback-controller-msgs/jazzy";
       inputs.nix-ros-overlay.follows = "nix-ros-overlay";
     };
   };
