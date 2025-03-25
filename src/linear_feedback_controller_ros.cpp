@@ -199,7 +199,8 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
   return CallbackReturn::SUCCESS;
 }
 
-return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
+return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
+    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   synched_state_msg_.mutex.lock();
   state_msg_.msg_odom = synched_state_msg_.msg_odom;
   state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;
@@ -330,12 +331,6 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         Eigen::VectorXd::Map(&reference_interfaces_[0], nq);
     input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
     new_joint_velocity_ = Eigen::VectorXd::Map(&reference_interfaces_[nq], nv);
-  }
-
-  for (Eigen::Index i = 0; i < joint_nv; ++i) {
-    input_sensor_.joint_state.velocity[i] = filters::exponentialSmoothing(
-        new_joint_velocity_[i], input_sensor_.joint_state.velocity[i],
-        parameters_.joint_velocity_filter_coefficient);
   }
 
   for (Eigen::Index i = 0; i < joint_nv; ++i) {

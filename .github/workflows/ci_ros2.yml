@@ -1,16 +1,22 @@
 name: Ubuntu20.04, ROS2 Continuous Integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - jazzy
+    - jazzy-devel
+  pull_request:
+    branches:
+    - jazzy
+    - jazzy-devel
 
 jobs:
   build:
     strategy:
       matrix:
         include:
-          - ros_version: "humble"
-            ubuntu_version: "ubuntu-22.04"
-          # - ros_version: "iron"
-          #   ubuntu_version: "ubuntu-22.04"
+          - ros_version: "jazzy"
+            ubuntu_version: "ubuntu-24.04"
     runs-on: ${{ matrix.ubuntu_version }}
     steps:
       #
@@ -41,3 +47,7 @@ jobs:
           package-name: linear_feedback_controller
           target-ros2-distro: ${{ matrix.ros_version }}
           vcs-repo-file-url: /tmp/deps.repos
+        env:
+          MAKEFLAGS: "-j1"
+      - run: |
+          echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
