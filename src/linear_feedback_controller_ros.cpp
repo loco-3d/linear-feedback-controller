@@ -268,6 +268,7 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   if (!read_state_from_references()) {
     return return_type::ERROR;
   }
+  input_sensor_.stamp = time;
 
   // publish the state.
   linear_feedback_controller_msgs::sensorEigenToMsg(input_sensor_,
