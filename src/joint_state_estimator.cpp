@@ -41,12 +41,8 @@ controller_interface::CallbackReturn JointStateEstimator::on_configure(
   params_ = param_listener_->get_params();
 
   // Define the name of the interfaces to use from the parameters.
-  state_interface_names_ = params_.interfaces;
-  command_interface_names_.clear();
-  for (auto& state_interface_name : state_interface_names_) {
-    command_interface_names_.emplace_back(params_.command_prefix + "/" +
-                                          state_interface_name);
-  }
+  state_interface_names_ = params_.state_interfaces;
+  command_interface_names_ = params_.command_interfaces;
 
   // Pre-reserve command/state interfaces.
   state_interfaces_.reserve(state_interface_names_.size());
@@ -102,8 +98,9 @@ controller_interface::return_type JointStateEstimator::update(
     if (!std::isnan(state_interface_value)) {
       command_interfaces_[i].set_value(state_interface_value);
     } else {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Nan detected in the robot state interface.");
+      RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                   "Nan detected in the robot state interface : "
+                    << state_interfaces_[i].get_name());
       return controller_interface::return_type::ERROR;
     }
   }
