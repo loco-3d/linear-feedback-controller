@@ -40,6 +40,18 @@ sec_generate_parameter_library(
 )
 add_dependencies(joint_state_estimator_parameters
                  joint_state_estimator_parameters_doc)
+# Passthrough params
+sec_generate_parameter_library_markdown(
+  passthrough_controller_generated_parameters_doc
+  src/passthrough_controller.yaml)
+sec_generate_parameter_library(
+  passthrough_controller_generated_parameters # Lib name
+  passthrough_controller_parameters # CMake target name for the parameter
+                                   # library.
+  src/passthrough_controller.yaml # Path to input yaml file
+)
+add_dependencies(joint_state_estimator_parameters
+                 joint_state_estimator_parameters_doc)
 
 #
 # Main Library
@@ -50,6 +62,7 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
+    include/${PROJECT_NAME}/passthrough_controller.hpp
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
@@ -57,6 +70,7 @@ set(${PROJECT_NAME}_sources
     src/lf_controller.cpp #
     src/linear_feedback_controller.cpp #
     src/linear_feedback_controller_ros.cpp #
+    src/passthrough_controller.cpp #
     src/pd_controller.cpp #
     src/robot_model_builder.cpp)
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
