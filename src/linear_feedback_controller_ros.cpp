@@ -54,8 +54,7 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
     return CallbackReturn::FAILURE;
   }
   if (parameters_.chainable_controller.command_interfaces.size() !=
-      lfc_.get_robot_model()->get_moving_joint_names().size())
-  {
+      lfc_.get_robot_model()->get_moving_joint_names().size()) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Parameter chainable_controller.command_interfaces do not "
                  "have the correct size.");
