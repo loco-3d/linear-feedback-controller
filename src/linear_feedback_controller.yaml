@@ -1,9 +1,8 @@
 linear_feedback_controller:
   chainable_controller:
-    command_prefix: {
-      type: "string",
+    command_interfaces: {
+      type: "string_array",
       description: "Names of the downstream controller that takes the robot state as references.",
-      default_value: ""
     }
     reference_prefix: {
       type: "string",
