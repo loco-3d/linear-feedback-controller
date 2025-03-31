@@ -53,6 +53,14 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
                  "Issues initializing the introspection.");
     return CallbackReturn::FAILURE;
   }
+  if (parameters_.chainable_controller.command_interfaces.size() !=
+      lfc_.get_robot_model()->get_moving_joint_names().size())
+  {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Parameter chainable_controller.command_interfaces do not "
+                 "have the correct size.");
+    return CallbackReturn::FAILURE;
+  }
   first_time_update_and_write_commands_ = true;
   return CallbackReturn::SUCCESS;
 }
@@ -70,10 +78,8 @@ LinearFeedbackControllerRos::command_interface_configuration() const {
   command_interfaces_config_names.clear();
 
   // Then the joint informations.
-  for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-    const auto name = parameters_.chainable_controller.command_prefix + joint +
-                      "/" + HW_IF_EFFORT;
-    command_interfaces_config_names.emplace_back(name);
+  for (const auto& cin : parameters_.chainable_controller.command_interfaces) {
+    command_interfaces_config_names.emplace_back(cin);
   }
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
