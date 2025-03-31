@@ -55,15 +55,6 @@ using ControlMsg = linear_feedback_controller_msgs::msg::Control;
     CONTROLLER_INTERFACE_MINOR_VERSION == (minor) &&               \
     CONTROLLER_INTERFACE_PATCH_VERSION >= (patch)))
 
-struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE StateMsg {
-  Odometry msg_odom;
-  JointState msg_joint_state;
-};
-
-struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedStateMsg : StateMsg {
-  std::mutex mutex;
-};
-
 struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedControlMsg {
   ControlMsg msg;
   std::mutex mutex;
@@ -179,13 +170,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   void state_syncher_callback(
       const Odometry::ConstSharedPtr& msg_odom,
       const JointState::ConstSharedPtr& msg_joint_state);
-  //   rclcpp_action::GoalResponse handle_goal(
-  //     const rclcpp_action::GoalUUID & uuid,
-  //     std::shared_ptr<const RunLFC::Goal> goal);
-  //   rclcpp_action::CancelResponse handle_cancel(
-  //     const std::shared_ptr<GoalHandleRunLFC> goal_handle);
-  //   void handle_accepted(const std::shared_ptr<GoalHandleRunLFC>
-  //   goal_handle);
   void control_subscription_callback(const ControlMsg msg);
 
  protected:
@@ -199,20 +183,19 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   rclcpp::Node::SharedPtr robot_description_node_;
   rclcpp::SyncParametersClient::SharedPtr robot_description_parameter_client_;
 
-  // State interfaces
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_position_state_interface_;
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_velocity_state_interface_;
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_effort_state_interface_;
+  // Reference interfaces
+  InterfaceVector<double> base_reference_interface_;
+  InterfaceVector<double> base_reference_interface_;
+  InterfaceVector<double> joint_position_reference_interface_;
+  InterfaceVector<double> joint_velocity_reference_interface_;
+  InterfaceVector<double> joint_effort_reference_interface_;
 
   // Reference interfaces.
   std::vector<std::string> reference_interface_names_;
 
   // Command interfaces.
   InterfaceVector<hardware_interface::LoanedCommandInterface>
-      joint_effort_command_interface_;
+    joint_effort_command_interface_;
 
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;
@@ -232,15 +215,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
-
-  // State subscriber
-  message_filters::Subscriber<Odometry, LifecycleNode> subscriber_odom_;
-  message_filters::Subscriber<JointState, LifecycleNode>
-      subscriber_joint_state_;
-  std::shared_ptr<message_filters::TimeSynchronizer<Odometry, JointState>>
-      state_syncher_;
-  ProtectedStateMsg synched_state_msg_;
-  StateMsg state_msg_;
 
   // MPC communication
   rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;
