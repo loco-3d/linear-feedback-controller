@@ -51,25 +51,23 @@ controller_interface::CallbackReturn JointStateEstimator::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // Check of we have access to all command interface.
   bool ret = controller_interface::get_ordered_interfaces(
-    command_interfaces_, params_.command_interfaces, std::string(""),
-    command_ordered_interfaces_);
-  
-    if(!ret ||
+      command_interfaces_, params_.command_interfaces, std::string(""),
+      command_ordered_interfaces_);
+
+  if (!ret ||
       params_.command_interfaces.size() != command_ordered_interfaces_.size()) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Expected %zu command interfaces, got %zu",
-                 params_.command_interfaces.size(),
-                 command_ordered_interfaces_.size());
+    RCLCPP_ERROR(
+        get_node()->get_logger(), "Expected %zu command interfaces, got %zu",
+        params_.command_interfaces.size(), command_ordered_interfaces_.size());
     return controller_interface::CallbackReturn::ERROR;
   }
 
   // Check if we have access to all state interfaces.
   ret = controller_interface::get_ordered_interfaces(
-    state_interfaces_, params_.state_interfaces, std::string(""),
-    state_ordered_interfaces_);
+      state_interfaces_, params_.state_interfaces, std::string(""),
+      state_ordered_interfaces_);
   if (!ret ||
-          params_.state_interfaces.size() !=
-          state_ordered_interfaces_.size()) {
+      params_.state_interfaces.size() != state_ordered_interfaces_.size()) {
     RCLCPP_ERROR(this->get_node()->get_logger(),
                  "Expected %zu state interfaces, got %zu",
                  params_.state_interfaces.size(),
@@ -93,17 +91,16 @@ controller_interface::return_type JointStateEstimator::update(
     double state_interface_value = state_interfaces_[i].get_value();
     if (!std::isnan(state_interface_value)) {
       bool ret = command_interfaces_[i].set_value(state_interface_value);
-      if(!ret)
-      {
+      if (!ret) {
         RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-          "Problem writing in the robot command interface : "
-          << command_interfaces_[i].get_name());
-        return controller_interface::return_type::ERROR;  
+                            "Problem writing in the robot command interface : "
+                                << command_interfaces_[i].get_name());
+        return controller_interface::return_type::ERROR;
       }
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-        "Nan detected in the robot state interface : "
-        << state_interfaces_[i].get_name());
+                          "Nan detected in the robot state interface : "
+                              << state_interfaces_[i].get_name());
       return controller_interface::return_type::ERROR;
     }
   }

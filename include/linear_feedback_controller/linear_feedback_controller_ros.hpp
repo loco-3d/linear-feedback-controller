@@ -188,7 +188,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   // Command interfaces.
   InterfaceVector<hardware_interface::LoanedCommandInterface>
-    joint_effort_command_interface_;
+      joint_effort_command_interface_;
 
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;
