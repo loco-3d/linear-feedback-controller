@@ -76,10 +76,17 @@ controller_interface::CallbackReturn PassthroughController::on_configure(
 controller_interface::CallbackReturn PassthroughController::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  if (
-    !controller_interface::get_ordered_interfaces(
-      command_interfaces_, command_interface_names_, std::string(""), ordered_command_interfaces_) ||
-    command_interface_names_.size() != ordered_command_interfaces_.size())
+  if(!is_in_chained_mode())
+  {
+    RCLCPP_ERROR(get_node()->get_logger(), "Not in chained mode.");
+    return controller_interface::CallbackReturn::ERROR;
+  }
+
+  bool ret = controller_interface::get_ordered_interfaces(
+    command_interfaces_, command_interface_names_, std::string(""), ordered_command_interfaces_);
+  if (!ret ||
+      command_interface_names_.size() != ordered_command_interfaces_.size() ||
+      command_interface_names_.size() != reference_interfaces_.size())
   {
     RCLCPP_ERROR(
       this->get_node()->get_logger(), "Expected %zu command interfaces, got %zu",
@@ -111,11 +118,14 @@ controller_interface::return_type PassthroughController::update_and_write_comman
   {
     if (!std::isnan(reference_interfaces_[i]))
     {
-      if(!ordered_command_interfaces_[i].get().set_value(reference_interfaces_[i]))
+      bool ret = ordered_command_interfaces_[i].get().set_value(
+        reference_interfaces_[i]);
+      if(!ret)
       {
         RCLCPP_ERROR_STREAM(get_node()->get_logger(),
             "Error writting into the command interface : "
             << ordered_command_interfaces_[i].get().get_name());
+        return controller_interface::return_type::ERROR;
       }
     }
     else
@@ -123,6 +133,7 @@ controller_interface::return_type PassthroughController::update_and_write_comman
         RCLCPP_ERROR_STREAM(get_node()->get_logger(),
             "Nan detected in the reference interface : "
             << reference_interface_names_[i]);
+        return controller_interface::return_type::ERROR;
     }
   }
 
