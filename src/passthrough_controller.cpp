@@ -115,7 +115,7 @@ PassthroughController::update_and_write_commands(
       if (!ret) {
         RCLCPP_ERROR_STREAM(
             get_node()->get_logger(),
-            "Error writting into the command interface : "
+            "Error writing into the command interface : "
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
@@ -123,7 +123,8 @@ PassthroughController::update_and_write_commands(
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the reference interface : "
                               << reference_interface_names_[i]);
-      return controller_interface::return_type::ERROR;
+        bool ret = ordered_command_interfaces_[i].get().set_value(0.0);
+        return controller_interface::return_type::OK;
     }
   }
 
@@ -134,9 +135,9 @@ std::vector<hardware_interface::CommandInterface>
 PassthroughController::on_export_reference_interfaces() {
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
   for (size_t i = 0; i < reference_interface_names_.size(); ++i) {
-    reference_interfaces.push_back(hardware_interface::CommandInterface(
-        get_node()->get_name(), reference_interface_names_[i],
-        &reference_interfaces_[i]));
+    reference_interfaces.emplace_back(
+      get_node()->get_name(), reference_interface_names_[i],
+      &reference_interfaces_[i]);
   }
   return reference_interfaces;
 }
