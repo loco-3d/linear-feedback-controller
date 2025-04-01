@@ -48,8 +48,12 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC JointStateEstimator
   std::shared_ptr<joint_state_estimator::ParamListener> param_listener_;
   joint_state_estimator::Params params_;
 
-  std::vector<std::string> state_interface_names_;
-  std::vector<std::string> command_interface_names_;
+  std::vector
+  <std::reference_wrapper<hardware_interface::LoanedStateInterface>>
+    state_ordered_interfaces_;
+  std::vector
+  <std::reference_wrapper<hardware_interface::LoanedCommandInterface>>
+    command_ordered_interfaces_;
 };
 }  // namespace linear_feedback_controller
 
