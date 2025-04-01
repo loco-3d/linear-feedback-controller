@@ -183,13 +183,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   rclcpp::Node::SharedPtr robot_description_node_;
   rclcpp::SyncParametersClient::SharedPtr robot_description_parameter_client_;
 
-  // Reference interfaces
-  InterfaceVector<double> base_reference_interface_;
-  InterfaceVector<double> base_reference_interface_;
-  InterfaceVector<double> joint_position_reference_interface_;
-  InterfaceVector<double> joint_velocity_reference_interface_;
-  InterfaceVector<double> joint_effort_reference_interface_;
-
   // Reference interfaces.
   std::vector<std::string> reference_interface_names_;
 
@@ -199,11 +192,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;
-
-  /// @brief Joint position measured at init time.
-  Eigen::VectorXd init_joint_position_;
-  /// @brief Joint torques measured at init time.
-  Eigen::VectorXd init_joint_effort_;
 
   // Inputs/Ouputs attributes.
   TimePoint input_time_;
