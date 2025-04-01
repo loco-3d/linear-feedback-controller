@@ -16,4 +16,12 @@
     </description>
   </class>
 
+  <class name="linear_feedback_controller/PassthroughController"
+         type="linear_feedback_controller::PassthroughController"
+         base_class_type="controller_interface::ChainableControllerInterface">
+    <description>
+      Forward the joint state into the command potentially filtering some signals.
+    </description>
+  </class>
+
 </library>
