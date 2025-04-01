@@ -19,8 +19,7 @@ linear_feedback_controller:
     default_value: 0.9,
     description: "Specifies the filter coefficient for the sensor's exponential filter. If equal to 1 the filter is inactive. I equal to zero the filter crash the signal into a constant being the initial value of the signal.",
     validation: {
-      gt_eq<>: 0.0,
-      lt_eq<>: 1.0,
+      bounds<>: [0.0, 1.0]
     }
   }
   moving_joint_names: {
