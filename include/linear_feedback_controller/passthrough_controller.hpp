@@ -14,49 +14,52 @@
 #include "linear_feedback_controller/passthrough_controller_generated_parameters.hpp"
 
 /**
- * PassthroughController is a simple chainable controller that exposes reference interfaces equal to
- * the number of it's command interfaces. This controller simply forwards the information commanded
- * to it's reference interface to it's own command interfaces without any modifications.
+ * PassthroughController is a simple chainable controller that exposes reference
+ * interfaces equal to the number of it's command interfaces. This controller
+ * simply forwards the information commanded to it's reference interface to it's
+ * own command interfaces without any modifications.
  */
-namespace linear_feedback_controller
-{
+namespace linear_feedback_controller {
 using DataType = std_msgs::msg::Float64MultiArray;
-class PassthroughController : public controller_interface::ChainableControllerInterface
-{
-public:
+class PassthroughController
+    : public controller_interface::ChainableControllerInterface {
+ public:
   controller_interface::CallbackReturn on_init() override;
 
-  controller_interface::InterfaceConfiguration command_interface_configuration() const override;
+  controller_interface::InterfaceConfiguration command_interface_configuration()
+      const override;
 
-  controller_interface::InterfaceConfiguration state_interface_configuration() const override;
+  controller_interface::InterfaceConfiguration state_interface_configuration()
+      const override;
 
   controller_interface::CallbackReturn on_configure(
-    const rclcpp_lifecycle::State & previous_state) override;
+      const rclcpp_lifecycle::State& previous_state) override;
 
   controller_interface::CallbackReturn on_activate(
-    const rclcpp_lifecycle::State & previous_state) override;
+      const rclcpp_lifecycle::State& previous_state) override;
 
   controller_interface::CallbackReturn on_deactivate(
-    const rclcpp_lifecycle::State & previous_state) override;
+      const rclcpp_lifecycle::State& previous_state) override;
 
   bool on_set_chained_mode(bool chained_mode) override;
 
   controller_interface::return_type update_and_write_commands(
-    const rclcpp::Time & time, const rclcpp::Duration & period) override;
+      const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
-protected:
-  std::vector<hardware_interface::CommandInterface> on_export_reference_interfaces() override;
+ protected:
+  std::vector<hardware_interface::CommandInterface>
+  on_export_reference_interfaces() override;
 
   controller_interface::return_type update_reference_from_subscribers(
-    const rclcpp::Time & time, const rclcpp::Duration & period) override;
+      const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
   std::shared_ptr<passthrough_controller::ParamListener> param_listener_;
   passthrough_controller::Params params_;
   std::vector<std::string> reference_interface_names_;
   std::vector<std::string> command_interface_names_;
-  std::vector
-    <std::reference_wrapper<hardware_interface::LoanedCommandInterface>>
-    ordered_command_interfaces_;
+  std::vector<
+      std::reference_wrapper<hardware_interface::LoanedCommandInterface>>
+      ordered_command_interfaces_;
 };
 }  // namespace linear_feedback_controller
 

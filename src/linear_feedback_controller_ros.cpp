@@ -129,10 +129,9 @@ CallbackReturn LinearFeedbackControllerRos::on_configure(
 
 CallbackReturn LinearFeedbackControllerRos::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  if(!is_in_chained_mode())
-  {
+  if (!is_in_chained_mode()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-      "Wrong activation, the controller needs to be in chain mode.");
+                 "Wrong activation, the controller needs to be in chain mode.");
   }
 
   const std::vector<std::string> joint_names =
@@ -195,18 +194,17 @@ return_type LinearFeedbackControllerRos::update_reference_from_subscribers()
 
 return_type LinearFeedbackControllerRos::update_and_write_commands(
     const rclcpp::Time& time, const rclcpp::Duration& /*period*/) {
-  
   // Read the hardware data.
   if (!read_state_from_references()) {
     return return_type::ERROR;
   }
   input_sensor_.stamp = time;
-  
+
   // First time executing here.
   if (first_time_update_and_write_commands_) {
     // Get current joint average position filtered and current averaged torque.
-    lfc_.set_initial_state(
-      input_sensor_.joint_state.effort, input_sensor_.joint_state.position);
+    lfc_.set_initial_state(input_sensor_.joint_state.effort,
+                           input_sensor_.joint_state.position);
     first_time_update_and_write_commands_ = false;
   }
 
@@ -231,25 +229,25 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
       lfc_.compute_control(time_lfc, input_sensor_, input_control_,
                            parameters_.remove_gravity_compensation_effort);
 
-  if(output_joint_effort_.hasNaN())
-  {
+  if (output_joint_effort_.hasNaN()) {
     RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-        "NaN detect in output joint effort command: "
-        << output_joint_effort_.transpose());
-      return controller_interface::return_type::ERROR;
+                        "NaN detect in output joint effort command: "
+                            << output_joint_effort_.transpose());
+    return controller_interface::return_type::ERROR;
   }
 
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
   for (Eigen::Index i = 0; i < joint_nv; ++i) {
     bool ret = joint_effort_command_interface_[i].get().set_value(
-      output_joint_effort_[i]);
-    
-    if(!ret){
-      RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-        "Error in writing command value [" << output_joint_effort_[i]
-        << "] at this interface: ["
-        << joint_effort_command_interface_[i].get().get_name() << "]");
+        output_joint_effort_[i]);
+
+    if (!ret) {
+      RCLCPP_ERROR_STREAM(
+          get_node()->get_logger(),
+          "Error in writing command value ["
+              << output_joint_effort_[i] << "] at this interface: ["
+              << joint_effort_command_interface_[i].get().get_name() << "]");
       return controller_interface::return_type::ERROR;
     }
   }
@@ -298,28 +296,24 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         parameters_.joint_velocity_filter_coefficient);
   }
 
-  if(reference_interface_names_.size() != reference_interfaces_.size())
-  {
+  if (reference_interface_names_.size() != reference_interfaces_.size()) {
     RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-        "Inconsistent size: reference_interface_names_.size("
-        << reference_interface_names_.size()
-        << ") != reference_interfaces_.size("
-        << reference_interfaces_.size()
-        << ").");
+                        "Inconsistent size: reference_interface_names_.size("
+                            << reference_interface_names_.size()
+                            << ") != reference_interfaces_.size("
+                            << reference_interfaces_.size() << ").");
     return false;
   }
 
-  if(
-    input_sensor_.joint_state.position.hasNaN() &&
-    input_sensor_.joint_state.velocity.hasNaN() &&
-    input_sensor_.joint_state.effort.hasNaN()
-  ) {
+  if (input_sensor_.joint_state.position.hasNaN() &&
+      input_sensor_.joint_state.velocity.hasNaN() &&
+      input_sensor_.joint_state.effort.hasNaN()) {
     RCLCPP_ERROR(get_node()->get_logger(), "The joint state must be NaN free.");
-    for(size_t i = 0 ; reference_interfaces_.size() ; ++i)
-    {
+    for (size_t i = 0; reference_interfaces_.size(); ++i) {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-        "reference[" << reference_interface_names_[i]
-        << "] = " << reference_interfaces_[i] << ".");
+                          "reference[" << reference_interface_names_[i]
+                                       << "] = " << reference_interfaces_[i]
+                                       << ".");
     }
     return false;
   }
@@ -532,9 +526,8 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
                       joint + "/" + HW_IF_EFFORT;
     reference_interface_names_.emplace_back(name);
   }
-  reference_interfaces_.resize(
-    reference_interface_names_.size(),
-    std::numeric_limits<double>::quiet_NaN());
+  reference_interfaces_.resize(reference_interface_names_.size(),
+                               std::numeric_limits<double>::quiet_NaN());
   return true;
 }
 

@@ -47,7 +47,7 @@ sec_generate_parameter_library_markdown(
 sec_generate_parameter_library(
   passthrough_controller_generated_parameters # Lib name
   passthrough_controller_parameters # CMake target name for the parameter
-                                   # library.
+  # library.
   src/passthrough_controller.yaml # Path to input yaml file
 )
 add_dependencies(joint_state_estimator_parameters
