@@ -65,52 +65,19 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
 
 InterfaceConfiguration
 LinearFeedbackControllerRos::command_interface_configuration() const {
-  // Output the estimated robot state as command interface.
-  std::vector<std::string> command_interfaces_config_names = {};
-
-  // Position and velocity interfaces for the joints and the freeflyer.
-  const auto num_chainable_interfaces = lfc_.get_robot_model()->get_joint_nv();
-
-  // Dynamic allocation.
-  command_interfaces_config_names.reserve(num_chainable_interfaces);
-  command_interfaces_config_names.clear();
-
-  // Then the joint informations.
-  for (const auto& cin : parameters_.chainable_controller.command_interfaces) {
-    command_interfaces_config_names.emplace_back(cin);
-  }
-
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
-          command_interfaces_config_names};
+    parameters_.chainable_controller.command_interfaces};
 }
 
 InterfaceConfiguration
 LinearFeedbackControllerRos::state_interface_configuration() const {
-  // Get the joint state measurements.
-  std::vector<std::string> state_interfaces_config_names;
-
-  // Position and velocity interfaces for the joints and the freeflyer.
-  const auto num_chainable_interfaces = lfc_.get_robot_model()->get_joint_nq() +
-                                        lfc_.get_robot_model()->get_joint_nv();
-
-  // Dynamic allocation.
-  state_interfaces_config_names.reserve(num_chainable_interfaces);
-  state_interfaces_config_names.clear();
-
-  // Then the joint informations.
-  for (auto interface : {HW_IF_POSITION, HW_IF_VELOCITY, HW_IF_EFFORT}) {
-    for (const auto& joint : lfc_.get_robot_model()->get_moving_joint_names()) {
-      const auto name = joint + "/" + interface;
-      state_interfaces_config_names.emplace_back(name);
-    }
-  }
-
-  return {controller_interface::interface_configuration_type::INDIVIDUAL,
-          state_interfaces_config_names};
+  return controller_interface::InterfaceConfiguration{
+    controller_interface::interface_configuration_type::NONE};
 }
 
 std::vector<hardware_interface::CommandInterface>
 LinearFeedbackControllerRos::on_export_reference_interfaces() {
+  setup_reference_interface();
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
   reference_interfaces.clear();
   for (size_t i = 0; i < reference_interface_names_.size(); ++i) {
@@ -142,8 +109,17 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
 
   // Assign the command interface.
   all_good &= controller_interface::get_ordered_interfaces(
-      command_interfaces_, joint_names, HW_IF_EFFORT,
+      command_interfaces_, parameters_.chainable_controller.command_interfaces, "",
       joint_effort_command_interface_);
+  if (!all_good ||
+      parameters_.chainable_controller.command_interfaces.size() !=
+      joint_effort_command_interface_.size()) {
+    RCLCPP_ERROR(this->get_node()->get_logger(),
+                  "Expected %zu command interfaces, got %zu",
+                  parameters_.chainable_controller.command_interfaces.size(),
+                  joint_effort_command_interface_.size());
+    return controller_interface::CallbackReturn::ERROR;
+  }
 
   std::fill(reference_interfaces_.begin(), reference_interfaces_.end(),
             std::numeric_limits<double>::quiet_NaN());
@@ -228,7 +204,6 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   output_joint_effort_ =
       lfc_.compute_control(time_lfc, input_sensor_, input_control_,
                            parameters_.remove_gravity_compensation_effort);
-
   if (output_joint_effort_.hasNaN()) {
     RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                         "NaN detect in output joint effort command: "
