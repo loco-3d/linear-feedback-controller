@@ -66,13 +66,13 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
 InterfaceConfiguration
 LinearFeedbackControllerRos::command_interface_configuration() const {
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
-    parameters_.chainable_controller.command_interfaces};
+          parameters_.chainable_controller.command_interfaces};
 }
 
 InterfaceConfiguration
 LinearFeedbackControllerRos::state_interface_configuration() const {
   return controller_interface::InterfaceConfiguration{
-    controller_interface::interface_configuration_type::NONE};
+      controller_interface::interface_configuration_type::NONE};
 }
 
 std::vector<hardware_interface::CommandInterface>
@@ -109,15 +109,14 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
 
   // Assign the command interface.
   all_good &= controller_interface::get_ordered_interfaces(
-      command_interfaces_, parameters_.chainable_controller.command_interfaces, "",
-      joint_effort_command_interface_);
-  if (!all_good ||
-      parameters_.chainable_controller.command_interfaces.size() !=
-      joint_effort_command_interface_.size()) {
+      command_interfaces_, parameters_.chainable_controller.command_interfaces,
+      "", joint_effort_command_interface_);
+  if (!all_good || parameters_.chainable_controller.command_interfaces.size() !=
+                       joint_effort_command_interface_.size()) {
     RCLCPP_ERROR(this->get_node()->get_logger(),
-                  "Expected %zu command interfaces, got %zu",
-                  parameters_.chainable_controller.command_interfaces.size(),
-                  joint_effort_command_interface_.size());
+                 "Expected %zu command interfaces, got %zu",
+                 parameters_.chainable_controller.command_interfaces.size(),
+                 joint_effort_command_interface_.size());
     return controller_interface::CallbackReturn::ERROR;
   }
 
