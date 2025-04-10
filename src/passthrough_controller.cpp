@@ -111,7 +111,7 @@ PassthroughController::update_and_write_commands(
   for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
     if (!std::isnan(reference_interfaces_[i])) {
       bool ret = ordered_command_interfaces_[i].get().set_value(
-          reference_interfaces_[i]);
+        reference_interfaces_[i]);
       if (!ret) {
         RCLCPP_ERROR_STREAM(
             get_node()->get_logger(),
