@@ -1,6 +1,10 @@
 name: Ubuntu20.04, ROS2 Continuous Integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+  pull_request:
 
 jobs:
   build:
@@ -9,8 +13,9 @@ jobs:
         include:
           - ros_version: "humble"
             ubuntu_version: "ubuntu-22.04"
-          # - ros_version: "iron"
-          #   ubuntu_version: "ubuntu-22.04"
+          - ros_version: "jazzy"
+            ubuntu_version: "ubuntu-24.04"
+
     runs-on: ${{ matrix.ubuntu_version }}
     steps:
       #

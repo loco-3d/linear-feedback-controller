@@ -3,10 +3,8 @@ name: "CI - Nix"
 on:
   push:
     branches:
-    - humble
+    - main
   pull_request:
-    branches:
-    - humble
 
 jobs:
   tests:
