@@ -283,7 +283,7 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
       input_sensor_.joint_state.velocity.hasNaN() &&
       input_sensor_.joint_state.effort.hasNaN()) {
     RCLCPP_ERROR(get_node()->get_logger(), "The joint state must be NaN free.");
-    for (size_t i = 0; reference_interfaces_.size(); ++i) {
+    for (size_t i = 0; i < reference_interfaces_.size(); ++i) {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "reference[" << reference_interface_names_[i]
                                        << "] = " << reference_interfaces_[i]
@@ -562,7 +562,7 @@ bool LinearFeedbackControllerRos::ends_with(const std::string& str,
 
 void LinearFeedbackControllerRos::control_subscription_callback(
     const ControlMsg msg) {
-  RCLCPP_INFO_ONCE(get_node()->get_logger(), "Received sensor msgs.");
+  RCLCPP_INFO_ONCE(get_node()->get_logger(), "Received control msgs.");
   synched_input_control_msg_.mutex.lock();
   synched_input_control_msg_.msg = msg;
   synched_input_control_msg_.mutex.unlock();
