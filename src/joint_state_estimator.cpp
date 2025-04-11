@@ -89,20 +89,21 @@ controller_interface::return_type JointStateEstimator::update(
     const rclcpp::Time& /* time */, const rclcpp::Duration& /* period */) {
   for (size_t i = 0; i < command_ordered_interfaces_.size(); ++i) {
     double state_interface_value =
-      state_ordered_interfaces_[i].get().get_value();
+        state_ordered_interfaces_[i].get().get_value();
     if (!std::isnan(state_interface_value)) {
-      bool ret = command_ordered_interfaces_[i].get().set_value(
-        state_interface_value);
+      bool ret =
+          command_ordered_interfaces_[i].get().set_value(state_interface_value);
       if (!ret) {
-        RCLCPP_ERROR_STREAM(get_node()->get_logger(),
-                            "Problem writing in the robot command interface : "
-                            << command_ordered_interfaces_[i].get().get_name());
+        RCLCPP_ERROR_STREAM(
+            get_node()->get_logger(),
+            "Problem writing in the robot command interface : "
+                << command_ordered_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the robot state interface : "
-                          << state_ordered_interfaces_[i].get().get_name());
+                              << state_ordered_interfaces_[i].get().get_name());
       return controller_interface::return_type::ERROR;
     }
   }
