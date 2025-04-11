@@ -1,4 +1,4 @@
-name: Ubuntu20.04, ROS2 Continuous Integration
+name: ROS2 Continuous Integration
 
 on:
   push:
