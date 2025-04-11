@@ -24,10 +24,11 @@
 #include <pal_base_ros_controller/base_robot_with_estimator_controller.h>
 
 // local include
+#include <flex-joints/flexi-hips.hpp>
+
 #include "linear_feedback_controller/averaging_filter.hpp"
 #include "linear_feedback_controller/contact_detector.hpp"
 #include "linear_feedback_controller/min_jerk.hpp"
-#include <flex-joints/flexi-hips.hpp>
 
 namespace linear_feedback_controller {
 
@@ -254,7 +255,6 @@ class LinearFeedbackController
 
   bool readEstimator() override;
 
-
  private:  // Members
   /// @brief String containing the model of the robot in xml/urdf format.
   std::string in_urdf_;
@@ -478,10 +478,12 @@ class LinearFeedbackController
   Eigen::VectorXd desired_feedforward_torque_;
 
   flex::Flex flexibility_compensator_;
-  std::vector<double> std_joint_position_compensated_, std_joint_velocity_compensated_;
-  Eigen::VectorXd ei_joint_position_compensated_, ei_joint_velocity_compensated_, ei_joint_desired_torques_;
-  double hip_deflection_right_pitch_, hip_deflection_right_roll_,hip_deflection_left_pitch_, hip_deflection_left_roll_;
-
+  std::vector<double> std_joint_position_compensated_,
+      std_joint_velocity_compensated_;
+  Eigen::VectorXd ei_joint_position_compensated_,
+      ei_joint_velocity_compensated_, ei_joint_desired_torques_;
+  double hip_deflection_right_pitch_, hip_deflection_right_roll_,
+      hip_deflection_left_pitch_, hip_deflection_left_roll_;
 };
 
 template <class T>
