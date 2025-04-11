@@ -76,11 +76,12 @@ list(GET version_list 0 controller_interface_VERSION_MAJOR)
 list(GET version_list 1 controller_interface_VERSION_MINOR)
 list(GET version_list 2 controller_interface_VERSION_PATCH)
 # Define macros for the version components.
-target_compile_definitions(${PROJECT_NAME} PRIVATE 
-  CONTROLLER_INTERFACE_MAJOR_VERSION=${controller_interface_VERSION_MAJOR}
-  CONTROLLER_INTERFACE_MINOR_VERSION=${controller_interface_VERSION_MINOR}
-  CONTROLLER_INTERFACE_PATCH_VERSION=${controller_interface_VERSION_PATCH}
-)
+target_compile_definitions(
+  ${PROJECT_NAME}
+  PRIVATE
+    CONTROLLER_INTERFACE_MAJOR_VERSION=${controller_interface_VERSION_MAJOR}
+    CONTROLLER_INTERFACE_MINOR_VERSION=${controller_interface_VERSION_MINOR}
+    CONTROLLER_INTERFACE_PATCH_VERSION=${controller_interface_VERSION_PATCH})
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
 

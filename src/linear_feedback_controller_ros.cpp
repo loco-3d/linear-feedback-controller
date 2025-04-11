@@ -203,7 +203,7 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 27, 3)
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
     const rclcpp::Time& time, const rclcpp::Duration& period)
-#else // humble version
+#else  // humble version
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers()
 #endif
 {
