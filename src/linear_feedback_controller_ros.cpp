@@ -199,7 +199,14 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
   return CallbackReturn::SUCCESS;
 }
 
-return_type LinearFeedbackControllerRos::update_reference_from_subscribers() {
+// master (jazzy) version 01/03/2025
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
+return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
+    const rclcpp::Time& time, const rclcpp::Duration& period)
+#else  // humble version
+return_type LinearFeedbackControllerRos::update_reference_from_subscribers()
+#endif
+{
   synched_state_msg_.mutex.lock();
   state_msg_.msg_odom = synched_state_msg_.msg_odom;
   state_msg_.msg_joint_state = synched_state_msg_.msg_joint_state;
