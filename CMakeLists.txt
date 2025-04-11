@@ -71,6 +71,7 @@ target_compile_definitions(
 
 ament_target_dependencies(${PROJECT_NAME} Eigen3)
 # Extract the version components of the controller_interface package.
+message(STATUS "controller_interface_VERSION: ${controller_interface_VERSION}")
 string(REPLACE "." ";" version_list ${controller_interface_VERSION})
 list(GET version_list 0 controller_interface_VERSION_MAJOR)
 list(GET version_list 1 controller_interface_VERSION_MINOR)
