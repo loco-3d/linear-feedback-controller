@@ -47,6 +47,14 @@ using sensor_msgs::msg::JointState;
 using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
 using ControlMsg = linear_feedback_controller_msgs::msg::Control;
 
+#define CONTROLLER_INTERFACE_VERSION_AT_LEAST(major, minor, patch) \
+  ((CONTROLLER_INTERFACE_MAJOR_VERSION > (major)) || \
+   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) && \
+    CONTROLLER_INTERFACE_MINOR_VERSION > (minor)) || \
+   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) && \
+    CONTROLLER_INTERFACE_MINOR_VERSION == (minor) && \
+    CONTROLLER_INTERFACE_PATCH_VERSION >= (patch)))
+
 struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE StateMsg {
   Odometry msg_odom;
   JointState msg_joint_state;
@@ -94,8 +102,15 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() final;
 
+// master (jazzy) version 01/03/2025
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 27, 3)
+  /// @brief ChainableControllerInterface::update_reference_from_subscribers
+  return_type update_reference_from_subscribers(
+    const rclcpp::Time& time, const rclcpp::Duration& period) final;
+#else // humble version
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
   return_type update_reference_from_subscribers() final;
+#endif
 
   /// @brief ChainableControllerInterface::update_and_write_commands
   return_type update_and_write_commands(const rclcpp::Time& time,
