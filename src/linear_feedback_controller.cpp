@@ -1,6 +1,7 @@
 #include "linear_feedback_controller/linear_feedback_controller.hpp"
 
 #include <algorithm>
+#include <flex-joints/flexi-hips.hpp>
 #include <pinocchio/algorithm/compute-all-terms.hpp>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/model.hpp>
@@ -53,8 +54,16 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   measured_velocity_.fill(0.0);
   diff_state_.resize(2 * pinocchio_model_reduced_.nv);
   diff_state_.fill(0.0);
-
+  std_joint_position_compensated_ = getActualJointPositions();
+  std_joint_velocity_compensated_ = getActualJointVelocities();
+  ei_joint_position_compensated_ =
+      Eigen::VectorXd::Zero(std_joint_position_compensated_.size());
+  ei_joint_velocity_compensated_ =
+      Eigen::VectorXd::Zero(std_joint_velocity_compensated_.size());
+  ei_joint_desired_torques_ =
+      Eigen::VectorXd::Zero(std_joint_velocity_compensated_.size());
   // Prepare the publisher and subscriber exchanging the control and state.
+
   sensor_publisher_ = std::make_shared<realtime_tools::RealtimePublisher<
       linear_feedback_controller_msgs::Sensor> >(node_handle, "sensor_state",
                                                  1);
@@ -124,6 +133,33 @@ bool LinearFeedbackController::loadEtras(ros::NodeHandle& node_handle) {
   // Register all variables that we wanna log.
   initializeIntrospection();
 
+  // build flexibility compensator:
+  flex::FlexSettings flex_settings;
+  flex_settings.dt = getControllerDt().toSec();
+  flex_settings.left_stiffness = eVector2(2800., 2800.);
+  flex_settings.right_stiffness = eVector2(4200., 4200.);
+  flex_settings.left_damping = 2 * flex_settings.left_stiffness.cwiseSqrt();
+  flex_settings.right_damping = 2 * flex_settings.right_stiffness.cwiseSqrt();
+  std::vector<std::string> hip_left_flexible_joints = {
+      {"leg_left_1_joint", "leg_left_2_joint", "leg_left_3_joint"}};
+  std::vector<std::string> hip_right_flexible_joints = {
+      {"leg_right_1_joint", "leg_right_2_joint", "leg_right_3_joint"}};
+  flex_settings.left_hip_indices =
+      Eigen::Array3i();  // indexes of left hip z, x, y joints in jointState
+                         // vector
+  flex_settings.right_hip_indices =
+      Eigen::Array3i();  // indexes of right hip z, x, y joints in jointState
+                         // vector
+  for (int i = 0; i < 3; ++i) {
+    flex_settings.left_hip_indices[i] =
+        indexVector(getControlledJointNames(),
+                    hip_left_flexible_joints[static_cast<size_t>(i)]);
+    flex_settings.right_hip_indices[i] =
+        indexVector(getControlledJointNames(),
+                    hip_right_flexible_joints[static_cast<size_t>(i)]);
+  }
+  flexibility_compensator_.initialize(flex_settings);
+
   ROS_INFO_STREAM("LinearFeedbackController::loadEtras(): Done.");
   return true;
 }
@@ -170,6 +206,7 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
                            ctrl_js.velocity[i],  //
                            0.0,                  // Acceleration.
                            weighted_desired_torque);
+      ei_joint_desired_torques_[pin_to_hwi_[i]] = weighted_desired_torque;
     }
   } else if (ctrl_js.name.empty())  // No control has been sent yet.
   {
@@ -182,6 +219,8 @@ void LinearFeedbackController::updateExtras(const ros::Time& time,
                            0.0,                                // Velocity
                            0.0,                                // Acceleration
                            pd_desired_torque_(pin_to_hwi_[i]));
+      ei_joint_desired_torques_[pin_to_hwi_[i]] =
+          pd_desired_torque_(pin_to_hwi_[i]);
     }
     init_lfc_time_ = time;
   } else {
@@ -483,10 +522,31 @@ void LinearFeedbackController::acquireSensorAndPublish(
   // Fill the joint state data, i.e. the position, velocity and torque.
   const auto& act_jp = getActualJointPositions();
   const auto& act_jv = getActualJointVelocities();
+  ei_joint_position_compensated_ = ::Eigen::Map<const ::Eigen::VectorXd>(
+      act_jp.data(), static_cast<Eigen::Index>(act_jp.size()));
+  ei_joint_velocity_compensated_ = ::Eigen::Map<const ::Eigen::VectorXd>(
+      act_jv.data(), static_cast<Eigen::Index>(act_jv.size()));
+  // Flexibility compensation
+  if (!ei_joint_desired_torques_.isZero())  // @TODO: torques exists
+  {
+    // This update jointState_ and jointStateVelocity_
+    flexibility_compensator_.correctEstimatedDeflections(
+        ei_joint_desired_torques_, ei_joint_position_compensated_,
+        ei_joint_velocity_compensated_);
+    hip_deflection_left_roll_ = flexibility_compensator_.getLeftFlex()[1];
+    hip_deflection_left_pitch_ = flexibility_compensator_.getLeftFlex()[0];
+    hip_deflection_right_roll_ = flexibility_compensator_.getRightFlex()[1];
+    hip_deflection_right_pitch_ = flexibility_compensator_.getRightFlex()[0];
+  } else {
+    ROS_WARN("ei_joint_desired_torques_ is zero");
+  }
+
   std::size_t nb_joint = eigen_sensor_msg_.joint_state.position.size();
   for (std::size_t i = 0; i < nb_joint; ++i) {
-    eigen_sensor_msg_.joint_state.position(i) = act_jp[pin_to_hwi_[i]];
-    eigen_sensor_msg_.joint_state.velocity(i) = act_jv[pin_to_hwi_[i]];
+    eigen_sensor_msg_.joint_state.position(i) =
+        ei_joint_position_compensated_[pin_to_hwi_[i]];
+    eigen_sensor_msg_.joint_state.velocity(i) =
+        ei_joint_velocity_compensated_[pin_to_hwi_[i]];
     eigen_sensor_msg_.joint_state.effort(i) =
         getJointMeasuredTorque(pin_to_hwi_[i]) -
         in_torque_offsets_[pin_to_hwi_[i]];
@@ -694,6 +754,14 @@ void LinearFeedbackController::initializeIntrospection() {
                     &registered_variables_);
   REGISTER_VARIABLE("/introspection_data", "desired_lip_base",
                     &desired_lip_base_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_right_pitch",
+                    &hip_deflection_right_pitch_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_right_roll",
+                    &hip_deflection_right_roll_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_left_pitch",
+                    &hip_deflection_left_pitch_, &registered_variables_);
+  REGISTER_VARIABLE("/introspection_data", "hip_deflection_left_roll",
+                    &hip_deflection_left_roll_, &registered_variables_);
 
   // Resize the STD containers:
   actual_local_cops_.resize(eigen_sensor_msg_.contacts.size());
@@ -759,6 +827,27 @@ void LinearFeedbackController::initializeIntrospection() {
                       "desired_feedforward_torque_" + in_moving_joint_names_[i],
                       &desired_feedforward_torque_[i], &registered_variables_);
   }
+}
+
+bool LinearFeedbackController::readEstimator() {
+  if (true)  // @TRUE
+  {
+    // convert from eigen to std::vector<double>
+    std_joint_position_compensated_ =
+        std::vector<double>(ei_joint_position_compensated_.data(),
+                            ei_joint_position_compensated_.data() +
+                                ei_joint_position_compensated_.size());
+    std_joint_velocity_compensated_ =
+        std::vector<double>(ei_joint_velocity_compensated_.data(),
+                            ei_joint_velocity_compensated_.data() +
+                                ei_joint_velocity_compensated_.size());
+  } else {
+    std_joint_position_compensated_ = getActualJointPositions();
+    std_joint_velocity_compensated_ = getActualJointVelocities();
+  }
+
+  return updateEstimator(std_joint_position_compensated_,
+                         std_joint_velocity_compensated_);
 }
 
 }  // namespace linear_feedback_controller
