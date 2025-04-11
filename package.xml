@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>linear_feedback_controller</name>
   <version>1.0.2</version>
   <description>
@@ -13,27 +13,33 @@
   <license>BSD-2</license>
   <url>https://github.com/loco-3d/linear_feedback_controller</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-  <depend>roscpp</depend>
-  <depend>pinocchio</depend>
-  <depend>realtime_tools</depend>
-  <depend>example-robot-data</depend>
-  <depend>linear_feedback_controller_msgs</depend>
-  <depend>pal_base_ros_controller</depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>fmt</build_depend>
+  <build_depend>parameter_traits</build_depend>
+  <build_export_depend>eigen</build_export_depend>
 
-  <!-- Need to depend directly on the package containing the base type of the controller for the plugin to work -->
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
   <depend>controller_interface</depend>
-
-  <!-- Create the plugin -->
+  <depend>control_toolbox</depend>
+  <depend>hardware_interface</depend>
+  <depend>message_filters</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>pluginlib</depend>
+  <depend>realtime_tools</depend>
+  <depend>pinocchio</depend>
+  <depend>linear_feedback_controller_msgs</depend>
+  <depend>pal_statistics</depend>
+  <depend>generate_parameter_library</depend>
 
-  <exec_depend>python-rospkg</exec_depend>
-
-  <test_depend>rostest</test_depend>
+  <test_depend>example-robot-data</test_depend>
   <test_depend>gtest</test_depend>
 
   <export>
-    <controller_interface plugin="${prefix}/controller_plugins.xml" />
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

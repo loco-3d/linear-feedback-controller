@@ -1,0 +1,53 @@
+linear_feedback_controller:
+  chainable_controller:
+    command_prefix: {
+      type: "string",
+      description: "Names of the downstream controller that takes the robot state as references.",
+      default_value: ""
+    }
+    reference_prefix: {
+      type: "string",
+      description: "Names of the downstream controller that takes the robot state as references.",
+      default_value: ""
+    }
+  remove_gravity_compensation_effort: {
+    type: bool,
+    description: "Do we need to remove the gravity compensation effort? In practice some robot (like the Panda robot) drivers take as input effort and sum them with the gravity compensation effort. So we need to remove this component to our computed effort in our controller.",
+  }
+  joint_velocity_filter_coefficient: {
+    type: double,
+    default_value: 0.9,
+    description: "Specifies the filter coefficient for the sensor's exponential filter. If equal to 1 the filter is inactive. I equal to zero the filter crash the signal into a constant being the initial value of the signal.",
+    validation: {
+      gt_eq<>: 0.0,
+      lt_eq<>: 1.0,
+    }
+  }
+  moving_joint_names: {
+    type: string_array,
+    description: "list of active joint names used by the controller.",
+    validation: { not_empty<>: [] }
+  }
+  __map_moving_joint_names: {
+    p: {
+      type: double,
+      description: "Proportional gains for the PD controller.",
+      validation: { gt_eq<>: 0.0 }
+    },
+    d: {
+      type: double,
+      description: "Derivation gains for the PD controller.",
+      validation: { gt_eq<>: 0.0 }
+    }
+  }
+  robot_has_free_flyer: {
+    type: bool,
+    description: "Has the robot a freeflyer or not?",
+  }
+  pd_to_lf_transition_duration: {
+    type: double,
+    description: "Duration **in seconds** of transition between the PD and the LF controllers.",
+    validation: {
+      gt_eq<>: 0.0
+    }
+  }

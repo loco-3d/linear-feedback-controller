@@ -74,7 +74,12 @@ moving_joint_names:   [
     # arm_right_6_joint,
     # arm_right_7_joint,
   ]
-from_pd_to_lf_duration: 0.1 # duration in sec.
-lower_force_threshold: 10 # Newton
-upper_force_threshold: 150 # Newton
-threshold_contact_counter: 15 # iteration
+pd_to_lf_transition_duration: 0.1 # duration in sec.
+
+contact_detector_params:
+    - lower_force_threshold: 30 # Newton
+      upper_force_threshold: 150 # Newton
+      threshold_contact_counter: 10 # iteration
+    - lower_force_threshold: 30 # Newton
+      upper_force_threshold: 150 # Newton
+      threshold_contact_counter: 10 # iteration
