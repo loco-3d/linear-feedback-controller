@@ -110,7 +110,7 @@ PassthroughController::update_and_write_commands(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
     if (!std::isnan(reference_interfaces_[i])) {
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
       bool ret = ordered_command_interfaces_[i].get().set_value(
           reference_interfaces_[i]);
       if (!ret) {
@@ -120,14 +120,14 @@ PassthroughController::update_and_write_commands(
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
-#else  // humble
+#else  // humble version
       ordered_command_interfaces_[i].get().set_value(reference_interfaces_[i]);
 #endif
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the reference interface : "
                               << reference_interface_names_[i]);
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
       bool ret = ordered_command_interfaces_[i].get().set_value(0.0);
       if (!ret) {
         RCLCPP_ERROR_STREAM(
@@ -136,7 +136,7 @@ PassthroughController::update_and_write_commands(
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
-#else  // humble
+#else  // humble version
       ordered_command_interfaces_[i].get().set_value(0.0);
 #endif
       return controller_interface::return_type::OK;
@@ -158,8 +158,13 @@ PassthroughController::on_export_reference_interfaces() {
 }
 
 controller_interface::return_type
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
 PassthroughController::update_reference_from_subscribers(
-    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
+    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
+#else  // humble version
+PassthroughController::update_reference_from_subscribers()
+#endif
+{
   return controller_interface::return_type::OK;
 }
 

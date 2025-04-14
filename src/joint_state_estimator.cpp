@@ -91,8 +91,7 @@ controller_interface::return_type JointStateEstimator::update(
     double state_interface_value =
         state_ordered_interfaces_[i].get().get_value();
     if (!std::isnan(state_interface_value)) {
-// master (jazzy) version 01/03/2025
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
       bool ret =
           command_ordered_interfaces_[i].get().set_value(state_interface_value);
       if (!ret) {

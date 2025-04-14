@@ -156,8 +156,7 @@ CallbackReturn LinearFeedbackControllerRos::on_error(
   return CallbackReturn::SUCCESS;
 }
 
-// master (jazzy) version 01/03/2025
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
 return_type LinearFeedbackControllerRos::update_reference_from_subscribers(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
 #else  // humble version
@@ -213,8 +212,7 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
   for (Eigen::Index i = 0; i < joint_nv; ++i) {
-// master (jazzy) version 01/03/2025
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
     bool ret = joint_effort_command_interface_[i].get().set_value(
         output_joint_effort_[i]);
     if (!ret) {
