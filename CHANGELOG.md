@@ -13,7 +13,10 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 - Breaking change: migration ROS2
 - Splitting the ROS vs none ROS part of the code.
-- Unit-test the math.
+
+### Added
+
+- Added unit-test for the math.
 
 ## [1.0.2] - 2023-04-03
 
