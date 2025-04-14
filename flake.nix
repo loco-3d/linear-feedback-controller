@@ -32,8 +32,25 @@
           };
           checks = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self'.packages;
           packages = {
-            default = self'.packages.linear-feedback-controller;
-            linear-feedback-controller = pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs {
+            default = self'.packages.humble-linear-feedback-controller;
+            humble-linear-feedback-controller = pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs {
+              src = lib.fileset.toSource {
+                root = ./.;
+                fileset = lib.fileset.unions [
+                  ./cmake
+                  ./CMakeLists.txt
+                  ./config
+                  ./controller_plugins.xml
+                  ./include
+                  ./launch
+                  ./LICENSE
+                  ./package.xml
+                  ./src
+                  ./tests
+                ];
+              };
+            };
+            jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs {
               src = lib.fileset.toSource {
                 root = ./.;
                 fileset = lib.fileset.unions [
