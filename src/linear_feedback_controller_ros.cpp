@@ -213,9 +213,10 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
   // Write the output of the control (joint effort), in the command interface.
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
   for (Eigen::Index i = 0; i < joint_nv; ++i) {
+// master (jazzy) version 01/03/2025
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
     bool ret = joint_effort_command_interface_[i].get().set_value(
         output_joint_effort_[i]);
-
     if (!ret) {
       RCLCPP_ERROR_STREAM(
           get_node()->get_logger(),
@@ -224,8 +225,10 @@ return_type LinearFeedbackControllerRos::update_and_write_commands(
               << joint_effort_command_interface_[i].get().get_name() << "]");
       return controller_interface::return_type::ERROR;
     }
+#else  // humble version
+    joint_effort_command_interface_[i].get().set_value(output_joint_effort_[i]);
+#endif
   }
-
   return return_type::OK;
 }
 

@@ -29,6 +29,7 @@
 
 // Auto-generated header by the `generate_parameter_library` package.
 #include "linear_feedback_controller/generated_parameters.hpp"
+#include "linear_feedback_controller/handle_ros_versions.hpp"
 #include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
@@ -46,14 +47,6 @@ using rclcpp_lifecycle::LifecycleNode;
 using sensor_msgs::msg::JointState;
 using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
 using ControlMsg = linear_feedback_controller_msgs::msg::Control;
-
-#define CONTROLLER_INTERFACE_VERSION_AT_LEAST(major, minor, patch) \
-  ((CONTROLLER_INTERFACE_MAJOR_VERSION > (major)) ||               \
-   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) &&               \
-    CONTROLLER_INTERFACE_MINOR_VERSION > (minor)) ||               \
-   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) &&               \
-    CONTROLLER_INTERFACE_MINOR_VERSION == (minor) &&               \
-    CONTROLLER_INTERFACE_PATCH_VERSION >= (patch)))
 
 struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedControlMsg {
   ControlMsg msg;
