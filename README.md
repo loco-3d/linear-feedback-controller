@@ -5,9 +5,10 @@
 This repository is aimed to be used with its public API the
 [linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs).
 
-These two package are under the license [BSD-2 license](./LICENSE).
+These two packages are under the license [BSD-2 license](./LICENSE).
 
-The current versions of this 2 package can be found in their respective `package.xml` file.
+The current versions of these two packages can be found in their respective
+`package.xml` file. There **must** be an associated git tag in a shape of vX.Y.Z.
 
 Follows a quick description of these package.
 
@@ -18,18 +19,17 @@ controller.
 It is implementing a chainable controller pluggable with any kind of state
 estimator.
 
-We implement a ROS 2 action client/server setup.
-We send a request with:
+We implement a ROS 2 topic publisher sending:
 - base configuration (only if the robot has a free-flyer, identity otherwise)
 - base velocity (only if the robot has a free-flyer, identity otherwise)
 - joint positions
 - joint velocities
 - joint efforts (torques applied to the joints)
 
-We send receive the response in the shape:
+We send receive the response via a topic in the shape:
 - A feedback gain matrix
 - A feedforward term in torque
-- The state which was used to linearize the control.
+- The state which was sent before used to linearize the control.
 
 This allows us, for example, to use it on the Talos (1 and 3) robots with a remote controller
 using a whole body model predictive control based on [croccodyl](https://github.com/loco-3d/crocoddyl)
@@ -37,116 +37,69 @@ using a whole body model predictive control based on [croccodyl](https://github.
 ## The linear_feedback_controller_msgs
 
 [This package](https://github.com/loco-3d/linear-feedback-controller-msgs) contains the external user interface to the linear_feedback_controller
-package. It describes the sensor data exchanged in the previously cited RosTopics.
+package. It describes the sensor data exchanged in the previously cited ROS2 topics.
 
 And in particular it offers a very simple ROS/[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
-conversion. This is made to facilitate further computations with the Sensor
-data. And ease to fill in the Control message.
+conversion tooling.
+And a ROS/[numpy](https://numpy.org/) conversion tooling.
+These are made to facilitate further computations with the Sensor data,
+and ease to fill in the Control message.
 
 Please check the [README.md](https://github.com/loco-3d/linear-feedback-controller-msgs/blob/main/README.md) of the package for more details.
 
 ## Example of usage
 
-### Requirements
+This a ROS2 controller so on can simply look at the ROS2 control documentation.
+An example of configuration can be found
+[in this repository here](./config/tiago_pro_lfc_params.yaml).
 
-For this example you need to have access to the dockers in https://gitlab.laas.fr/gsaurel/docker-pal/.
-This is a private repository so one need to be part of the LAAS-CNRS french laboratory.
-Further development will provide a new public image in order to use this code in simulation.
+The example is extracted from the agimus-demos pacakges:
+https://github.com/agimus-project/agimus-demos
 
-### Build the repository using ROS and docker.
+And in particular the setup of the LFC is in the `agimus_demos_common` package.
 
-First of all build or pull the docker from https://gitlab.laas.fr/gsaurel/docker-pal/
-using the branch `gsaurel`.
+### Build the package.
 
-```
-docker pull gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
-```
+This package is base on ament_cmake hence one can simply use the standard:
 
-Then run the docker and mount (`-v` docker option) the `src` and `build` folder
-of your workspace in order to get some cache between to run of the container:
-
-```
-	chown -R :gepetto $(YOUR_WS)  # you might need sudo if you get errors here
-	chmod -R g+rwX  $(YOUR_WS)    # you might need sudo if you get errors here
-	xhost +local:
-	docker run --rm -v $(YOUR_WS)/src:/ws/src -v $(PWD)/Makefile:/ws/Makefile -v /home/$(USER)/devel:/home/user/devel -v $(YOUR_WS)/build:/ws/build --gpus all --net host -e DISPLAY -it gitlab.laas.fr:4567/gsaurel/docker-pal:gsaurel
-```
-
-If you need another terminal to connect to the last docker container ran you can use:
-```
-docker exec --workdir=/ws -u user -it `docker ps --latest --quiet` bash
-```
-
-Once connected to docker with multiple terminal (5) please run in order:
-
-- Terminal 1: Start the simulation:
-```
-reset && catkin build linear_feedback_controller && source install/setup.bash && roslaunch talos_pal_physics_simulator talos_pal_physics_simulator_with_actuators.launch robot:=full_v2
-```
-
-- Terminal 2: Spawn the default controller:
-```
-reset && source install/setup.bash && roslaunch talos_controller_configuration default_controllers.launch
-```
-in the same terminal, once the robot is in the default pose, kill (`ctrl+C`) the roslaunch
-
-- Terminal 3: Spawn the linear feedback controller:
-```
-reset && source install/setup.bash && roslaunch linear_feedback_controller talos_linear_feedback_controller.launch simulation:=true default_params:=true
-```
-
-- Terminal 4: For recording logs you can use `rosbag`:
-```
-reset && source install/setup.bash && rosbag record -o src/lfc /linear_feedback_controller/sensor_state /linear_feedback_controller/desired_control
-```
-
-- Terminal 5: For starting a very simple PD controller via Feedback gains run:
-```
-reset && source install/setup.bash && rosrun linear_feedback_controller pd_controller
-```
-
-The next paragraph is the same procedure except one can use the Makefile that is
-in the root of this repos to do so.
-
-### Build the repository using make
-
-There is also [Makefile](Makefile) to ease the usage of docker and ROS instructions
-in order to execute the demo.
-
-- Create the workspace and clone the repository
-```
-mkdir -p ~/devel/workspace/src
-cd ~/devel/workspace/src
+```bash
 git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+cd linear-feedback-controller
+make _build
+cd _build
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/install/folder
+make
+make install
 ```
 
-- Run the docker and build in terminal(1)
-```
-cd ~/devel/workspace/src/linear_feedback_controller
-make docker_pull_and_run
-make build
+Or one can use the ROS2 super build system [colcon](https://colcon.readthedocs.io/en/released/):
+
+```bash
+mkdir -p workspace/src
+cd workspace/src
+git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+cd ../../ # back to workspace.
+colcon build
 ```
 
-- Run the simulation, terminal(1)
+One can also use [nix](https://nixos.wiki/wiki/Main_Page) to:
+- Check the package (builds and run tests):
+```bash
+git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+cd linear-feedback-controller
+nix
 ```
-make simu
+- Build the package:
+```bash
+git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+cd linear-feedback-controller
+nix build -L
 ```
-
-- Run the default controller and kill it (ctrl+C) when the robot is in half-sitting terminal(2)
-```
-make docker_connect
-make default_ctrl
-```
-
-- Run the linear feedback controller terminal (2)
-```
-make lf_ctrl
-```
-
-- Run the PD controller using the lfc terminal (3)
-```
-make docker_connect
-make pd_ctrl
+- Create a shell in which the LFC can be built:
+```bash
+git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+cd linear-feedback-controller
+nix develop
 ```
 
 ### Copyrights and License

@@ -1,0 +1,48 @@
+---
+linear_feedback_controller:
+  ros__parameters:
+    type: linear_feedback_controller/LinearFeedbackController
+    moving_joint_names: [
+      arm_right_1_joint,
+      arm_right_2_joint,
+      arm_right_3_joint,
+      arm_right_4_joint,
+      arm_right_5_joint,
+      arm_right_6_joint,
+      arm_right_7_joint
+    ]
+    arm_right_1_joint:
+      p: 10000.0
+      d: 0.6
+    arm_right_2_joint:
+      p: 30000.0
+      d: 5.0
+    arm_right_3_joint:
+      p: 5000.0
+      d: 1.0
+    arm_right_4_joint:
+      p: 500.0
+      d: 5.0
+    arm_right_5_joint:
+      p: 500.0
+      d: 0.0
+    arm_right_6_joint:
+      p: 500.0
+      d: 0.3
+    arm_right_7_joint:
+      p: 500.0
+      d: 0.0
+    chainable_controller:
+      command_interfaces:
+      - arm_right_1_joint_inertia_shaping_controller/arm_right_1_joint/effort
+      - arm_right_2_joint_inertia_shaping_controller/arm_right_2_joint/effort
+      - arm_right_3_joint_inertia_shaping_controller/arm_right_3_joint/effort
+      - arm_right_4_joint_inertia_shaping_controller/arm_right_4_joint/effort
+      - arm_right_5_joint_inertia_shaping_controller/arm_right_5_joint/effort
+      - arm_right_6_joint_inertia_shaping_controller/arm_right_6_joint/effort
+      - arm_right_7_joint_inertia_shaping_controller/arm_right_7_joint/effort
+      reference_prefix: ''
+    joint_velocity_filter_coefficient: 0.9
+    pd_to_lf_transition_duration: 0.1
+    remove_gravity_compensation_effort: true
+    robot_has_free_flyer: false
