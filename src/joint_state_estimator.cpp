@@ -91,6 +91,8 @@ controller_interface::return_type JointStateEstimator::update(
     double state_interface_value =
         state_ordered_interfaces_[i].get().get_value();
     if (!std::isnan(state_interface_value)) {
+// master (jazzy) version 01/03/2025
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
       bool ret =
           command_ordered_interfaces_[i].get().set_value(state_interface_value);
       if (!ret) {
@@ -100,6 +102,9 @@ controller_interface::return_type JointStateEstimator::update(
                 << command_ordered_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
+#else  // humble version
+      command_ordered_interfaces_[i].get().set_value(state_interface_value);
+#endif
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the robot state interface : "

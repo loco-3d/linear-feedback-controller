@@ -110,6 +110,7 @@ PassthroughController::update_and_write_commands(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
     if (!std::isnan(reference_interfaces_[i])) {
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy
       bool ret = ordered_command_interfaces_[i].get().set_value(
           reference_interfaces_[i]);
       if (!ret) {
@@ -119,11 +120,25 @@ PassthroughController::update_and_write_commands(
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
+#else  // humble
+      ordered_command_interfaces_[i].get().set_value(reference_interfaces_[i]);
+#endif
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the reference interface : "
                               << reference_interface_names_[i]);
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy
       bool ret = ordered_command_interfaces_[i].get().set_value(0.0);
+      if (!ret) {
+        RCLCPP_ERROR_STREAM(
+            get_node()->get_logger(),
+            "Error writing into the command interface : "
+                << ordered_command_interfaces_[i].get().get_name());
+        return controller_interface::return_type::ERROR;
+      }
+#else  // humble
+      ordered_command_interfaces_[i].get().set_value(0.0);
+#endif
       return controller_interface::return_type::OK;
     }
   }
