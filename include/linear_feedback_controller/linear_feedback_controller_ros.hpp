@@ -86,14 +86,13 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() final;
 
-// master (jazzy) version 01/03/2025
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  return_type update_reference_from_subscribers(
-      const rclcpp::Time& time, const rclcpp::Duration& period) final;
+  return_type
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  update_reference_from_subscribers(const rclcpp::Time& time,
+                                    const rclcpp::Duration& period) final;
 #else  // humble version
-  /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  return_type update_reference_from_subscribers() final;
+  update_reference_from_subscribers() final;
 #endif
 
   /// @brief ChainableControllerInterface::update_and_write_commands
