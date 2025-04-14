@@ -87,7 +87,7 @@ One can also use [nix](https://nixos.wiki/wiki/Main_Page) to:
 ```bash
 git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
 cd linear-feedback-controller
-nix
+nix flake check -L
 ```
 - Build the package:
 ```bash
