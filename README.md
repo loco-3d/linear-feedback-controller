@@ -76,32 +76,27 @@ Or one can use the ROS2 super build system [colcon](https://colcon.readthedocs.i
 
 ```bash
 mkdir -p workspace/src
-cd workspace/src
-git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
-cd ../../ # back to workspace.
+git -C workspace/src clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
 colcon build
 ```
 
-One can also use [nix](https://nixos.wiki/wiki/Main_Page) to:
+One can also use [nix](https://nixos.org/) to:
 - Check the package (builds and run tests):
 ```bash
-git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+git clone --recursive https://github.com/loco-3d/linear-feedback-controller.git
 cd linear-feedback-controller
 nix flake check -L
 ```
 - Build the package:
 ```bash
-git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
-cd linear-feedback-controller
 nix build -L
 ```
 - Create a shell in which the LFC can be built:
 ```bash
-git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
-cd linear-feedback-controller
 nix develop
 ```
 
+Alternatively, you can use [nix-direnv](https://github.com/nix-community/nix-direnv/) to automatically activate the development environment
 ### Copyrights and License
 
 See the BSD-2 LICENSE file.
