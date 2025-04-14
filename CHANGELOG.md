@@ -52,7 +52,7 @@ Implementation of linear-feedback-controller in ROS1 for Talos PAL-Robotics robo
 
 ## Git changelogs
 
-[Unreleased]: https://github.com/loco-3d/linear-feedback-controller/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/loco-3d/linear-feedback-controller/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/loco-3d/linear-feedback-controller/compare/v1.0.2...v2.0.0
 [1.0.2]: https://github.com/loco-3d/linear-feedback-controller/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/loco-3d/linear-feedback-controller/compare/v1.0.0...v1.0.1
