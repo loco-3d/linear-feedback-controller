@@ -63,7 +63,7 @@ And in particular the setup of the LFC is in the `agimus_demos_common` package.
 This package is base on ament_cmake hence one can simply use the standard:
 
 ```bash
-git clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+git clone https://github.com/loco-3d/linear-feedback-controller.git
 cd linear-feedback-controller
 make _build
 cd _build
@@ -76,14 +76,14 @@ Or one can use the ROS2 super build system [colcon](https://colcon.readthedocs.i
 
 ```bash
 mkdir -p workspace/src
-git -C workspace/src clone --recursive git@github.com:loco-3d/linear-feedback-controller.git
+git -C workspace/src clone https://github.com/loco-3d/linear-feedback-controller.git
 colcon build
 ```
 
 One can also use [nix](https://nixos.org/) to:
 - Check the package (builds and run tests):
 ```bash
-git clone --recursive https://github.com/loco-3d/linear-feedback-controller.git
+git clone https://github.com/loco-3d/linear-feedback-controller.git
 cd linear-feedback-controller
 nix flake check -L
 ```
