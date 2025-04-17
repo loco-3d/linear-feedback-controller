@@ -55,8 +55,11 @@ CallbackReturn LinearFeedbackControllerRos::on_init() {
   if (parameters_.chainable_controller.command_interfaces.size() !=
       lfc_.get_robot_model()->get_moving_joint_names().size()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Parameter chainable_controller.command_interfaces do not "
-                 "have the correct size.");
+                 "Size mismatch between robot model and parameters. "
+                 "Robot description have %zu moving joints declared in it "
+                 "while chainable_controller.command_interfaces contains %zu",
+                 lfc_.get_robot_model()->get_moving_joint_names().size(),
+                 parameters_.chainable_controller.command_interfaces.size());
     return CallbackReturn::FAILURE;
   }
   first_time_update_and_write_commands_ = true;

@@ -53,13 +53,12 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC PassthroughController
   on_export_reference_interfaces() override;
 
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  controller_interface::return_type
+  controller_interface::return_type 
+  update_reference_from_subscribers(
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
-  update_reference_from_subscribers(const rclcpp::Time& time,
-                                    const rclcpp::Duration& period) final;
-#else  // humble version
-  update_reference_from_subscribers() final;
+    const rclcpp::Time& time, const rclcpp::Duration& period
 #endif
+  ) final;
 
   std::shared_ptr<passthrough_controller::ParamListener> param_listener_;
   passthrough_controller::Params params_;
