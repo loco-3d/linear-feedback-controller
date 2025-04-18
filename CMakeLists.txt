@@ -22,11 +22,11 @@ ament_auto_find_build_dependencies()
 include(cmake/sec_generate_parameter_library.cmake)
 # Main node params
 sec_generate_parameter_library_markdown(${PROJECT_NAME}_parameters_doc
-                                        src/linear_feedback_controller.yaml)
+                                        src/${PROJECT_NAME}.yaml)
 sec_generate_parameter_library(
   generated_parameters # Lib name
   ${PROJECT_NAME}_parameters # CMake target name for the parameter library.
-  src/linear_feedback_controller.yaml # Path to input yaml file
+  src/${PROJECT_NAME}.yaml # Path to input yaml file
 )
 add_dependencies(${PROJECT_NAME}_parameters ${PROJECT_NAME}_parameters_doc)
 # Joint estimator params
@@ -40,6 +40,17 @@ sec_generate_parameter_library(
 )
 add_dependencies(joint_state_estimator_parameters
                  joint_state_estimator_parameters_doc)
+# Passthrough params
+sec_generate_parameter_library_markdown(passthrough_controller_parameters_doc
+                                        src/passthrough_controller.yaml)
+sec_generate_parameter_library(
+  passthrough_controller_generated_parameters # Lib name
+  passthrough_controller_parameters # CMake target name for the parameter
+  # library.
+  src/passthrough_controller.yaml # Path to input yaml file
+)
+add_dependencies(passthrough_controller_parameters
+                 passthrough_controller_parameters_doc)
 
 #
 # Main Library
@@ -50,6 +61,7 @@ set(${PROJECT_NAME}_headers
     include/${PROJECT_NAME}/lf_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller.hpp
     include/${PROJECT_NAME}/linear_feedback_controller_ros.hpp
+    include/${PROJECT_NAME}/passthrough_controller.hpp
     include/${PROJECT_NAME}/pd_controller.hpp
     include/${PROJECT_NAME}/robot_model_builder.hpp)
 set(${PROJECT_NAME}_sources
@@ -57,6 +69,7 @@ set(${PROJECT_NAME}_sources
     src/lf_controller.cpp #
     src/linear_feedback_controller.cpp #
     src/linear_feedback_controller_ros.cpp #
+    src/passthrough_controller.cpp #
     src/pd_controller.cpp #
     src/robot_model_builder.cpp)
 ament_auto_add_library(${PROJECT_NAME} ${${PROJECT_NAME}_sources}
@@ -84,7 +97,9 @@ target_compile_definitions(
     CONTROLLER_INTERFACE_MINOR_VERSION=${controller_interface_VERSION_MINOR}
     CONTROLLER_INTERFACE_PATCH_VERSION=${controller_interface_VERSION_PATCH})
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_parameters)
+target_link_libraries(
+  ${PROJECT_NAME} ${PROJECT_NAME}_parameters joint_state_estimator_parameters
+  passthrough_controller_parameters)
 
 #
 # Unit tests
@@ -119,9 +134,11 @@ pluginlib_export_plugin_description_file(controller_interface
 #
 # Installation
 #
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/linear_feedback_controller.md
-              ${CMAKE_CURRENT_BINARY_DIR}/joint_state_estimator.md
-        DESTINATION share/${PROJECT_NAME}/doc)
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/linear_feedback_controller.md
+        ${CMAKE_CURRENT_BINARY_DIR}/joint_state_estimator.md
+        ${CMAKE_CURRENT_BINARY_DIR}/passthrough_controller.md
+  DESTINATION share/${PROJECT_NAME}/doc)
 
 install(
   PROGRAMS tests/pd_plus_controller.py

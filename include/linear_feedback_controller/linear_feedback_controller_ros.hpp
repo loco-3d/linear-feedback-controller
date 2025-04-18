@@ -29,6 +29,7 @@
 
 // Auto-generated header by the `generate_parameter_library` package.
 #include "linear_feedback_controller/generated_parameters.hpp"
+#include "linear_feedback_controller/handle_ros_versions.hpp"
 #include "linear_feedback_controller/visibility.hpp"
 
 namespace linear_feedback_controller {
@@ -46,23 +47,6 @@ using rclcpp_lifecycle::LifecycleNode;
 using sensor_msgs::msg::JointState;
 using SensorMsg = linear_feedback_controller_msgs::msg::Sensor;
 using ControlMsg = linear_feedback_controller_msgs::msg::Control;
-
-#define CONTROLLER_INTERFACE_VERSION_AT_LEAST(major, minor, patch) \
-  ((CONTROLLER_INTERFACE_MAJOR_VERSION > (major)) ||               \
-   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) &&               \
-    CONTROLLER_INTERFACE_MINOR_VERSION > (minor)) ||               \
-   (CONTROLLER_INTERFACE_MAJOR_VERSION == (major) &&               \
-    CONTROLLER_INTERFACE_MINOR_VERSION == (minor) &&               \
-    CONTROLLER_INTERFACE_PATCH_VERSION >= (patch)))
-
-struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE StateMsg {
-  Odometry msg_odom;
-  JointState msg_joint_state;
-};
-
-struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedStateMsg : StateMsg {
-  std::mutex mutex;
-};
 
 struct LINEAR_FEEDBACK_CONTROLLER_PRIVATE ProtectedControlMsg {
   ControlMsg msg;
@@ -102,14 +86,13 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() final;
 
-// master (jazzy) version 01/03/2025
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  return_type update_reference_from_subscribers(
-      const rclcpp::Time& time, const rclcpp::Duration& period) final;
+  return_type
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  update_reference_from_subscribers(const rclcpp::Time& time,
+                                    const rclcpp::Duration& period) final;
 #else  // humble version
-  /// @brief ChainableControllerInterface::update_reference_from_subscribers
-  return_type update_reference_from_subscribers() final;
+  update_reference_from_subscribers() final;
 #endif
 
   /// @brief ChainableControllerInterface::update_and_write_commands
@@ -179,13 +162,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   void state_syncher_callback(
       const Odometry::ConstSharedPtr& msg_odom,
       const JointState::ConstSharedPtr& msg_joint_state);
-  //   rclcpp_action::GoalResponse handle_goal(
-  //     const rclcpp_action::GoalUUID & uuid,
-  //     std::shared_ptr<const RunLFC::Goal> goal);
-  //   rclcpp_action::CancelResponse handle_cancel(
-  //     const std::shared_ptr<GoalHandleRunLFC> goal_handle);
-  //   void handle_accepted(const std::shared_ptr<GoalHandleRunLFC>
-  //   goal_handle);
   void control_subscription_callback(const ControlMsg msg);
 
  protected:
@@ -199,14 +175,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   rclcpp::Node::SharedPtr robot_description_node_;
   rclcpp::SyncParametersClient::SharedPtr robot_description_parameter_client_;
 
-  // State interfaces
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_position_state_interface_;
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_velocity_state_interface_;
-  InterfaceVector<hardware_interface::LoanedStateInterface>
-      joint_effort_state_interface_;
-
   // Reference interfaces.
   std::vector<std::string> reference_interface_names_;
 
@@ -216,11 +184,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   /// @brief Controller without ROS.
   LinearFeedbackController lfc_;
-
-  /// @brief Joint position measured at init time.
-  Eigen::VectorXd init_joint_position_;
-  /// @brief Joint torques measured at init time.
-  Eigen::VectorXd init_joint_effort_;
 
   // Inputs/Ouputs attributes.
   TimePoint input_time_;
@@ -232,15 +195,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   // Logging attributes.
   pal_statistics::RegistrationsRAII bookkeeping_;
-
-  // State subscriber
-  message_filters::Subscriber<Odometry, LifecycleNode> subscriber_odom_;
-  message_filters::Subscriber<JointState, LifecycleNode>
-      subscriber_joint_state_;
-  std::shared_ptr<message_filters::TimeSynchronizer<Odometry, JointState>>
-      state_syncher_;
-  ProtectedStateMsg synched_state_msg_;
-  StateMsg state_msg_;
 
   // MPC communication
   rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;

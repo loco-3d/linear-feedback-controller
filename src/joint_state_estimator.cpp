@@ -23,7 +23,7 @@ JointStateEstimator::command_interface_configuration() const {
   controller_interface::InterfaceConfiguration command_interfaces_config;
   command_interfaces_config.type =
       controller_interface::interface_configuration_type::INDIVIDUAL;
-  command_interfaces_config.names = command_interface_names_;
+  command_interfaces_config.names = params_.command_interfaces;
   return command_interfaces_config;
 }
 
@@ -32,25 +32,16 @@ JointStateEstimator::state_interface_configuration() const {
   controller_interface::InterfaceConfiguration state_interface_config;
   state_interface_config.type =
       controller_interface::interface_configuration_type::INDIVIDUAL;
-  state_interface_config.names = state_interface_names_;
+  state_interface_config.names = params_.state_interfaces;
   return state_interface_config;
 }
 
 controller_interface::CallbackReturn JointStateEstimator::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   params_ = param_listener_->get_params();
-
-  // Define the name of the interfaces to use from the parameters.
-  state_interface_names_ = params_.interfaces;
-  command_interface_names_.clear();
-  for (auto& state_interface_name : state_interface_names_) {
-    command_interface_names_.emplace_back(params_.command_prefix + "/" +
-                                          state_interface_name);
-  }
-
   // Pre-reserve command/state interfaces.
-  state_interfaces_.reserve(state_interface_names_.size());
-  command_interfaces_.reserve(command_interface_names_.size());
+  state_interfaces_.reserve(params_.state_interfaces.size());
+  command_interfaces_.reserve(params_.command_interfaces.size());
   RCLCPP_INFO(this->get_node()->get_logger(), "configure successful");
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -59,31 +50,28 @@ controller_interface::CallbackReturn JointStateEstimator::on_configure(
 controller_interface::CallbackReturn JointStateEstimator::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // Check of we have access to all command interface.
-  std::vector<
-      std::reference_wrapper<hardware_interface::LoanedCommandInterface>>
-      command_ordered_interfaces;
-  if (!controller_interface::get_ordered_interfaces(
-          command_interfaces_, command_interface_names_, std::string(""),
-          command_ordered_interfaces) ||
-      command_interface_names_.size() != command_ordered_interfaces.size()) {
-    RCLCPP_ERROR(this->get_node()->get_logger(),
-                 "Expected %zu command interfaces, got %zu",
-                 command_interface_names_.size(),
-                 command_ordered_interfaces.size());
+  bool ret = controller_interface::get_ordered_interfaces(
+      command_interfaces_, params_.command_interfaces, std::string(""),
+      command_ordered_interfaces_);
+
+  if (!ret ||
+      params_.command_interfaces.size() != command_ordered_interfaces_.size()) {
+    RCLCPP_ERROR(
+        get_node()->get_logger(), "Expected %zu command interfaces, got %zu",
+        params_.command_interfaces.size(), command_ordered_interfaces_.size());
     return controller_interface::CallbackReturn::ERROR;
   }
 
   // Check if we have access to all state interfaces.
-  std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>>
-      state_ordered_interfaces;
-  if (!controller_interface::get_ordered_interfaces(
-          state_interfaces_, state_interface_names_, std::string(""),
-          state_ordered_interfaces) ||
-      state_interface_names_.size() != state_ordered_interfaces.size()) {
+  ret = controller_interface::get_ordered_interfaces(
+      state_interfaces_, params_.state_interfaces, std::string(""),
+      state_ordered_interfaces_);
+  if (!ret ||
+      params_.state_interfaces.size() != state_ordered_interfaces_.size()) {
     RCLCPP_ERROR(this->get_node()->get_logger(),
                  "Expected %zu state interfaces, got %zu",
-                 state_interface_names_.size(),
-                 state_ordered_interfaces.size());
+                 params_.state_interfaces.size(),
+                 state_ordered_interfaces_.size());
     return controller_interface::CallbackReturn::ERROR;
   }
 
@@ -92,18 +80,34 @@ controller_interface::CallbackReturn JointStateEstimator::on_activate(
 
 controller_interface::CallbackReturn JointStateEstimator::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  command_ordered_interfaces_.clear();
+  state_ordered_interfaces_.clear();
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::return_type JointStateEstimator::update(
     const rclcpp::Time& /* time */, const rclcpp::Duration& /* period */) {
-  for (size_t i = 0; i < command_interfaces_.size(); ++i) {
-    double state_interface_value = state_interfaces_[i].get_value();
+  for (size_t i = 0; i < command_ordered_interfaces_.size(); ++i) {
+    double state_interface_value =
+        state_ordered_interfaces_[i].get().get_value();
     if (!std::isnan(state_interface_value)) {
-      command_interfaces_[i].set_value(state_interface_value);
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+      bool ret =
+          command_ordered_interfaces_[i].get().set_value(state_interface_value);
+      if (!ret) {
+        RCLCPP_ERROR_STREAM(
+            get_node()->get_logger(),
+            "Problem writing in the robot command interface : "
+                << command_ordered_interfaces_[i].get().get_name());
+        return controller_interface::return_type::ERROR;
+      }
+#else  // humble version
+      command_ordered_interfaces_[i].get().set_value(state_interface_value);
+#endif
     } else {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Nan detected in the robot state interface.");
+      RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                          "Nan detected in the robot state interface : "
+                              << state_ordered_interfaces_[i].get().get_name());
       return controller_interface::return_type::ERROR;
     }
   }

@@ -1,7 +1,6 @@
-joint_state_estimator:
-  state_interfaces: {
+passthrough_controller:
+  reference_interfaces: {
     type: string_array,
-    default_value: [],
     description: "Names of the interfaces to be forwarded",
     validation: {
           not_empty<>: null,
@@ -10,8 +9,7 @@ joint_state_estimator:
   }
   command_interfaces: {
     type: string_array,
-    default_value: [],
-    description: "Names of the interfaces to be forwarded",
+    description: "Names of the interfaces to forward to.",
     validation: {
           not_empty<>: null,
           unique<>: null,
