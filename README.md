@@ -34,6 +34,16 @@ We send receive the response via a topic in the shape:
 This allows us, for example, to use it on the Talos (1 and 3) robots with a remote controller
 using a whole body model predictive control based on [croccodyl](https://github.com/loco-3d/crocoddyl)
 
+For the interfacing of a fixed robot we add a joint_state_estimator which aims
+at providing a layer of filtering from the joint sensors.
+
+In addition we provide a passthrough controller which aims at renaming some
+output interfaces downstream in case this is needed. Typically you may want the 
+same configuration file for simulation and for the robot but the interfaces
+ffrom one to the other may not match. You can use the passthrough controller
+for this.
+
+
 ## The linear_feedback_controller_msgs
 
 [This package](https://github.com/loco-3d/linear-feedback-controller-msgs) contains the external user interface to the linear_feedback_controller
@@ -97,6 +107,7 @@ nix develop
 ```
 
 Alternatively, you can use [nix-direnv](https://github.com/nix-community/nix-direnv/) to automatically activate the development environment
+
 ### Copyrights and License
 
 See the BSD-2 LICENSE file.
@@ -109,3 +120,4 @@ Here is the list of the historical main authors:
 Main maintainers
 - Guilhem Saurel (gsaurel@laas.fr)
 - Maximilien Naveau (maximilien.naveau@gmail.com)
+- Arthur Valiente
