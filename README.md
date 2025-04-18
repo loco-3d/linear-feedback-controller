@@ -38,7 +38,7 @@ For the interfacing of a fixed robot we add a joint_state_estimator which aims
 at providing a layer of filtering from the joint sensors.
 
 In addition we provide a passthrough controller which aims at renaming some
-output interfaces downstream in case this is needed. Typically you may want the 
+output interfaces downstream in case this is needed. Typically you may want the
 same configuration file for simulation and for the robot but the interfaces
 ffrom one to the other may not match. You can use the passthrough controller
 for this.
