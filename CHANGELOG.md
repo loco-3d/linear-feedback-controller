@@ -9,6 +9,17 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+## added
+
+- A passthrough_controller to simulate controllers on partial interface sets.
+  Example in a certain robot there is one controller per joint on the robot
+  but not in simulation. This passthrough controller helps the user to create
+  a seemless interface for both the real robot and the simulation.
+
+## changed
+
+- Breaking API! The in and out interfaces can now be twicked interface by interface.
+
 ## [2.0.0] - 2025-04-14
 
 ### Changed
