@@ -536,9 +536,9 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   input_sensor_msg_.joint_state.effort.resize(joint_nv, 0.0);
 
   input_control_.initial_state = input_sensor_;
-  
+
   /**
-   * Number of rows in the feedback gain matrix: 
+   * Number of rows in the feedback gain matrix:
    *  - equals `nv` if the robot has no free-flyer joint
    *  - equals `nv-6` if the robot has a free-flyer joint
    */
