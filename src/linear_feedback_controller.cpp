@@ -36,6 +36,7 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 bool LinearFeedbackController::set_initial_state(
     const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
   pd_controller_.set_reference(tau_init, jq_init);
+  tau_init_ = tau_init;
   return true;
 }
 
@@ -58,34 +59,48 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     first_control_received_time_ = time;
   }
 
-  if (!first_control_received_time_initialized) {
-    control_ =
-        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
-  } else if (during_switch) {
-    double weight = ((time - first_control_received_time_).count()) /
-                    params_.pd_to_lf_transition_duration.count();
-    weight = std::clamp(weight, 0.0, 1.0);
-    const Eigen::VectorXd& pd_ctrl =
-        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
-    const Eigen::VectorXd& lf_ctrl =
-        lf_controller_.compute_control(sensor, control);
-
-    control_ = (1.0 - weight) * pd_ctrl + weight * lf_ctrl;
-  } else {
-    control_ = lf_controller_.compute_control(sensor, control);
-  }
+  Eigen::VectorXd tau_gravity;
 
   if (remove_gravity_compensation_effort) {
     robot_model_builder_->construct_robot_state(sensor, robot_configuration_,
                                                 robot_velocity_);
 
     // NOTE: .tail() is used to remove the freeflyer components
-    control_ -=
+    tau_gravity =
         pinocchio::rnea(robot_model_builder_->get_model(),
                         robot_model_builder_->get_data(), robot_configuration_,
                         robot_velocity_null_, robot_velocity_null_)
-            .tail(control_.size());
+            .tail(tau_init_.size());
   }
+
+  if (!first_control_received_time_initialized) {
+    control_ =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
+
+    if (remove_gravity_compensation_effort)
+        control_ -= tau_init_;
+  } else if (during_switch) {
+    double weight = ((time - first_control_received_time_).count()) /
+                    params_.pd_to_lf_transition_duration.count();
+    weight = std::clamp(weight, 0.0, 1.0);
+    Eigen::VectorXd pd_ctrl =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
+    Eigen::VectorXd lf_ctrl =
+        lf_controller_.compute_control(sensor, control);
+
+    if (remove_gravity_compensation_effort) {
+      pd_ctrl -= tau_init_;
+      lf_ctrl -= tau_gravity;
+    }
+
+    control_ = (1.0 - weight) * pd_ctrl + weight * lf_ctrl;
+  } else {
+    control_ = lf_controller_.compute_control(sensor, control);
+
+    if (remove_gravity_compensation_effort)
+        control_ -= tau_gravity;
+  }
+
 
   return control_;
 }
