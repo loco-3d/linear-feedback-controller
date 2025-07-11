@@ -102,9 +102,9 @@ target_link_libraries(
   ${PROJECT_NAME} ${PROJECT_NAME}_parameters joint_state_estimator_parameters
   passthrough_controller_parameters)
 
-
 if(ENABLE_COVERAGE)
-  message(STATUS "Coverage enabled, adding flags to library target: ${PROJECT_NAME}")
+  message(
+    STATUS "Coverage enabled, adding flags to library target: ${PROJECT_NAME}")
   target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
   target_link_libraries(${PROJECT_NAME} gcov)
 endif()
@@ -117,11 +117,8 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_auto_find_test_dependencies()
 
-  set(TESTS_LIST
-      test_pd_controller
-      test_lf_controller
-      test_linear_feedback_controller
-  )
+  set(TESTS_LIST test_pd_controller test_lf_controller
+                 test_linear_feedback_controller)
   foreach(test_name ${TESTS_LIST})
 
     # Test creation and link to the library
@@ -139,17 +136,14 @@ if(BUILD_TESTING)
     message(STATUS "Adding the 'coverage' custom target.")
     add_custom_target(
       coverage
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage_report
-      COMMAND gcovr
-              --root ${CMAKE_SOURCE_DIR}
-              --filter "${CMAKE_SOURCE_DIR}/src/"
-              --filter "${CMAKE_SOURCE_DIR}/include/"
-              --delete
-              --html --html-details
-              -o ${CMAKE_BINARY_DIR}/coverage_report/index.html
+      COMMAND ${CMAKE_COMMAND} -E make_directory
+              ${CMAKE_BINARY_DIR}/coverage_report
+      COMMAND
+        gcovr --root ${CMAKE_SOURCE_DIR} --filter "${CMAKE_SOURCE_DIR}/src/"
+        --filter "${CMAKE_SOURCE_DIR}/include/" --delete --html --html-details
+        -o ${CMAKE_BINARY_DIR}/coverage_report/index.html
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      COMMENT "Generating HTML coverage report in build/coverage_report/"
-    )
+      COMMENT "Generating HTML coverage report in build/coverage_report/")
   endif()
 endif()
 
