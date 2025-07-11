@@ -1,226 +1,263 @@
 #include <gtest/gtest.h>
-
-#include <fstream>
-
-#include "example-robot-data/path.hpp"
 #include "linear_feedback_controller/robot_model_builder.hpp"
+
+// URDF exemple, as simple as possible
+const std::string simple_urdf_content = R"(
+    <robot name="simple_test_robot">
+      <link name="base_link"/>
+      <link name="link1"/>
+      <link name="link2"/>
+      <link name="link3"/>
+      <joint name="joint1" type="revolute">
+        <parent link="base_link"/>
+        <child link="link1"/>
+        <limit effort="54.0" lower="-3.14159265" upper="3.14159265" velocity="3.2"/>
+      </joint>
+      <joint name="joint2" type="revolute">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <limit effort="54.0" lower="-3.14159265" upper="3.14159265" velocity="3.2"/>
+      </joint>
+      <joint name="joint3" type="revolute">
+        <parent link="link2"/>
+        <child link="link3"/>
+        <limit effort="54.0" lower="-3.14159265" upper="3.14159265" velocity="3.2"/>
+      </joint>
+    </robot>
+)";
 
 using namespace linear_feedback_controller;
 
-class RobotModelBuilderTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    std::string talos_urdf_path = std::string(EXAMPLE_ROBOT_DATA_MODEL_DIR) +
-                                  "/talos_data/robots/talos_reduced.urdf";
-    talos_urdf_ = ReadFile(talos_urdf_path);
+// Create a fixture to test NON free-flyer cases
+class RobotModelBuilderNonFreeFlyerTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+      builder = std::make_unique<RobotModelBuilder>();
 
-    default_configuration_name_ = "half_sitting";
+      std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
+      std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
 
-    // moving_joint_names
-    sorted_moving_joint_names_ = {
-        "root_joint",        "leg_left_1_joint",  "leg_left_2_joint",
-        "leg_left_3_joint",  "leg_left_4_joint",  "leg_left_5_joint",
-        "leg_left_6_joint",  "leg_right_1_joint", "leg_right_2_joint",
-        "leg_right_3_joint", "leg_right_4_joint", "leg_right_5_joint",
-        "leg_right_6_joint", "torso_1_joint",     "torso_2_joint",
-    };
-    // remove the root_joint which is an artifact of Pinocchio.
-    test_sorted_moving_joint_names_ = {
-        "leg_left_1_joint",  "leg_left_2_joint",  "leg_left_3_joint",
-        "leg_left_4_joint",  "leg_left_5_joint",  "leg_left_6_joint",
-        "leg_right_1_joint", "leg_right_2_joint", "leg_right_3_joint",
-        "leg_right_4_joint", "leg_right_5_joint", "leg_right_6_joint",
-        "torso_1_joint",     "torso_2_joint",
-    };
-    mixed_moving_joint_names_ = {
-        "leg_right_1_joint", "leg_right_2_joint", "leg_right_3_joint",
-        "leg_right_4_joint", "leg_right_5_joint", "leg_right_6_joint",
-        "torso_1_joint",     "torso_2_joint",     "leg_left_1_joint",
-        "leg_left_2_joint",  "leg_left_3_joint",  "leg_left_4_joint",
-        "leg_left_5_joint",  "leg_left_6_joint",  "root_joint",
-    };
-    wrong_moving_joint_names_ = {
-        "root_joint",        "leg_left_1_joint",  "leg_left_2_joint",
-        "leg_left_3_joint",  "leg_left_4_joint",  "leg_left_5_joint",
-        "leg_left_6_joint",  "leg_right_1_joint", "leg_right_2_joint",
-        "leg_right_3_joint", "leg_right_4_joint", "leg_right_5_joint",
-        "leg_right_6_joint", "torso_1_joint",     "banana",
-    };
-    duplicate_moving_joint_names_ = {
-        "root_joint",        "root_joint",        "leg_left_1_joint",
-        "leg_left_1_joint",  "leg_left_2_joint",  "leg_left_2_joint",
-        "leg_left_3_joint",  "leg_left_3_joint",  "leg_left_4_joint",
-        "leg_left_4_joint",  "leg_left_5_joint",  "leg_left_5_joint",
-        "leg_left_6_joint",  "leg_left_6_joint",  "leg_right_1_joint",
-        "leg_right_1_joint", "leg_right_2_joint", "leg_right_2_joint",
-        "leg_right_3_joint", "leg_right_3_joint", "leg_right_4_joint",
-        "leg_right_4_joint", "leg_right_5_joint", "leg_right_5_joint",
-        "leg_right_6_joint", "leg_right_6_joint", "torso_1_joint",
-        "torso_1_joint",     "torso_2_joint",     "torso_2_joint",
-    };
-    controlled_joint_names_ = {
-        {"root_joint",        "leg_left_1_joint",  "leg_left_2_joint",
-         "leg_left_3_joint",  "leg_left_4_joint",  "leg_left_5_joint",
-         "leg_left_6_joint",  "leg_right_1_joint", "leg_right_2_joint",
-         "leg_right_3_joint", "leg_right_4_joint", "leg_right_5_joint",
-         "leg_right_6_joint", "torso_1_joint",     "torso_2_joint",
-         "arm_left_1_joint",  "arm_left_2_joint",  "arm_left_3_joint",
-         "arm_left_4_joint",  "arm_left_5_joint",  "arm_left_6_joint",
-         "arm_left_7_joint",  "arm_right_1_joint", "arm_right_2_joint",
-         "arm_right_3_joint", "arm_right_4_joint", "arm_right_5_joint",
-         "arm_right_6_joint", "arm_right_7_joint"}};
-    sorted_moving_joint_ids_ = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    sorted_locked_joint_ids_ = {16, 17, 18, 19, 20, 21, 22, 23, 24,
-                                25, 26, 27, 28, 29, 30, 31, 32, 33};
-    has_free_flyer_ = true;
-  }
-
-  void TearDown() override {}
-
-  std::string ReadFile(std::string filePath) {
-    // Open the file using ifstream.
-    std::ifstream file(filePath);
-    // Confirm file opening.
-    if (!file.is_open()) {
-      // print error message and return
-      throw std::runtime_error("Failed to open file: " + filePath);
+      bool build_success = builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false);
+      ASSERT_TRUE(build_success) << "Failed to build non-free-flyer model.";
     }
-    // Read file.
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    // Close the file
-    file.close();
-    // Return the string.
-    return buffer.str();
-  }
 
-  std::string talos_urdf_;
-  std::string talos_srdf_;
-  std::string default_configuration_name_;
-  std::vector<std::string> moving_joint_names_;
-  bool has_free_flyer_;
-  std::vector<std::string> controlled_joint_names_;
-  std::vector<std::string> sorted_moving_joint_names_;
-  std::vector<std::string> test_sorted_moving_joint_names_;
-  std::vector<std::string> mixed_moving_joint_names_;
-  std::vector<std::string> wrong_moving_joint_names_;
-  std::vector<std::string> duplicate_moving_joint_names_;
-  std::vector<long unsigned int> sorted_moving_joint_ids_;
-  std::vector<long unsigned int> sorted_locked_joint_ids_;
+    std::unique_ptr<RobotModelBuilder> builder;
 };
-class DISABLED_MinJerkTest : public RobotModelBuilderTest {};
 
-TEST_F(RobotModelBuilderTest, checkConstructor) { RobotModelBuilder obj; }
+TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioModelAndDataAreCorrect) {
+  const auto& model = builder->get_model();
+  // Pinocchio add a "universe" joint, so we get 3+1 joints
+  EXPECT_EQ(model.njoints, 4);
+  EXPECT_EQ(model.nv, 3);
+  EXPECT_EQ(model.nq, 3);
 
-TEST_F(RobotModelBuilderTest, checkMovingJointNames) {
-  RobotModelBuilder obj;
-
-  obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-
-  ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
+  const auto& data = builder->get_data();
+  EXPECT_EQ(data.f.size(), model.njoints);
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointNamesMixed) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-  ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
+TEST_F(RobotModelBuilderNonFreeFlyerTest, BuilderParametersAreCorrect) {
+  EXPECT_EQ(builder->get_nv(), 3);
+  EXPECT_EQ(builder->get_nq(), 3);
+
+  // *_join_* represent the idea of considering only the joints provided by the model.
+  // So it is different only in case of free flyer nv(+6) and nq(+7)
+  EXPECT_EQ(builder->get_joint_nv(), builder->get_nv());
+  EXPECT_EQ(builder->get_joint_nq(), builder->get_nq());
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointNamesWrong) {
-  RobotModelBuilder obj;
-  ASSERT_FALSE(obj.build_model(talos_urdf_, wrong_moving_joint_names_,
-                               controlled_joint_names_, has_free_flyer_));
+TEST_F(RobotModelBuilderNonFreeFlyerTest, RobotHasFreeFlyerFlagIsFalse) {
+  EXPECT_FALSE(builder->get_robot_has_free_flyer());
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointNamesDuplicate) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-  ASSERT_EQ(obj.get_moving_joint_names(), test_sorted_moving_joint_names_);
+TEST_F(RobotModelBuilderNonFreeFlyerTest, MovingJointNamesAreCorrect) {
+  // No changes should be made by the builder
+  std::vector<std::string> expected_names = {"joint1", "joint2", "joint3"};
+  const auto& returned_names = builder->get_moving_joint_names();
+  ASSERT_EQ(returned_names.size(), expected_names.size());
+  EXPECT_EQ(returned_names, expected_names);
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointIdsSorted) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
+TEST_F(RobotModelBuilderNonFreeFlyerTest, MovingJointIdsAreCorrect) {
 
-  std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
-  for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
-    ASSERT_LE(moving_joint_ids[i - 1], moving_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_moving_joint_ids(), sorted_moving_joint_ids_);
+  const auto& returned_ids = builder->get_moving_joint_ids();
+
+  ASSERT_EQ(returned_ids.size(), 3);
+
+  EXPECT_EQ(returned_ids[0], 1);
+  EXPECT_EQ(returned_ids[1], 2);
+  EXPECT_EQ(returned_ids[2], 3);
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointIdsMixed) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-
-  std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
-  for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
-    ASSERT_LE(moving_joint_ids[i - 1], moving_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_moving_joint_ids(), sorted_moving_joint_ids_);
+TEST_F(RobotModelBuilderNonFreeFlyerTest, LockedJointIdsAreEmpty) {
+  // No locked joints on this model
+  const auto& returned_locked_ids = builder->get_locked_joint_ids();
+  EXPECT_TRUE(returned_locked_ids.empty());
 }
 
-TEST_F(RobotModelBuilderTest, checkMovingJointIdsDuplicate) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
+TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioToHardwareInterfaceMapIsCorrect) {
 
-  std::vector<long unsigned int> moving_joint_ids = obj.get_moving_joint_ids();
-  for (std::size_t i = 1; i < moving_joint_ids.size(); ++i) {
-    ASSERT_LE(moving_joint_ids[i - 1], moving_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_moving_joint_ids(), sorted_moving_joint_ids_);
+  const auto& model = builder->get_model();
+  const auto& pin_to_hwi = builder->get_pinocchio_to_hardware_interface_map();
+  ASSERT_EQ(pin_to_hwi.size(), 3);
+
+  EXPECT_EQ(pin_to_hwi.at(0), 0); // (0, 0)
+  EXPECT_EQ(pin_to_hwi.at(1), 1); // (1, 1)
+  EXPECT_EQ(pin_to_hwi.at(2), 2); // (2, 2)
 }
 
-TEST_F(RobotModelBuilderTest, checkLockedJointIdsSorted) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, sorted_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
+// Create a fixture to test free-flyer cases
+class RobotModelBuilderFreeFlyerTest : public ::testing::Test {
+protected:
+    // Function called before each test
+    void SetUp() override {
+      builder = std::make_unique<RobotModelBuilder>();
+
+      std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
+      std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
+
+      bool build_success = builder->build_model(simple_urdf_content, moving_joints, controlled_joints, true);
+      ASSERT_TRUE(build_success) << "Failed to build free-flyer model.";
+    }
+
+    // Objects used on each test
+    std::unique_ptr<RobotModelBuilder> builder;
+};
+
+TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioModelIsCorrect) {
+  const auto& model = builder->get_model();
+  // Pinocchio add a "universe" joint add a "root_joint" joint for freeflyers, so we get 3+1+1 joints
+  EXPECT_EQ(model.njoints, 5);
+  // The "root_joint" is a 6 DoF freedown movement - represented by nv += 6
+  EXPECT_EQ(model.nv, 9);
+  // and nq += 7
+  EXPECT_EQ(model.nq, 10);
+
 }
 
-TEST_F(RobotModelBuilderTest, checkLockedJointIdsMixed) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, mixed_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
+TEST_F(RobotModelBuilderFreeFlyerTest, BuilderParametersAreCorrect) {
+  EXPECT_EQ(builder->get_nv(), 9);
+  EXPECT_EQ(builder->get_nq(), 10);
 
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
+  // *_join_* represent the idea of considering only the joints provided by the model.
+  // So it is different only in case of free flyer
+  EXPECT_NE(builder->get_joint_nv(), builder->get_nv());
+  EXPECT_NE(builder->get_joint_nq(), builder->get_nq());
 }
 
-TEST_F(RobotModelBuilderTest, checkLockedJointIdsDuplicate) {
-  RobotModelBuilder obj;
-  obj.build_model(talos_urdf_, duplicate_moving_joint_names_,
-                  controlled_joint_names_, has_free_flyer_);
-
-  std::vector<long unsigned int> locked_joint_ids = obj.get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  ASSERT_EQ(obj.get_locked_joint_ids(), sorted_locked_joint_ids_);
+TEST_F(RobotModelBuilderFreeFlyerTest, RobotHasFreeFlyerFlagIsTrue) {
+  EXPECT_TRUE(builder->get_robot_has_free_flyer());
 }
 
-TEST_F(RobotModelBuilderTest, checkSharedPtr) {
-  RobotModelBuilder::SharedPtr obj = std::make_shared<RobotModelBuilder>();
-  obj->build_model(talos_urdf_, duplicate_moving_joint_names_,
-                   controlled_joint_names_, has_free_flyer_);
-
-  std::vector<long unsigned int> locked_joint_ids = obj->get_locked_joint_ids();
-  for (std::size_t i = 1; i < locked_joint_ids.size(); ++i) {
-    ASSERT_LE(locked_joint_ids[i - 1], locked_joint_ids[i]);
-  }
-  ASSERT_EQ(obj->get_locked_joint_ids(), sorted_locked_joint_ids_);
+TEST_F(RobotModelBuilderFreeFlyerTest, MovingJointNamesAreCorrect) {
+  // No changes should be made by the builder
+  // root_joint should not be reported by the builder
+  std::vector<std::string> expected_names = {"joint1", "joint2", "joint3"};
+  const auto& returned_names = builder->get_moving_joint_names();
+  ASSERT_EQ(returned_names.size(), expected_names.size());
+  EXPECT_EQ(returned_names, expected_names);
 }
+
+TEST_F(RobotModelBuilderFreeFlyerTest, MovingJointIdsAreCorrect) {
+
+  const auto& returned_ids = builder->get_moving_joint_ids();
+
+  ASSERT_EQ(returned_ids.size(), 3);
+  // with "root_joint" added, ids are shifted
+  EXPECT_EQ(returned_ids[0], 2);
+  EXPECT_EQ(returned_ids[1], 3);
+  EXPECT_EQ(returned_ids[2], 4);
+}
+
+TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioToHardwareInterfaceMapIsCorrect) {
+
+  const auto& model = builder->get_model();
+  const auto& pin_to_hwi = builder->get_pinocchio_to_hardware_interface_map();
+  ASSERT_EQ(pin_to_hwi.size(), 3);
+
+  EXPECT_EQ(pin_to_hwi.at(0), 0);
+  EXPECT_EQ(pin_to_hwi.at(1), 1);
+  EXPECT_EQ(pin_to_hwi.at(2), 2);
+}
+
+
+// Fixture to test filtering functionalities 
+class RobotModelBuilderFilteringTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        builder = std::make_unique<RobotModelBuilder>();
+    }
+
+    std::unique_ptr<RobotModelBuilder> builder;
+    std::vector<std::string> moving_joints_;
+    std::vector<std::string> controlled_joints_;
+};
+
+
+TEST_F(RobotModelBuilderFilteringTest, CorrectlyFiltersMovingAndLockedJoints) {
+  moving_joints_ = {"joint1", "joint3"};
+  controlled_joints_ = {"joint1", "joint3"};
+
+  bool build_success = builder->build_model(simple_urdf_content, moving_joints_, controlled_joints_, false);
+  ASSERT_TRUE(build_success) << "Failed to build filtered model.";
+
+  const auto& moving_ids = builder->get_moving_joint_ids();
+  EXPECT_EQ(moving_ids.size(), 2);
+  EXPECT_EQ(moving_ids[0], 1);
+  EXPECT_EQ(moving_ids[1], 3);
+
+  const auto& locked_ids = builder->get_locked_joint_ids();
+  ASSERT_EQ(locked_ids.size(), 1);
+  EXPECT_EQ(locked_ids[0], 2);
+
+  const auto& returned_moving_names = builder->get_moving_joint_names();
+  EXPECT_EQ(returned_moving_names, moving_joints_);
+
+}
+
+TEST_F(RobotModelBuilderFilteringTest, CorrectlyHandlesInvertedControlledAndMovingJointNames) {
+  moving_joints_ = {"joint3", "joint2"};
+  controlled_joints_ = {"joint2", "joint1", "joint3"};
+
+  bool build_success = builder->build_model(simple_urdf_content, moving_joints_, controlled_joints_, false);
+  ASSERT_TRUE(build_success) << "Failed to build filtered model.";
+
+  // should be sorted
+  const auto& returned_moving_names = builder->get_moving_joint_names();
+  EXPECT_EQ(returned_moving_names[0], "joint2");
+  EXPECT_EQ(returned_moving_names[1], "joint3");
+
+  const auto& pin_to_hwi = builder->get_pinocchio_to_hardware_interface_map();
+  // looks like pin_to_hwi is used because controlled_joints is not sorted
+  // sorted moving_joint ID: 0 -> controlled_joints (HWI) Index: 0
+  // sorted moving_joint ID: 1 -> controlled_joints (HWI) Index: 2
+  ASSERT_EQ(pin_to_hwi.size(), 2);
+  EXPECT_EQ(pin_to_hwi.at(0), 0);
+  EXPECT_EQ(pin_to_hwi.at(1), 2);
+}
+
+
+// Test errors from builder 
+class RobotModelBuilderErrorTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        builder = std::make_unique<RobotModelBuilder>();
+    }
+     std::unique_ptr<RobotModelBuilder> builder;
+};
+
+TEST_F(RobotModelBuilderErrorTest, BuildFailsWithNonexistentJointName) {
+  std::vector<std::string> moving_joints = {"joint1", "non_existent_joint"};
+  std::vector<std::string> controlled_joints = {"joint1"};
+
+  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false));
+}
+
+TEST_F(RobotModelBuilderErrorTest, BuildFailsWithMoreMovingJointsThanControlledJoints) {
+  std::vector<std::string> moving_joints = {"joint1", "joint2"};
+  std::vector<std::string> controlled_joints = {"joint1"};
+
+  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false));
+}
+
+
