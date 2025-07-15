@@ -20,7 +20,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
 
   RobotModelBuilder();
 
-  ~RobotModelBuilder();
+  virtual ~RobotModelBuilder();
 
   /**
    * @brief Build the robot model freezing the joints that are not moving.
@@ -31,7 +31,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    * @param controlled_joint_names List of actively controlled joints.
    * @param robot_has_free_flyer If the robot has a free flyer or not.
    */
-  bool build_model(const std::string& urdf,
+  virtual bool build_model(const std::string& urdf,
                    const std::vector<std::string>& moving_joint_names,
                    const std::vector<std::string>& controlled_joint_names,
                    const bool robot_has_free_flyer);
@@ -41,35 +41,35 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    *
    * @return const std::vector<std::string>&
    */
-  const std::vector<std::string>& get_moving_joint_names() const;
+  virtual const std::vector<std::string>& get_moving_joint_names() const;
 
   /**
    * @brief Get the moving joint ids.
    *
    * @return const std::vector<pinocchio::Index>&
    */
-  const std::vector<pinocchio::Index>& get_moving_joint_ids() const;
+  virtual const std::vector<pinocchio::Index>& get_moving_joint_ids() const;
 
   /**
    * @brief Get the locked joint ids.
    *
    * @return const std::vector<pinocchio::Index>&
    */
-  const std::vector<pinocchio::Index>& get_locked_joint_ids() const;
+  virtual const std::vector<pinocchio::Index>& get_locked_joint_ids() const;
 
   /**
    * @brief Get the pinocchio model.
    *
    * @return const pinocchio::Model&
    */
-  const pinocchio::Model& get_model() const;
+  virtual const pinocchio::Model& get_model() const;
 
   /**
    * @brief Get the Pinocchio Data.
    *
    * @return pinocchio::Data&
    */
-  pinocchio::Data& get_data();
+  virtual pinocchio::Data& get_data();
 
   /**
    * @brief Get if the robot model has a free flyer joint.
@@ -77,23 +77,23 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    * @return true
    * @return false
    */
-  bool get_robot_has_free_flyer() const;
+  virtual bool get_robot_has_free_flyer() const;
 
   /**
    * @brief Get the Pinocchio To Hardware Interface Map.
    *
    * @return std::map<int, int>
    */
-  const std::map<int, int>& get_pinocchio_to_hardware_interface_map() const;
+  virtual const std::map<int, int>& get_pinocchio_to_hardware_interface_map() const;
 
-  void construct_robot_state(
+  virtual void construct_robot_state(
       const linear_feedback_controller_msgs::Eigen::Sensor& Sensor,
       Eigen::VectorXd& robot_configuration, Eigen::VectorXd& robot_velocity);
 
-  int get_joint_nv() const;
-  int get_joint_nq() const;
-  int get_nv() const;
-  int get_nq() const;
+  virtual int get_joint_nv() const;
+  virtual int get_joint_nq() const;
+  virtual int get_nv() const;
+  virtual int get_nq() const;
 
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
