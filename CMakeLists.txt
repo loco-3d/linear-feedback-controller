@@ -1,9 +1,31 @@
 cmake_minimum_required(VERSION 3.22.1)
 
+set(PROJECT_NAME linear_feedback_controller)
+set(PROJECT_DESCRIPTION "ROS2 control with Ricatti gains")
+set(PROJECT_URL "http://github.com/loco-3d/linear-feedback-controller")
+
 #
 # Project definition
 #
-project(linear_feedback_controller LANGUAGES CXX)
+find_package(jrl-cmakemodules QUIET CONFIG)
+if(jrl-cmakemodules_FOUND)
+  message(STATUS "JRL cmakemodules found on system at ${JRL_CMAKE_MODULES}")
+  get_property(
+    JRL_CMAKE_MODULES
+    TARGET jrl-cmakemodules::jrl-cmakemodules
+    PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+else()
+  message(STATUS "JRL cmakemodules not found. Let's fetch it.")
+  include(FetchContent)
+  FetchContent_Declare(
+    "jrl-cmakemodules"
+    GIT_REPOSITORY "https://github.com/jrl-umi3218/jrl-cmakemodules.git")
+  FetchContent_MakeAvailable("jrl-cmakemodules")
+  FetchContent_GetProperties("jrl-cmakemodules" SOURCE_DIR JRL_CMAKE_MODULES)
+endif()
+include("${JRL_CMAKE_MODULES}/base.cmake")
+compute_project_args(PROJECT_ARGS LANGUAGES CXX)
+project(${PROJECT_NAME} ${PROJECT_ARGS})
 
 #
 # Options
@@ -104,25 +126,26 @@ target_link_libraries(
 #
 # Unit tests
 #
-include(CTest)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(GTest REQUIRED)
   ament_auto_find_test_dependencies()
 
-  ament_auto_add_gtest(test_robot_model_builder
-                       tests/test_robot_model_builder.cpp)
-  target_link_libraries(test_robot_model_builder ${PROJECT_NAME}
-                        example-robot-data::example-robot-data)
+  add_unit_test(test_robot_model_builder tests/test_robot_model_builder.cpp)
+  target_link_libraries(
+    test_robot_model_builder ${PROJECT_NAME}
+    example-robot-data::example-robot-data GTest::gtest_main)
 
-  ament_auto_add_gtest(test_pd_controller tests/test_pd_controller.cpp)
-  target_link_libraries(test_pd_controller ${PROJECT_NAME})
+  add_unit_test(test_pd_controller tests/test_pd_controller.cpp)
+  target_link_libraries(test_pd_controller ${PROJECT_NAME} GTest::gtest_main)
 
-  ament_auto_add_gtest(test_lf_controller tests/test_lf_controller.cpp)
-  target_link_libraries(test_lf_controller ${PROJECT_NAME})
+  add_unit_test(test_lf_controller tests/test_lf_controller.cpp)
+  target_link_libraries(test_lf_controller ${PROJECT_NAME} GTest::gtest_main)
 
-  ament_auto_add_gtest(test_linear_feedback_controller
-                       tests/test_linear_feedback_controller.cpp)
-  target_link_libraries(test_linear_feedback_controller ${PROJECT_NAME})
+  add_unit_test(test_linear_feedback_controller
+                tests/test_linear_feedback_controller.cpp)
+  target_link_libraries(test_linear_feedback_controller ${PROJECT_NAME}
+                        GTest::gtest_main)
 endif()
 
 #
