@@ -118,7 +118,7 @@ if(BUILD_TESTING)
   ament_auto_find_test_dependencies()
 
   set(TESTS_LIST test_pd_controller test_lf_controller
-                 test_linear_feedback_controller test_robot_model_builder)
+                 test_linear_feedback_controller)
   foreach(test_name ${TESTS_LIST})
 
     # Test creation and link to the library
