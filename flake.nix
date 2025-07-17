@@ -44,7 +44,8 @@
                     inherit src;
                     nativeBuildInputs = super.nativeBuildInputs ++ [ pkgs.gcovr ];
                   });
-              jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs
+              jazzy-linear-feedback-controller =
+                pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs
                   (super: {
                     inherit src;
                     nativeBuildInputs = super.nativeBuildInputs ++ [ pkgs.gcovr ];
