@@ -39,7 +39,8 @@
   <depend condition="$ROS_DISTRO != humble">rosidl_dynamic_typesupport</depend>
 
   <test_depend>example-robot-data</test_depend>
-  <test_depend>gtest</test_depend>
+  <test_depend>gtest_vendor</test_depend>
+  <test_depend>gmock_vendor</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
