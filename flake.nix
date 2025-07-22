@@ -37,6 +37,8 @@
               };
             in
             lib.filterAttrs (_n: v: v.meta.available && !v.meta.broken) (rec {
+              inherit (pkgs.rosPackages.humble) gtest-vendor ament-cmake-gtest;
+              inherit (pkgs) gtest;
               default = humble-linear-feedback-controller;
               humble-linear-feedback-controller =
                 pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs
