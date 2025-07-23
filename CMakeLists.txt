@@ -127,10 +127,9 @@ if(BUILD_TESTING)
 
     # ADD compilation options for coverage
     if(ENABLE_COVERAGE)
-      find_program(GCOVR 
-                    gcovr
-                    DOC "gcov is required for use with -DENABLE_COVERAGE=ON"
-                    REQUIRED)
+      find_program(
+        GCOVR gcovr DOC "gcov is required for use with -DENABLE_COVERAGE=ON"
+                        REQUIRED)
       target_compile_options(${test_name} PRIVATE --coverage)
       target_link_libraries(${test_name} gcov)
     endif()
