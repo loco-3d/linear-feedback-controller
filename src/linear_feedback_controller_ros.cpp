@@ -536,7 +536,13 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   input_sensor_msg_.joint_state.effort.resize(joint_nv, 0.0);
 
   input_control_.initial_state = input_sensor_;
-  input_control_.feedback_gain = Eigen::MatrixXd::Zero(nv, 2 * nv);
+
+  /**
+   * Number of rows in the feedback gain matrix:
+   *  - equals `nv` if the robot has no free-flyer joint
+   *  - equals `nv-6` if the robot has a free-flyer joint
+   */
+  input_control_.feedback_gain = Eigen::MatrixXd::Zero(joint_nv, 2 * nv);
   input_control_.feedback_gain.fill(
       std::numeric_limits<double>::signaling_NaN());
   input_control_.feedforward = Eigen::VectorXd::Zero(nv);
