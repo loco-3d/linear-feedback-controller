@@ -127,6 +127,10 @@ if(BUILD_TESTING)
 
     # ADD compilation options for coverage
     if(ENABLE_COVERAGE)
+      find_program(GCOVR 
+                    gcovr
+                    DOC "gcov is required for use with -DENABLE_COVERAGE=ON"
+                    REQUIRED)
       target_compile_options(${test_name} PRIVATE --coverage)
       target_link_libraries(${test_name} gcov)
     endif()
@@ -139,7 +143,7 @@ if(BUILD_TESTING)
       COMMAND ${CMAKE_COMMAND} -E make_directory
               ${CMAKE_BINARY_DIR}/coverage_report
       COMMAND
-        gcovr --root ${CMAKE_SOURCE_DIR} --filter "${CMAKE_SOURCE_DIR}/src/"
+        ${GCOVR} --root ${CMAKE_SOURCE_DIR} --filter "${CMAKE_SOURCE_DIR}/src/"
         --filter "${CMAKE_SOURCE_DIR}/include/" --delete --html --html-details
         -o ${CMAKE_BINARY_DIR}/coverage_report/index.html
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
