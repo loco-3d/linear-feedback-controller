@@ -40,16 +40,10 @@
               default = humble-linear-feedback-controller;
               humble-linear-feedback-controller =
                 pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs
-                  (super: {
-                    inherit src;
-                    nativeBuildInputs = super.nativeBuildInputs ++ [ pkgs.gcovr ];
-                  });
-              jazzy-linear-feedback-controller =
-                pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs
-                  (super: {
-                    inherit src;
-                    nativeBuildInputs = super.nativeBuildInputs ++ [ pkgs.gcovr ];
-                  });
+                  { inherit src; };
+              jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs {
+                inherit src;
+              };
             });
         };
     };

@@ -9,7 +9,6 @@ project(linear_feedback_controller LANGUAGES CXX)
 # Options
 #
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
-option(ENABLE_COVERAGE "Enable C++ code coverage with gcov/gcovr" OFF)
 
 #
 # Handle dependencies by reading the package.xml
@@ -102,16 +101,6 @@ target_link_libraries(
   ${PROJECT_NAME} ${PROJECT_NAME}_parameters joint_state_estimator_parameters
   passthrough_controller_parameters)
 
-if(ENABLE_COVERAGE)
-  find_program(
-    GCOVR gcovr DOC "gcov is required for use with -DENABLE_COVERAGE=ON"
-                    REQUIRED)
-  message(
-    STATUS "Coverage enabled, adding flags to library target: ${PROJECT_NAME}")
-  target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
-  target_link_libraries(${PROJECT_NAME} gcov)
-endif()
-
 #
 # Unit tests
 #
@@ -120,34 +109,20 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_auto_find_test_dependencies()
 
-  set(TESTS_LIST test_pd_controller test_lf_controller
-                 test_linear_feedback_controller)
-  foreach(test_name ${TESTS_LIST})
+  ament_auto_add_gtest(test_robot_model_builder
+                       tests/test_robot_model_builder.cpp)
+  target_link_libraries(test_robot_model_builder ${PROJECT_NAME}
+                        example-robot-data::example-robot-data)
 
-    # Test creation and link to the library
-    ament_auto_add_gtest(${test_name} tests/${test_name}.cpp)
-    target_link_libraries(${test_name} ${PROJECT_NAME})
+  ament_auto_add_gtest(test_pd_controller tests/test_pd_controller.cpp)
+  target_link_libraries(test_pd_controller ${PROJECT_NAME})
 
-    # ADD compilation options for coverage
-    if(ENABLE_COVERAGE)
-      target_compile_options(${test_name} PRIVATE --coverage)
-      target_link_libraries(${test_name} gcov)
-    endif()
-  endforeach()
+  ament_auto_add_gtest(test_lf_controller tests/test_lf_controller.cpp)
+  target_link_libraries(test_lf_controller ${PROJECT_NAME})
 
-  if(ENABLE_COVERAGE)
-    message(STATUS "Adding the 'coverage' custom target.")
-    add_custom_target(
-      coverage
-      COMMAND ${CMAKE_COMMAND} -E make_directory
-              ${CMAKE_BINARY_DIR}/coverage_report
-      COMMAND
-        ${GCOVR} --root ${CMAKE_SOURCE_DIR} --filter "${CMAKE_SOURCE_DIR}/src/"
-        --filter "${CMAKE_SOURCE_DIR}/include/" --delete --html --html-details
-        -o ${CMAKE_BINARY_DIR}/coverage_report/index.html
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      COMMENT "Generating HTML coverage report in build/coverage_report/")
-  endif()
+  ament_auto_add_gtest(test_linear_feedback_controller
+                       tests/test_linear_feedback_controller.cpp)
+  target_link_libraries(test_linear_feedback_controller ${PROJECT_NAME})
 endif()
 
 #
