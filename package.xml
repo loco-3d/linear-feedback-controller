@@ -40,6 +40,7 @@
 
   <test_depend>example-robot-data</test_depend>
   <test_depend>gtest</test_depend>
+  <test_depend>gcovr</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
