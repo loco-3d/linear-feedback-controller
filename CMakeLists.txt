@@ -103,11 +103,11 @@ target_link_libraries(
   passthrough_controller_parameters)
 
 if(ENABLE_COVERAGE)
-  message(
-    STATUS "Coverage enabled, adding flags to library target: ${PROJECT_NAME}")
   find_program(
     GCOVR gcovr DOC "gcov is required for use with -DENABLE_COVERAGE=ON"
                     REQUIRED)
+  message(
+    STATUS "Coverage enabled, adding flags to library target: ${PROJECT_NAME}")
   target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
   target_link_libraries(${PROJECT_NAME} gcov)
 endif()
