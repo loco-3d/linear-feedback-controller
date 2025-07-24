@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
 // URDF exemple, as simple as possible
@@ -30,18 +31,19 @@ using namespace linear_feedback_controller;
 
 // Create a fixture to test NON free-flyer cases
 class RobotModelBuilderNonFreeFlyerTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-      builder = std::make_unique<RobotModelBuilder>();
+ protected:
+  void SetUp() override {
+    builder = std::make_unique<RobotModelBuilder>();
 
-      std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
-      std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
+    std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
+    std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
 
-      bool build_success = builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false);
-      ASSERT_TRUE(build_success) << "Failed to build non-free-flyer model.";
-    }
+    bool build_success = builder->build_model(
+        simple_urdf_content, moving_joints, controlled_joints, false);
+    ASSERT_TRUE(build_success) << "Failed to build non-free-flyer model.";
+  }
 
-    std::unique_ptr<RobotModelBuilder> builder;
+  std::unique_ptr<RobotModelBuilder> builder;
 };
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioModelAndDataAreCorrect) {
@@ -59,8 +61,8 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, BuilderParametersAreCorrect) {
   EXPECT_EQ(builder->get_nv(), 3);
   EXPECT_EQ(builder->get_nq(), 3);
 
-  // *_join_* represent the idea of considering only the joints provided by the model.
-  // So it is different only in case of free flyer nv(+6) and nq(+7)
+  // *_join_* represent the idea of considering only the joints provided by the
+  // model. So it is different only in case of free flyer nv(+6) and nq(+7)
   EXPECT_EQ(builder->get_joint_nv(), builder->get_nv());
   EXPECT_EQ(builder->get_joint_nq(), builder->get_nq());
 }
@@ -78,7 +80,6 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, MovingJointNamesAreCorrect) {
 }
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, MovingJointIdsAreCorrect) {
-
   const auto& returned_ids = builder->get_moving_joint_ids();
 
   ASSERT_EQ(returned_ids.size(), 3);
@@ -94,53 +95,74 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, LockedJointIdsAreEmpty) {
   EXPECT_TRUE(returned_locked_ids.empty());
 }
 
-TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioToHardwareInterfaceMapIsCorrect) {
-
+TEST_F(RobotModelBuilderNonFreeFlyerTest,
+       PinocchioToHardwareInterfaceMapIsCorrect) {
   const auto& model = builder->get_model();
   const auto& pin_to_hwi = builder->get_pinocchio_to_hardware_interface_map();
   ASSERT_EQ(pin_to_hwi.size(), 3);
 
-  EXPECT_EQ(pin_to_hwi.at(0), 0); // (0, 0)
-  EXPECT_EQ(pin_to_hwi.at(1), 1); // (1, 1)
-  EXPECT_EQ(pin_to_hwi.at(2), 2); // (2, 2)
+  EXPECT_EQ(pin_to_hwi.at(0), 0);  // (0, 0)
+  EXPECT_EQ(pin_to_hwi.at(1), 1);  // (1, 1)
+  EXPECT_EQ(pin_to_hwi.at(2), 2);  // (2, 2)
 }
 
+TEST_F(RobotModelBuilderNonFreeFlyerTest, ConstructRobotStateCorrectly) {
+  linear_feedback_controller_msgs::Eigen::Sensor sensor;
+  const int n_joints = builder->get_joint_nq();  // 3
+
+  Eigen::VectorXd joint_positions(n_joints);
+  joint_positions << 0.1, 0.2, 0.3;
+  sensor.joint_state.position = joint_positions;
+
+  Eigen::VectorXd joint_velocities(n_joints);
+  joint_velocities << 1.1, 1.2, 1.3;
+  sensor.joint_state.velocity = joint_velocities;
+
+  Eigen::VectorXd robot_configuration(builder->get_nq());
+  Eigen::VectorXd robot_velocity(builder->get_nv());
+
+  builder->construct_robot_state(sensor, robot_configuration, robot_velocity);
+
+  EXPECT_EQ(robot_configuration, sensor.joint_state.position);
+  EXPECT_EQ(robot_velocity, sensor.joint_state.velocity);
+}
 
 // Create a fixture to test free-flyer cases
 class RobotModelBuilderFreeFlyerTest : public ::testing::Test {
-protected:
-    // Function called before each test
-    void SetUp() override {
-      builder = std::make_unique<RobotModelBuilder>();
+ protected:
+  // Function called before each test
+  void SetUp() override {
+    builder = std::make_unique<RobotModelBuilder>();
 
-      std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
-      std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
+    std::vector<std::string> moving_joints = {"joint1", "joint2", "joint3"};
+    std::vector<std::string> controlled_joints = {"joint1", "joint2", "joint3"};
 
-      bool build_success = builder->build_model(simple_urdf_content, moving_joints, controlled_joints, true);
-      ASSERT_TRUE(build_success) << "Failed to build free-flyer model.";
-    }
+    bool build_success = builder->build_model(
+        simple_urdf_content, moving_joints, controlled_joints, true);
+    ASSERT_TRUE(build_success) << "Failed to build free-flyer model.";
+  }
 
-    // Objects used on each test
-    std::unique_ptr<RobotModelBuilder> builder;
+  // Objects used on each test
+  std::unique_ptr<RobotModelBuilder> builder;
 };
 
 TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioModelIsCorrect) {
   const auto& model = builder->get_model();
-  // Pinocchio add a "universe" joint add a "root_joint" joint for freeflyers, so we get 3+1+1 joints
+  // Pinocchio add a "universe" joint add a "root_joint" joint for freeflyers,
+  // so we get 3+1+1 joints
   EXPECT_EQ(model.njoints, 5);
   // The "root_joint" is a 6 DoF freedown movement - represented by nv += 6
   EXPECT_EQ(model.nv, 9);
   // and nq += 7
   EXPECT_EQ(model.nq, 10);
-
 }
 
 TEST_F(RobotModelBuilderFreeFlyerTest, BuilderParametersAreCorrect) {
   EXPECT_EQ(builder->get_nv(), 9);
   EXPECT_EQ(builder->get_nq(), 10);
 
-  // *_join_* represent the idea of considering only the joints provided by the model.
-  // So it is different only in case of free flyer
+  // *_join_* represent the idea of considering only the joints provided by the
+  // model. So it is different only in case of free flyer
   EXPECT_NE(builder->get_joint_nv(), builder->get_nv());
   EXPECT_NE(builder->get_joint_nq(), builder->get_nq());
 }
@@ -159,7 +181,6 @@ TEST_F(RobotModelBuilderFreeFlyerTest, MovingJointNamesAreCorrect) {
 }
 
 TEST_F(RobotModelBuilderFreeFlyerTest, MovingJointIdsAreCorrect) {
-
   const auto& returned_ids = builder->get_moving_joint_ids();
 
   ASSERT_EQ(returned_ids.size(), 3);
@@ -169,8 +190,8 @@ TEST_F(RobotModelBuilderFreeFlyerTest, MovingJointIdsAreCorrect) {
   EXPECT_EQ(returned_ids[2], 4);
 }
 
-TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioToHardwareInterfaceMapIsCorrect) {
-
+TEST_F(RobotModelBuilderFreeFlyerTest,
+       PinocchioToHardwareInterfaceMapIsCorrect) {
   const auto& model = builder->get_model();
   const auto& pin_to_hwi = builder->get_pinocchio_to_hardware_interface_map();
   ASSERT_EQ(pin_to_hwi.size(), 3);
@@ -180,25 +201,59 @@ TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioToHardwareInterfaceMapIsCorrect)
   EXPECT_EQ(pin_to_hwi.at(2), 2);
 }
 
+TEST_F(RobotModelBuilderFreeFlyerTest, ConstructRobotStateCorrectly) {
+  linear_feedback_controller_msgs::Eigen::Sensor sensor;
 
-// Fixture to test filtering functionalities 
+  // Data for free-flyer base
+  Eigen::Vector<double, 7> base_pose;
+  base_pose << 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 1.0;  // x,y,z, qx,qy,qz,qw
+  sensor.base_pose = base_pose;
+
+  Eigen::Vector<double, 6> base_twist;
+  base_twist << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;  // v_x,y,z, w_x,y,z
+  sensor.base_twist = base_twist;
+
+  // Data for joints
+  const int n_joints = builder->get_joint_nq();  // 3
+  Eigen::VectorXd joint_positions(n_joints);
+  joint_positions << 0.7, 0.8, 0.9;
+  sensor.joint_state.position = joint_positions;
+
+  Eigen::VectorXd joint_velocities(n_joints);
+  joint_velocities << 1.7, 1.8, 1.9;
+  sensor.joint_state.velocity = joint_velocities;
+
+  Eigen::VectorXd robot_configuration(builder->get_nq());
+  Eigen::VectorXd robot_velocity(builder->get_nv());
+
+  builder->construct_robot_state(sensor, robot_configuration, robot_velocity);
+
+  // 3. Vérification (Assert)
+  // Ferify "free-flyer" part (beginning)
+  EXPECT_EQ(robot_configuration.head<7>(), sensor.base_pose);
+  EXPECT_EQ(robot_velocity.head<6>(), sensor.base_twist);
+
+  // Verifu joint part (end)
+  EXPECT_EQ(robot_configuration.tail(n_joints), sensor.joint_state.position);
+  EXPECT_EQ(robot_velocity.tail(n_joints), sensor.joint_state.velocity);
+}
+
+// Fixture to test filtering functionalities
 class RobotModelBuilderFilteringTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        builder = std::make_unique<RobotModelBuilder>();
-    }
+ protected:
+  void SetUp() override { builder = std::make_unique<RobotModelBuilder>(); }
 
-    std::unique_ptr<RobotModelBuilder> builder;
-    std::vector<std::string> moving_joints_;
-    std::vector<std::string> controlled_joints_;
+  std::unique_ptr<RobotModelBuilder> builder;
+  std::vector<std::string> moving_joints_;
+  std::vector<std::string> controlled_joints_;
 };
-
 
 TEST_F(RobotModelBuilderFilteringTest, CorrectlyFiltersMovingAndLockedJoints) {
   moving_joints_ = {"joint1", "joint3"};
   controlled_joints_ = {"joint1", "joint3"};
 
-  bool build_success = builder->build_model(simple_urdf_content, moving_joints_, controlled_joints_, false);
+  bool build_success = builder->build_model(simple_urdf_content, moving_joints_,
+                                            controlled_joints_, false);
   ASSERT_TRUE(build_success) << "Failed to build filtered model.";
 
   const auto& moving_ids = builder->get_moving_joint_ids();
@@ -212,14 +267,15 @@ TEST_F(RobotModelBuilderFilteringTest, CorrectlyFiltersMovingAndLockedJoints) {
 
   const auto& returned_moving_names = builder->get_moving_joint_names();
   EXPECT_EQ(returned_moving_names, moving_joints_);
-
 }
 
-TEST_F(RobotModelBuilderFilteringTest, CorrectlyHandlesInvertedControlledAndMovingJointNames) {
+TEST_F(RobotModelBuilderFilteringTest,
+       CorrectlyHandlesInvertedControlledAndMovingJointNames) {
   moving_joints_ = {"joint3", "joint2"};
   controlled_joints_ = {"joint2", "joint1", "joint3"};
 
-  bool build_success = builder->build_model(simple_urdf_content, moving_joints_, controlled_joints_, false);
+  bool build_success = builder->build_model(simple_urdf_content, moving_joints_,
+                                            controlled_joints_, false);
   ASSERT_TRUE(build_success) << "Failed to build filtered model.";
 
   // should be sorted
@@ -236,28 +292,26 @@ TEST_F(RobotModelBuilderFilteringTest, CorrectlyHandlesInvertedControlledAndMovi
   EXPECT_EQ(pin_to_hwi.at(1), 2);
 }
 
-
-// Test errors from builder 
+// Test errors from builder
 class RobotModelBuilderErrorTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        builder = std::make_unique<RobotModelBuilder>();
-    }
-     std::unique_ptr<RobotModelBuilder> builder;
+ protected:
+  void SetUp() override { builder = std::make_unique<RobotModelBuilder>(); }
+  std::unique_ptr<RobotModelBuilder> builder;
 };
 
 TEST_F(RobotModelBuilderErrorTest, BuildFailsWithNonexistentJointName) {
   std::vector<std::string> moving_joints = {"joint1", "non_existent_joint"};
   std::vector<std::string> controlled_joints = {"joint1"};
 
-  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false));
+  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints,
+                                    controlled_joints, false));
 }
 
-TEST_F(RobotModelBuilderErrorTest, BuildFailsWithMoreMovingJointsThanControlledJoints) {
+TEST_F(RobotModelBuilderErrorTest,
+       BuildFailsWithMoreMovingJointsThanControlledJoints) {
   std::vector<std::string> moving_joints = {"joint1", "joint2"};
   std::vector<std::string> controlled_joints = {"joint1"};
 
-  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints, controlled_joints, false));
+  EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints,
+                                    controlled_joints, false));
 }
-
-
