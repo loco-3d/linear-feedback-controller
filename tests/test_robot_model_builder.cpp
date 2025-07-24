@@ -315,3 +315,40 @@ TEST_F(RobotModelBuilderErrorTest,
   EXPECT_FALSE(builder->build_model(simple_urdf_content, moving_joints,
                                     controlled_joints, false));
 }
+
+#if !defined(NDEBUG)
+TEST_F(RobotModelBuilderErrorTest, ConstructStateDeathOnWrongConfigSize) {
+  std::vector<std::string> moving_joints = {"joint1"};
+  std::vector<std::string> controlled_joints = {"joint1"};
+  builder->build_model(simple_urdf_content, moving_joints, controlled_joints,
+                       false);
+
+  linear_feedback_controller_msgs::Eigen::Sensor sensor;
+  Eigen::VectorXd robot_velocity(builder->get_nv());  // correct vector size
+
+  // Create vector with incorrect size
+  Eigen::VectorXd wrong_size_config(builder->get_nq() + 1);
+
+  ASSERT_DEATH(
+      builder->construct_robot_state(sensor, wrong_size_config, robot_velocity),
+      "robot_configuration has the wrong size");
+}
+
+TEST_F(RobotModelBuilderErrorTest, ConstructStateDeathOnWrongVelocitySize) {
+  std::vector<std::string> moving_joints = {"joint1"};
+  std::vector<std::string> controlled_joints = {"joint1"};
+  builder->build_model(simple_urdf_content, moving_joints, controlled_joints,
+                       false);
+
+  linear_feedback_controller_msgs::Eigen::Sensor sensor;
+  Eigen::VectorXd robot_configuration(
+      builder->get_nq());  // correct vector size
+
+  // Create vector with incorrect size
+  Eigen::VectorXd wrong_size_velocity(builder->get_nv() - 1);
+
+  ASSERT_DEATH(builder->construct_robot_state(sensor, robot_configuration,
+                                              wrong_size_velocity),
+               "robot_velocity has the wrong size");
+}
+#endif  // !defined(NDEBUG)
