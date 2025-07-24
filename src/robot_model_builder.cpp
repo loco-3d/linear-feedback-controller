@@ -127,18 +127,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
         (size_t)std::distance(controlled_joint_names.begin(), it);
     pin_to_hwi_.emplace(std::make_pair(i, it_dist));
   }
-  // Double check what we just did
-  for (std::size_t i = 0; i < moving_joint_names_.size(); ++i) {
-    if (moving_joint_names_[i] != controlled_joint_names[pin_to_hwi_[i]]) {
-      std::cerr << "LinearFeedbackController::parseMovingJointNames(): "
-                << "The mapping from pinocchio to roscontrol is wrong. "
-                << "moving_joint_names_[i] != "
-                << "controlled_joint_names[pin_to_hwi_[i]] => "
-                << moving_joint_names_[i]
-                << " != " << controlled_joint_names[pin_to_hwi_[i]];
-      return false;
-    }
-  }
   return true;
 }
 
