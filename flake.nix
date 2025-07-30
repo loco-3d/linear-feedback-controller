@@ -42,14 +42,20 @@
                 pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs
                   (super: {
                     inherit src;
-                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [ pkgs.jrl-cmakemodules ];
+                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [
+                      pkgs.jrl-cmakemodules
+                      pkgs.kcov
+                    ];
                     checkInputs = (super.checkInputs or [ ]) ++ [ pkgs.gtest ];
                   });
               jazzy-linear-feedback-controller =
                 pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs
                   (super: {
                     inherit src;
-                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [ pkgs.jrl-cmakemodules ];
+                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [
+                      pkgs.jrl-cmakemodules
+                      pkgs.kcov
+                    ];
                     checkInputs = (super.checkInputs or [ ]) ++ [ pkgs.gtest ];
                   });
             });
