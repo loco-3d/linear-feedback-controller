@@ -98,6 +98,8 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   Eigen::VectorXd robot_velocity_;
   /// @brief Robot generalized tangent space 0 coordinates.
   Eigen::VectorXd robot_velocity_null_;
+  /// @brief Initial torque used in the PD (and optionally subtracted).
+  Eigen::VectorXd tau_init_;
 };
 
 }  // namespace linear_feedback_controller
