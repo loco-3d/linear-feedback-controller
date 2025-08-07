@@ -4,6 +4,9 @@ set(PROJECT_NAME linear_feedback_controller)
 set(PROJECT_DESCRIPTION "ROS2 control with Ricatti gains")
 set(PROJECT_URL "http://github.com/loco-3d/linear-feedback-controller")
 
+option(BUILD_DOCUMENTATION
+       "Build the documentation for the linear-feedback-controller package" OFF)
+
 #
 # Project definition
 #
