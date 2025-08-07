@@ -77,16 +77,14 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     control_ =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
 
-    if (remove_gravity_compensation_effort)
-        control_ -= tau_init_;
+    if (remove_gravity_compensation_effort) control_ -= tau_init_;
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
                     params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
     Eigen::VectorXd pd_ctrl =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
-    Eigen::VectorXd lf_ctrl =
-        lf_controller_.compute_control(sensor, control);
+    Eigen::VectorXd lf_ctrl = lf_controller_.compute_control(sensor, control);
 
     if (remove_gravity_compensation_effort) {
       pd_ctrl -= tau_init_;
@@ -97,10 +95,8 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   } else {
     control_ = lf_controller_.compute_control(sensor, control);
 
-    if (remove_gravity_compensation_effort)
-        control_ -= tau_gravity;
+    if (remove_gravity_compensation_effort) control_ -= tau_gravity;
   }
-
 
   return control_;
 }
