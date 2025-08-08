@@ -4,6 +4,9 @@ set(PROJECT_NAME linear_feedback_controller)
 set(PROJECT_DESCRIPTION "ROS2 control with Ricatti gains")
 set(PROJECT_URL "http://github.com/loco-3d/linear-feedback-controller")
 
+option(BUILD_DOCUMENTATION
+       "Build the documentation for the linear-feedback-controller package" OFF)
+
 #
 # Project definition
 #
@@ -131,21 +134,15 @@ if(BUILD_TESTING)
   find_package(GTest REQUIRED)
   ament_auto_find_test_dependencies()
 
-  add_unit_test(test_robot_model_builder tests/test_robot_model_builder.cpp)
-  target_link_libraries(
-    test_robot_model_builder ${PROJECT_NAME}
-    example-robot-data::example-robot-data GTest::gtest_main)
+  set(TESTS_LIST test_pd_controller test_lf_controller
+                 test_linear_feedback_controller test_robot_model_builder)
+  foreach(test_name ${TESTS_LIST})
 
-  add_unit_test(test_pd_controller tests/test_pd_controller.cpp)
-  target_link_libraries(test_pd_controller ${PROJECT_NAME} GTest::gtest_main)
+    add_unit_test(${test_name} tests/${test_name}.cpp)
+    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gtest_main)
 
-  add_unit_test(test_lf_controller tests/test_lf_controller.cpp)
-  target_link_libraries(test_lf_controller ${PROJECT_NAME} GTest::gtest_main)
+  endforeach()
 
-  add_unit_test(test_linear_feedback_controller
-                tests/test_linear_feedback_controller.cpp)
-  target_link_libraries(test_linear_feedback_controller ${PROJECT_NAME}
-                        GTest::gtest_main)
 endif()
 
 #
