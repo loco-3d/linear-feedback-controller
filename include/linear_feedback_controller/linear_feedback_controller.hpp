@@ -103,7 +103,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   Eigen::VectorXd tau_init_;
   /// @brief Optional: gravity compensation torque computed from robot model.
   Eigen::VectorXd tau_gravity_;
-
 };
 
 }  // namespace linear_feedback_controller
