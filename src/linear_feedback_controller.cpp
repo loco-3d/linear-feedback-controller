@@ -30,6 +30,10 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   robot_configuration_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nq());
   robot_velocity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
   robot_velocity_null_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
+  tau_init_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  tau_gravity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  control_tmp_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+
   return true;
 }
 
@@ -59,14 +63,12 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     first_control_received_time_ = time;
   }
 
-  Eigen::VectorXd tau_gravity;
-
   if (remove_gravity_compensation_effort) {
     robot_model_builder_->construct_robot_state(sensor, robot_configuration_,
                                                 robot_velocity_);
 
     // NOTE: .tail() is used to remove the freeflyer components
-    tau_gravity =
+    tau_gravity_ =
         pinocchio::rnea(robot_model_builder_->get_model(),
                         robot_model_builder_->get_data(), robot_configuration_,
                         robot_velocity_null_, robot_velocity_null_)
@@ -77,25 +79,30 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     control_ =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
 
-    if (remove_gravity_compensation_effort) control_ -= tau_init_;
+    if (remove_gravity_compensation_effort) {
+        control_ -= tau_init_;
+    }
   } else if (during_switch) {
     double weight = ((time - first_control_received_time_).count()) /
                     params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
-    Eigen::VectorXd pd_ctrl =
+    control_tmp_ =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
-    Eigen::VectorXd lf_ctrl = lf_controller_.compute_control(sensor, control);
+    control_ =
+        lf_controller_.compute_control(sensor, control);
 
     if (remove_gravity_compensation_effort) {
-      pd_ctrl -= tau_init_;
-      lf_ctrl -= tau_gravity;
+      control_tmp_ -= tau_init_;
+      control_ -= tau_gravity_;
     }
 
-    control_ = (1.0 - weight) * pd_ctrl + weight * lf_ctrl;
+    control_ = (1.0 - weight) * control_tmp_ + weight * control_;
   } else {
     control_ = lf_controller_.compute_control(sensor, control);
 
-    if (remove_gravity_compensation_effort) control_ -= tau_gravity;
+    if (remove_gravity_compensation_effort) {
+        control_ -= tau_gravity_;
+    }
   }
 
   return control_;
