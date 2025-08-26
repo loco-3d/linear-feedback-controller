@@ -50,3 +50,14 @@ jobs:
           MAKEFLAGS: "-j1"
       - run: |
           echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
+
+      #
+      # Test the repo
+      #
+      - name: Run CMake 'test' target
+        run: |
+          cd ros2_ws/build/linear_feedback_controller
+          cmake --build . -t test
+
+      - run: |
+          echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
