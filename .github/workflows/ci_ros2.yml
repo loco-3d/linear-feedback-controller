@@ -65,4 +65,6 @@ jobs:
       #
       - name: Run CMake 'test' target
         working-directory: ros_ws/build/linear_feedback_controller
-        run: cmake --build . -t test
+        run: |
+        source ../../install/setup.bash
+        cmake --build . -t test
