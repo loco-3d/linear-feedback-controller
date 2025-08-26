@@ -64,5 +64,5 @@ jobs:
       # Test the repo with cmake command
       #
       - name: Run CMake 'test' target
-        working-directory: ros2_ws/build/linear_feedback_controller
+        working-directory: ros_ws/build/linear_feedback_controller
         run: cmake --build . -t test
