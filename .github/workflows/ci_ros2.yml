@@ -39,6 +39,13 @@ jobs:
           required-ros-distributions: ${{ matrix.ros_version }}
 
       #
+      # Configure colcon for sequential execution
+      #
+      - name: Configure colcon
+        run: |
+          echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
+
+      #
       # Build and test the repo
       #
       - uses: ros-tooling/action-ros-ci@0.4.4
@@ -48,16 +55,14 @@ jobs:
           vcs-repo-file-url: /tmp/deps.repos
         env:
           MAKEFLAGS: "-j1"
-      - run: |
-          echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
+
+      # debug
+      - name: Debug Workspace Layout
+        run: ls -R
 
       #
-      # Test the repo
+      # Test the repo with cmake command
       #
       - name: Run CMake 'test' target
-        run: |
-          cd ros2_ws/build/linear_feedback_controller
-          cmake --build . -t test
-
-      - run: |
-          echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
+        working-directory: ros2_ws/build/linear_feedback_controller
+        run: cmake --build . -t test
