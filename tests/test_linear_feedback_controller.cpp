@@ -97,8 +97,8 @@ struct Expectations {
 
   static auto From(const RobotModelBuilder& model, const Gains& gains,
                    const References& refs, const Sensor& sensor,
-                   const Control& control,
-                   bool gravity_compensation) -> Expectations {
+                   const Control& control, bool gravity_compensation)
+      -> Expectations {
     Expectations out;
     out.pd = ExpectedPDControlFrom(gains, refs, sensor.joint_state.position,
                                    sensor.joint_state.velocity);
@@ -280,8 +280,8 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
            false,
            true,
        }) {
-
-    const auto expected = Expectations::From(model, gains, refs, sensor, control, gravity_compensation);
+    const auto expected = Expectations::From(model, gains, refs, sensor,
+                                             control, gravity_compensation);
 
     SCOPED_TRACE(::testing::Message()
                  << "\n gravity_compensation = "
