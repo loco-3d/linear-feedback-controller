@@ -32,7 +32,8 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   robot_velocity_null_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
   tau_init_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
   tau_gravity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
-  control_tmp_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  control_pd_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  control_lf_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
 
   return true;
 }
@@ -86,16 +87,16 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     double weight = ((time - first_control_received_time_).count()) /
                     params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
-    control_tmp_ =
+    control_pd_ =
         pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
-    control_ = lf_controller_.compute_control(sensor, control);
+    control_lf_ = lf_controller_.compute_control(sensor, control);
 
     if (remove_gravity_compensation_effort) {
-      control_tmp_ -= tau_init_;
-      control_ -= tau_gravity_;
+      control_pd_ -= tau_init_;
+      control_lf_ -= tau_gravity_;
     }
 
-    control_ = (1.0 - weight) * control_tmp_ + weight * control_;
+    control_.noalias() = (1.0 - weight) * control_pd_ + weight * control_lf_;
   } else {
     control_ = lf_controller_.compute_control(sensor, control);
 

@@ -83,8 +83,10 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   ControllerParameters params_; /*! @brief Parameters of the controller. */
   /// @brief Control to be sent to the low-level controller.
   Eigen::VectorXd control_;
-  /// @brief Temporary variable used in PD to LF transition phase
-  Eigen::VectorXd control_tmp_;
+  /// @brief Temporary variable for LF output used in PD to LF transition phase
+  Eigen::VectorXd control_pd_;
+  /// @brief Temporary variable for PD output used in PD to LF transition phase
+  Eigen::VectorXd control_lf_;
   /// @brief Rigid body model of the robot.
   RobotModelBuilder::SharedPtr robot_model_builder_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
