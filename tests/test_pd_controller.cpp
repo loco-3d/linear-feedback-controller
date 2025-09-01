@@ -32,7 +32,7 @@ TEST(PdControllerTest, DISABLED_SetGainsWithSpecialDouble) {
   auto requested_gains = Gains::Random(size);
 
   // Test for special double values acceptance or not ?
-  for (const auto &ref : {
+  for (const auto& ref : {
            std::ref(requested_gains.d(0)),
            // std::ref(requested_gains.d(size - 1)),
 
@@ -57,7 +57,7 @@ TEST(PdControllerTest, DISABLED_SetGainsWithSpecialDouble) {
 TEST(PdControllerTest, DISABLED_SetGainsWithDifferentSizes) {
   auto pd_ctrl = PDController();
 
-  for (auto &&requested_gains :
+  for (auto&& requested_gains :
        {
            Gains::Random(1, 2),
            Gains::Random(4, 3),
@@ -74,7 +74,7 @@ TEST(PdControllerTest, DISABLED_SetGainsWithDifferentSizes) {
 TEST(PdControllerTest, SetGains) {
   auto pd_ctrl = PDController();
 
-  for (auto &&requested_gains :
+  for (auto&& requested_gains :
        {
            Gains::Random(1),
            Gains::Random(3),
@@ -98,7 +98,7 @@ TEST(PdControllerTest, DISABLED_SetReferencesWithSpecialDouble) {
   auto requested_references = References::Random(size);
 
   // Test for special double values acceptance or not ?
-  for (const auto &ref : {
+  for (const auto& ref : {
            std::ref(requested_references.tau(0)),
            // std::ref(requested_references.tau(size - 1)),
 
@@ -124,7 +124,7 @@ TEST(PdControllerTest, DISABLED_SetReferencesWithSpecialDouble) {
 TEST(PdControllerTest, DISABLED_SetReferencesWithDifferentSizes) {
   auto pd_ctrl = PDController();
 
-  for (auto &&requested_references :
+  for (auto&& requested_references :
        {
            References::Random(1, 2),
            References::Random(4, 3),
@@ -142,7 +142,7 @@ TEST(PdControllerTest, DISABLED_SetReferencesWithDifferentSizes) {
 TEST(PdControllerTest, SetReferences) {
   auto pd_ctrl = PDController();
 
-  for (auto &&requested_references :
+  for (auto&& requested_references :
        {
            References::Random(1),
            References::Random(3),

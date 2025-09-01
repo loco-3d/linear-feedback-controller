@@ -15,7 +15,7 @@ template <typename T, typename = void>
 struct IsStreamable : std::false_type {};
 
 template <typename T>
-struct IsStreamable<T, std::void_t<decltype(std::declval<std::ostream &>()
+struct IsStreamable<T, std::void_t<decltype(std::declval<std::ostream&>()
                                             << std::declval<T>())>>
     : std::true_type {};
 
@@ -29,7 +29,7 @@ struct HasPrintTo : std::false_type {};
 template <typename T, typename... Others>
 struct HasPrintTo<T,
                   std::void_t<decltype(PrintTo(std::declval<T>(),
-                                               std::declval<std::ostream *>(),
+                                               std::declval<std::ostream*>(),
                                                std::declval<Others>()...))>,
                   Others...> : std::true_type {};
 
@@ -88,7 +88,7 @@ using PrintFormatOf = details::PrintFormatOf_t<T, PrintFormatDoesNotExists>;
  *  \return std::ostream& The ostream used
  */
 template <typename T>
-constexpr auto TryToPrintTo(T &&value, std::ostream *os,
+constexpr auto TryToPrintTo(T&& value, std::ostream* os,
                             std::string_view backup = "<Not Printable>")
     -> void {
   if (os == nullptr) return;
