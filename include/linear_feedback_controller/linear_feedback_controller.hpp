@@ -83,7 +83,10 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   ControllerParameters params_; /*! @brief Parameters of the controller. */
   /// @brief Control to be sent to the low-level controller.
   Eigen::VectorXd control_;
-
+  /// @brief Temporary variable for LF output used in PD to LF transition phase
+  Eigen::VectorXd control_pd_;
+  /// @brief Temporary variable for PD output used in PD to LF transition phase
+  Eigen::VectorXd control_lf_;
   /// @brief Rigid body model of the robot.
   RobotModelBuilder::SharedPtr robot_model_builder_;
   /// @brief A simple PD controller to hold the robot still at the beginning.
@@ -98,6 +101,10 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
   Eigen::VectorXd robot_velocity_;
   /// @brief Robot generalized tangent space 0 coordinates.
   Eigen::VectorXd robot_velocity_null_;
+  /// @brief Initial torque used in the PD (and optionally subtracted).
+  Eigen::VectorXd tau_init_;
+  /// @brief Optional: gravity compensation torque computed from robot model.
+  Eigen::VectorXd tau_gravity_;
 };
 
 }  // namespace linear_feedback_controller
