@@ -47,7 +47,7 @@ constexpr bool IsEigenMatrix_v = IsEigenMatrix<T>::value;
 template <typename VectorType, typename...,
           std::enable_if_t<tests::utils::details::IsEigenVector_v<VectorType>,
                            bool> = true>
-constexpr auto Grow(Eigen::PlainObjectBase<VectorType> &vector,
+constexpr auto Grow(Eigen::PlainObjectBase<VectorType>& vector,
                     std::size_t inc) {
   vector.conservativeResize(vector.size() + inc);
 }
@@ -62,7 +62,7 @@ constexpr auto Grow(Eigen::PlainObjectBase<VectorType> &vector,
 template <typename MatrixType, typename...,
           std::enable_if_t<tests::utils::details::IsEigenMatrix_v<MatrixType>,
                            bool> = true>
-constexpr auto Grow(Eigen::PlainObjectBase<MatrixType> &matrix,
+constexpr auto Grow(Eigen::PlainObjectBase<MatrixType>& matrix,
                     std::size_t row_inc,
                     std::optional<std::size_t> col_inc = std::nullopt) {
   matrix.conservativeResize(matrix.rows() + row_inc,
@@ -125,7 +125,7 @@ namespace Eigen {
 template <typename VectorType, typename...,
           std::enable_if_t<tests::utils::details::IsEigenVector_v<VectorType>,
                            bool> = true>
-auto PrintTo(const Eigen::DenseBase<VectorType> &vector, std::ostream *os,
+auto PrintTo(const Eigen::DenseBase<VectorType>& vector, std::ostream* os,
              tests::utils::VectorPrintFormat fmt = {}) -> void {
   if (os == nullptr) return;
 
