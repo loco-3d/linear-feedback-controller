@@ -37,8 +37,8 @@ struct Gains {
 };
 
 /// Function used because I keep miss using the API and inverting d/p
-inline auto SetTo(linear_feedback_controller::PDController &pd_ctrl,
-                  const Gains &gains) {
+inline auto SetTo(linear_feedback_controller::PDController& pd_ctrl,
+                  const Gains& gains) {
   return pd_ctrl.set_gains(gains.p, gains.d);
 }
 
@@ -51,7 +51,7 @@ inline auto SetTo(linear_feedback_controller::PDController &pd_ctrl,
  *  \param[in] gains The gains we wish to print
  *  \param[inout] os The output stream ptr to print to
  */
-constexpr auto PrintTo(const Gains &gains, std::ostream *os) -> void {
+constexpr auto PrintTo(const Gains& gains, std::ostream* os) -> void {
   if (os == nullptr) return;
 
   *os << "Gains{";
@@ -67,8 +67,8 @@ constexpr auto PrintTo(const Gains &gains, std::ostream *os) -> void {
   *os << "}";
 }
 
-constexpr auto operator<<(std::ostream &os, const Gains &gains)
-    -> std::ostream & {
+constexpr auto operator<<(std::ostream& os, const Gains& gains)
+    -> std::ostream& {
   PrintTo(gains, &os);
   return os;
 }
@@ -101,8 +101,8 @@ struct References {
 };
 
 /// Function used because I keep miss using the API and inverting tau/q
-inline auto SetTo(linear_feedback_controller::PDController &pd_ctrl,
-                  const References &ref) {
+inline auto SetTo(linear_feedback_controller::PDController& pd_ctrl,
+                  const References& ref) {
   return pd_ctrl.set_reference(ref.tau, ref.q);
 }
 
@@ -115,7 +115,7 @@ inline auto SetTo(linear_feedback_controller::PDController &pd_ctrl,
  *  \param[in] refs The references we wish to print
  *  \param[inout] os The output stream ptr to print to
  */
-constexpr auto PrintTo(const References &ref, std::ostream *os) -> void {
+constexpr auto PrintTo(const References& ref, std::ostream* os) -> void {
   if (os == nullptr) return;
 
   *os << "References{";
@@ -131,8 +131,8 @@ constexpr auto PrintTo(const References &ref, std::ostream *os) -> void {
   *os << "}";
 }
 
-constexpr auto operator<<(std::ostream &os, const References &references)
-    -> std::ostream & {
+constexpr auto operator<<(std::ostream& os, const References& references)
+    -> std::ostream& {
   PrintTo(references, &os);
   return os;
 }
@@ -145,9 +145,9 @@ constexpr auto operator<<(std::ostream &os, const References &references)
  *  @param[in] q Expected input states
  *  @param[in] v Expected input velocities
  */
-inline auto ExpectedPDControlFrom(const Gains &gains, const References &refs,
-                                  const Eigen::VectorXd &q,
-                                  const Eigen::VectorXd &v) -> Eigen::VectorXd {
+inline auto ExpectedPDControlFrom(const Gains& gains, const References& refs,
+                                  const Eigen::VectorXd& q,
+                                  const Eigen::VectorXd& v) -> Eigen::VectorXd {
   // clang-format off
   // o = tau_r - (p * (q - q_r)) - (d * v)
   return (refs.tau.array()

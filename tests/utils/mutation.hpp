@@ -38,17 +38,17 @@ struct [[nodiscard]] Mutation final {
    *  \param[in] tmp Value that will mutate the data
    */
   template <typename T>
-  constexpr Mutation(ValueType &value, T &&tmp)
+  constexpr Mutation(ValueType& value, T&& tmp)
       : Mutation(std::addressof(value), std::forward<T>(tmp)) {}
 
   /// Move Ctor
-  constexpr Mutation(Mutation &&other) {
+  constexpr Mutation(Mutation&& other) {
     // Use the move assignement below
     *this = std::move(other);
   }
 
   /// Move Assignement
-  constexpr auto operator=(Mutation &&other) -> Mutation & {
+  constexpr auto operator=(Mutation&& other) -> Mutation& {
     ptr_ = other.ptr_;
     old_value_ = std::move(other.old_value_);
 
@@ -57,10 +57,10 @@ struct [[nodiscard]] Mutation final {
   }
 
   /// Copy Ctor (not allowed)
-  constexpr Mutation(const Mutation &other) = delete;
+  constexpr Mutation(const Mutation& other) = delete;
 
   /// Copy Assignement (not allowed)
-  constexpr Mutation &operator=(const Mutation &other) = delete;
+  constexpr Mutation& operator=(const Mutation& other) = delete;
 
   /// Dtor that triggers the revert operation
   /// IMPORTANT: not virtual -> Do not inherit
@@ -74,7 +74,7 @@ struct [[nodiscard]] Mutation final {
    *  \param[in] revert True if we wish to revert the previous data before
    */
   template <typename T>
-  constexpr auto Reset(ValueType &new_data, T &&tmp, bool revert = true)
+  constexpr auto Reset(ValueType& new_data, T&& tmp, bool revert = true)
       -> void {
     if (revert) {
       Revert();
@@ -107,14 +107,14 @@ struct [[nodiscard]] Mutation final {
   /**
    *  \return const ValueType& Old value memorized (use when reverting)
    */
-  constexpr auto OldValue() const noexcept -> const ValueType & {
+  constexpr auto OldValue() const noexcept -> const ValueType& {
     return old_value_;
   }
 
   /**
    *  \return ValueType& Old value memorized (use when reverting)
    */
-  constexpr auto OldValue() noexcept -> ValueType & { return old_value_; }
+  constexpr auto OldValue() noexcept -> ValueType& { return old_value_; }
 
   /// Format specifier for the PrintTo function below
   struct PrintFormat {
@@ -126,8 +126,8 @@ struct [[nodiscard]] Mutation final {
    *  \brief Prints \a mutation to the provided \a os, given the format \a fmt
    *  \note We use friend function here to access the private .ptr_ data member
    */
-  friend constexpr auto PrintTo(const Mutation &mutation,
-                                std::ostream *const os, PrintFormat fmt = {})
+  friend constexpr auto PrintTo(const Mutation& mutation,
+                                std::ostream* const os, PrintFormat fmt = {})
       -> void {
     if (os == nullptr) return;
 
@@ -135,7 +135,7 @@ struct [[nodiscard]] Mutation final {
     if (mutation.IsAborted()) {
       *os << " ABORTED ";
     } else {
-      *os << ".ptr = " << (void *)mutation.ptr_;
+      *os << ".ptr = " << (void*)mutation.ptr_;
 
       if (fmt.show_data) {
         *os << " -> ";
@@ -153,11 +153,11 @@ struct [[nodiscard]] Mutation final {
  private:
   /// Private ctor (/!\ Assumes that \a ptr is NOT NULL /!\)
   template <typename T>
-  constexpr Mutation(ValueType *ptr, T &&tmp) : ptr_(ptr), old_value_(*ptr_) {
+  constexpr Mutation(ValueType* ptr, T&& tmp) : ptr_(ptr), old_value_(*ptr_) {
     *ptr_ = std::forward<T>(tmp);
   }
 
-  ValueType *ptr_;      /*!< Ptr of the data we wish to mutate/revert */
+  ValueType* ptr_;      /*!< Ptr of the data we wish to mutate/revert */
   ValueType old_value_; /*!< Old value memorize before mutation */
 };
 
@@ -176,7 +176,7 @@ struct [[nodiscard]] Mutation final {
  *                              when going out of scope
  */
 template <typename ValueType, typename T>
-constexpr auto TemporaryMutate(ValueType &value, T &&tmp)
+constexpr auto TemporaryMutate(ValueType& value, T&& tmp)
     -> Mutation<ValueType> {
   return Mutation<ValueType>{value, std::forward<T>(tmp)};
 }

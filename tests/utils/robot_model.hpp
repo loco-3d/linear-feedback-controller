@@ -42,7 +42,7 @@ constexpr auto ToString(JointType type) noexcept -> std::string_view {
  *  @param[in] type The JointType we wish to print
  *  @param[inout] os The output stream ptr we wish to print to
  */
-constexpr auto PrintTo(JointType type, std::ostream *os) noexcept -> void {
+constexpr auto PrintTo(JointType type, std::ostream* os) noexcept -> void {
   if (os == nullptr) return;
   *os << "JointType{ " << std::quoted(ToString(type)) << " }";
 }
@@ -86,7 +86,7 @@ struct JointDescription {
  *  @param[in] joint The jont we wish to print
  *  @param[inout] os The output stream ptr we wish to print to
  */
-constexpr auto PrintTo(JointDescription joint, std::ostream *os) noexcept
+constexpr auto PrintTo(JointDescription joint, std::ostream* os) noexcept
     -> void {
   if (os == nullptr) return;
 
@@ -111,14 +111,14 @@ struct JointNamesPair {
    *
    *  @return JointNamesPair Pair of name list
    */
-  static inline auto From(const std::vector<JointDescription> &joint_desc_list)
+  static inline auto From(const std::vector<JointDescription>& joint_desc_list)
       -> JointNamesPair {
     JointNamesPair out;
 
     out.controlled.reserve(joint_desc_list.size());
     out.moving.reserve(joint_desc_list.size());
 
-    for (const auto &joint : joint_desc_list) {
+    for (const auto& joint : joint_desc_list) {
       if (IsControlled(joint.type)) {
         out.controlled.emplace_back(joint.name);
       }
@@ -139,8 +139,8 @@ struct JointNamesPair {
  *  @param[in] moving List of moving joint names
  */
 inline auto MakeJointDescriptionListFrom(
-    const std::vector<std::string> &controlled,
-    const std::vector<std::string> &moving) -> std::vector<JointDescription> {
+    const std::vector<std::string>& controlled,
+    const std::vector<std::string>& moving) -> std::vector<JointDescription> {
   std::vector<JointDescription> out;
 
   // The worst case would be that each names are differents
@@ -156,7 +156,7 @@ inline auto MakeJointDescriptionListFrom(
   for (std::string_view name : controlled) {
     // If the name has already been pushed into out, update the type to Both
     auto found = std::find_if(out.begin(), out.end(),
-                              [name](const JointDescription &joint_desc) {
+                              [name](const JointDescription& joint_desc) {
                                 return joint_desc.name == name;
                               });
 
@@ -201,7 +201,7 @@ inline auto MakeAllModelDescriptionsFor(
   std::vector<ModelDescription> out;
   out.reserve(2 * all_joint_lists.size());
 
-  for (const auto &joint_list : all_joint_lists) {
+  for (const auto& joint_list : all_joint_lists) {
     out.emplace_back(ModelDescription{
         .urdf = urdf,
         .joint_list = joint_list,
@@ -230,7 +230,7 @@ struct ModelDescription::PrintFormat {
  *  @param[inout] os The output stream ptr we wish to print to
  *  @param[in] fmt The format specifier use to print the model
  */
-inline auto PrintTo(const ModelDescription &model, std::ostream *os,
+inline auto PrintTo(const ModelDescription& model, std::ostream* os,
                     typename ModelDescription::PrintFormat fmt = {}) noexcept
     -> void {
   if (os == nullptr) return;
@@ -265,14 +265,14 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
       *os << *robot_name;
     } else {
       *os << "str{";
-      *os << ".data() = @ " << (void const *)model.urdf.data() << ", ";
+      *os << ".data() = @ " << (void const*)model.urdf.data() << ", ";
       *os << ".size() = " << model.urdf.size() << ", ";
       *os << "}";
     }
     *os << ", ";
 
     *os << ".joint_list = [ ";
-    for (const auto &joint : model.joint_list) {
+    for (const auto& joint : model.joint_list) {
       PrintTo(joint, os);
       *os << ", ";
     }
@@ -291,7 +291,7 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
     }
 
     *os << model.joint_list.size() << "_Joints";
-    for (const auto &[name, type] : model.joint_list) {
+    for (const auto& [name, type] : model.joint_list) {
       *os << "_" << name << "_" << ToString(type);
     }
   }
@@ -305,7 +305,7 @@ inline auto PrintTo(const ModelDescription &model, std::ostream *os,
  *  @return std::unique_ptr<RobotModelBuilder> A valid RobotModelBuilder
  *          (i.e. build_model() returned true), nullptr otherwise
  */
-inline auto MakeRobotModelBuilderFrom(const ModelDescription &model)
+inline auto MakeRobotModelBuilderFrom(const ModelDescription& model)
     -> std::unique_ptr<linear_feedback_controller::RobotModelBuilder> {
   auto [controlled, moving] = JointNamesPair::From(model.joint_list);
   auto rmb = std::make_unique<linear_feedback_controller::RobotModelBuilder>();
