@@ -139,7 +139,8 @@ if(BUILD_TESTING)
   foreach(test_name ${TESTS_LIST})
 
     add_unit_test(${test_name} tests/${test_name}.cpp)
-    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gtest_main)
+    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gtest_main
+                          GTest::gmock_main)
 
   endforeach()
 
