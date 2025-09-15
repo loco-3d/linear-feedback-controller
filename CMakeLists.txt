@@ -139,7 +139,10 @@ if(BUILD_TESTING)
   foreach(test_name ${TESTS_LIST})
 
     add_unit_test(${test_name} tests/${test_name}.cpp)
-    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gmock_main)
+    target_include_directories(${test_name} PRIVATE ${GTEST_INCLUDE_DIRS}
+                                                    ${GMOCK_INCLUDE_DIRS})
+    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gmock_main
+                          pthread)
 
   endforeach()
 
