@@ -140,6 +140,12 @@ if(BUILD_TESTING)
 
     add_unit_test(${test_name} tests/${test_name}.cpp)
 
+    # DEBUG
+    message(
+      STATUS
+        "[${test_name}] Content of ament_gtest_LIBRARIES = ${ament_gtest_LIBRARIES}"
+    )
+
     if(TARGET GTest::gmock_main)
       target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gmock_main)
       message(
