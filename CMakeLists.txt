@@ -131,8 +131,8 @@ target_link_libraries(
 #
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  find_package(GTest REQUIRED)
   ament_auto_find_test_dependencies()
+  find_package(GTest QUIET)
 
   set(TESTS_LIST test_pd_controller test_lf_controller
                  test_linear_feedback_controller test_robot_model_builder)
@@ -142,7 +142,12 @@ if(BUILD_TESTING)
 
     if(TARGET GTest::gmock_main)
       target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gmock_main)
+      message(
+        STATUS "[${test_name}] Linking with modern target 'GTest::gmock_main'")
     else()
+      message(
+        STATUS
+          "[${test_name}] Linking with legacy variable ament_gtest_LIBRARIES")
       target_link_libraries(${test_name} ${PROJECT_NAME}
                             ${ament_gtest_LIBRARIES})
     endif()
