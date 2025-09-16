@@ -117,25 +117,3 @@ TEST_F(LFControllerRobustnessTest, ComputeControlThrowsIfNotInitialized) {
   EXPECT_THROW(controller_->compute_control(sensor_msg, control_msg),
                std::runtime_error);
 }
-
-// TEST_F(LFControllerRobustnessTest, ThrowsOnMismatchedMessageSizes) {
-//     // TODO: Implémentez ce test.
-//     mock_robot_builder_ = std::make_shared<SmartMockRobotModelBuilder>();
-//     controller_->initialize(mock_robot_builder_);
-//     // 1. Créez un contrôleur et initialisez-le avec un mock qui attend un
-//     DoF de 6.
-//     // 2. Créez un `control_msg` avec `q_ref` de taille 7 (invalide).
-//     // 3. Appelez `compute_control`.
-//     // 4. Utilisez EXPECT_THROW(..., std::invalid_argument) pour vérifier
-//     qu'une erreur est levée.
-// }
-
-// TEST_F(LFControllerRobustnessTest, HandlesSpecialFloatValuesInMessages) {
-//     // TODO: Implémentez ce test.
-//     // 1. Créez et initialisez le contrôleur.
-//     // 2. Créez un `sensor_msg` et mettez une valeur NaN ou Infinity dans
-//     `v`.
-//     // 3. Appelez `compute_control`.
-//     // 4. Si le contrôleur doit vérifier cela, utilisez EXPECT_THROW. Sinon,
-//     //    ce test peut servir à documenter le comportement actuel.
-// }
