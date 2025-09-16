@@ -31,10 +31,11 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    * @param controlled_joint_names List of actively controlled joints.
    * @param robot_has_free_flyer If the robot has a free flyer or not.
    */
-  virtual bool build_model(const std::string& urdf,
-                   const std::vector<std::string>& moving_joint_names,
-                   const std::vector<std::string>& controlled_joint_names,
-                   const bool robot_has_free_flyer);
+  virtual bool build_model(
+      const std::string& urdf,
+      const std::vector<std::string>& moving_joint_names,
+      const std::vector<std::string>& controlled_joint_names,
+      const bool robot_has_free_flyer);
 
   /**
    * @brief Get the moving joint names.
@@ -84,7 +85,8 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    *
    * @return std::map<int, int>
    */
-  virtual const std::map<int, int>& get_pinocchio_to_hardware_interface_map() const;
+  virtual const std::map<int, int>& get_pinocchio_to_hardware_interface_map()
+      const;
 
   virtual void construct_robot_state(
       const linear_feedback_controller_msgs::Eigen::Sensor& Sensor,
