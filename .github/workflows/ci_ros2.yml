@@ -39,6 +39,10 @@ jobs:
         run: |
           echo '{ "build": { "executor": "sequential" } }' > colcon-defaults.json
 
+      - name: Install Google Test
+        run: sudo apt-get install -y libgmock-dev
+
+
       #
       # Build and try to test the repo
       #
