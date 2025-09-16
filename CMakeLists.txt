@@ -149,6 +149,7 @@ if(BUILD_TESTING)
       target_link_libraries(${test_name} PRIVATE GTest::gmock)
     endif()
   endforeach()
+
 endif()
 
 #
