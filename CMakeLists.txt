@@ -131,16 +131,23 @@ target_link_libraries(
 #
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  find_package(GTest REQUIRED)
   ament_auto_find_test_dependencies()
+  find_package(GTest CONFIG QUIET)
+  if(NOT GTest_FOUND)
+    find_package(GTest REQUIRED)
+  endif()
 
   set(TESTS_LIST test_pd_controller test_lf_controller
                  test_linear_feedback_controller test_robot_model_builder)
+
   foreach(test_name ${TESTS_LIST})
-
     add_unit_test(${test_name} tests/${test_name}.cpp)
-    target_link_libraries(${test_name} ${PROJECT_NAME} GTest::gtest_main)
+    target_link_libraries(${test_name} PRIVATE ${PROJECT_NAME} GTest::gtest
+                                               GTest::gtest_main)
 
+    if(TARGET GTest::gmock)
+      target_link_libraries(${test_name} PRIVATE GTest::gmock)
+    endif()
   endforeach()
 
 endif()

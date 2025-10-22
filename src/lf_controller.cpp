@@ -9,6 +9,9 @@ LFController::LFController() {}
 LFController::~LFController() {}
 
 void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
+  if (!rmb) {
+    throw std::invalid_argument("RobotModelBuilder pointer cannot be null.");
+  }
   rmb_ = rmb;
   const auto nq = rmb_->get_nq();
   const auto nv = rmb_->get_nv();
@@ -26,6 +29,11 @@ void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
 const Eigen::VectorXd& LFController::compute_control(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor_msg,
     const linear_feedback_controller_msgs::Eigen::Control& control_msg) {
+  if (!rmb_) {
+    throw std::runtime_error(
+        "LFController is not initialized. Call initialize() before "
+        "compute_control().");
+  }
   // Shortcuts for easier code writing.
   const linear_feedback_controller_msgs::Eigen::JointState& sensor_js =
       sensor_msg.joint_state;
