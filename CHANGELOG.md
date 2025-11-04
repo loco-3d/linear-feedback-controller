@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+- add jrl_cmakemodules to package.xml
+
 ## [3.0.0] - 2025-10-23
 
 ## added

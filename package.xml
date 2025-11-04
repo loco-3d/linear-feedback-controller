@@ -10,14 +10,15 @@
   <maintainer email="guilhem.saurel@laas.fr">Guilhem Saurel</maintainer>
   <author>Maximilien Naveau</author>
 
-  <license>BSD-2</license>
-  <url>https://github.com/loco-3d/linear_feedback_controller</url>
+  <license>BSD-2-Clause</license>
+  <url>https://github.com/loco-3d/linear-feedback-controller</url>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <build_depend>eigen</build_depend>
   <build_depend>fmt</build_depend>
+  <build_depend>jrl_cmakemodules</build_depend>
   <build_depend>parameter_traits</build_depend>
   <build_export_depend>eigen</build_export_depend>
 
