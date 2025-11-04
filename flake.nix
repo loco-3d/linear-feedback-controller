@@ -12,53 +12,52 @@
 
   outputs =
     inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
-      imports = [ inputs.gepetto.flakeModule ];
-      perSystem =
-        { lib, pkgs, ... }:
-        {
-          packages =
-            let
-              src = lib.fileset.toSource {
-                root = ./.;
-                fileset = lib.fileset.unions [
-                  ./cmake
-                  ./CMakeLists.txt
-                  ./config
-                  ./controller_plugins.xml
-                  ./include
-                  ./launch
-                  ./LICENSE
-                  ./package.xml
-                  ./src
-                  ./tests
-                ];
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } (
+      { lib, self, ... }:
+      {
+        systems = import inputs.systems;
+        imports = [
+          inputs.gepetto.flakeModule
+          { gepetto-pkgs.overlays = [ self.overlays.default ]; }
+        ];
+        flake.overlays.default =
+          _final: prev:
+          let
+            override = _ros-final: ros-prev: {
+              linear-feedback-controller = ros-prev.linear-feedback-controller.overrideAttrs {
+                src = lib.fileset.toSource {
+                  root = ./.;
+                  fileset = lib.fileset.unions [
+                    ./cmake
+                    ./CMakeLists.txt
+                    ./config
+                    ./controller_plugins.xml
+                    ./include
+                    ./launch
+                    ./LICENSE
+                    ./package.xml
+                    ./src
+                    ./tests
+                  ];
+                };
               };
-            in
-            lib.filterAttrs (_n: v: v.meta.available && !v.meta.broken) (rec {
+            };
+          in
+          {
+            rosPackages = prev.rosPackages // {
+              humble = prev.rosPackages.humble.overrideScope override;
+              jazzy = prev.rosPackages.jazzy.overrideScope override;
+            };
+          };
+        perSystem =
+          { pkgs, ... }:
+          {
+            packages = lib.filterAttrs (_n: v: v.meta.available && !v.meta.broken) (rec {
               default = humble-linear-feedback-controller;
-              humble-linear-feedback-controller =
-                pkgs.rosPackages.humble.linear-feedback-controller.overrideAttrs
-                  (super: {
-                    inherit src;
-                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [
-                      pkgs.jrl-cmakemodules
-                      pkgs.kcov
-                    ];
-                    checkInputs = (super.checkInputs or [ ]) ++ [ pkgs.gtest ];
-                  });
-              jazzy-linear-feedback-controller =
-                pkgs.rosPackages.jazzy.linear-feedback-controller.overrideAttrs
-                  (super: {
-                    inherit src;
-                    nativeBuildInputs = (super.nativeBuildInputs or [ ]) ++ [
-                      pkgs.jrl-cmakemodules
-                      pkgs.kcov
-                    ];
-                    checkInputs = (super.checkInputs or [ ]) ++ [ pkgs.gtest ];
-                  });
+              humble-linear-feedback-controller = pkgs.rosPackages.humble.linear-feedback-controller;
+              jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller;
             });
-        };
-    };
+          };
+      }
+    );
 }
