@@ -45,7 +45,7 @@ jobs:
       #
       # Build and try to test the repo
       #
-      - uses: ros-tooling/action-ros-ci@0.4.4
+      - uses: ros-tooling/action-ros-ci@0.4.5
         with:
           package-name: linear_feedback_controller
           target-ros2-distro: ${{ matrix.ros_version }}
