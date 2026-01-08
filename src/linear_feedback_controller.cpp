@@ -105,9 +105,9 @@ bool LinearFeedbackController::set_initial_state(
             << tau_init.size()
             << ", q_ref_pd size=" << q_ref_pd.size() << std::endl;
 
-  // >>> LOG COMPLET DES RÉFÉRENCES INITIALES <<<
-  std::cout << "[LFC] set_initial_state: q0_pd = " << q0_pd.transpose() << std::endl;
-  std::cout << "[LFC] set_initial_state: tau_init_ = " << tau_init_.transpose() << std::endl;
+  // // >>> LOG COMPLET DES RÉFÉRENCES INITIALES <<<
+  // std::cout << "[LFC] set_initial_state: q0_pd = " << q0_pd.transpose() << std::endl;
+  // std::cout << "[LFC] set_initial_state: tau_init_ = " << tau_init_.transpose() << std::endl;
 
   pd_controller_.set_reference(tau_init, q_ref_pd);
   tau_init_ = tau_init;
