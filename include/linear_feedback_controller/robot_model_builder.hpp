@@ -97,6 +97,14 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
   virtual int get_nv() const;
   virtual int get_nq() const;
 
+  /**
+   * @brief Convert joint configuration vector (used by Pinocchio) to joint positions vector (used by the hardware interface).
+   *
+   * @return Eigen::VectorXd
+   */
+  Eigen::VectorXd jointConfigToJointPositions(
+      const Eigen::VectorXd& q_joint) const;
+
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
   std::vector<std::string> moving_joint_names_;
@@ -111,6 +119,9 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
   std::vector<pinocchio::JointIndex> moving_joint_ids_;
   /// @brief Sort the locked (position moving) joint names using the urdf order.
   std::vector<pinocchio::JointIndex> locked_joint_ids_;
+
+  std::vector<int> joint_nq_per_joint_;
+  std::vector<int> joint_nv_per_joint_;
 
   /// @brief Pinocchio (Rigid body dynamics robot model) removing locked joints.
   pinocchio::Model pinocchio_model_;
