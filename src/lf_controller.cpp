@@ -15,12 +15,10 @@ void LFController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
   rmb_ = rmb;
   const auto nq = rmb_->get_nq();
   const auto nv = rmb_->get_nv();
-  const auto joint_nq = rmb_->get_joint_nq();
   const auto joint_nv = rmb_->get_joint_nv();
 
   // DEBUG
   std::cout << "[LFC] initialize: nq=" << nq << ", nv=" << nv
-            << ", joint_nq=" << joint_nq
             << ", joint_nv=" << joint_nv << std::endl;
 
   desired_configuration_ = Eigen::VectorXd::Zero(nq);
