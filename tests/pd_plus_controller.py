@@ -129,6 +129,35 @@ class PDPlusController(Node):
         delta_q = c + a * np.cos(w * dt)
         dq = -w * a * np.sin(w * dt)
         return delta_q, dq
+    
+    def joint_positions_to_configuration(self, q_joint: np.ndarray) -> np.ndarray:
+        if q_joint.shape[0] != len(self.moving_joint_names):
+            raise ValueError(
+                f"joint_positions_to_configuration: expected {len(self.moving_joint_names)} "
+                f"joint positions, got {q_joint.shape[0]}"
+            )
+
+        q = np.zeros(self.pin_model.nq)
+
+        for k, joint_name in enumerate(self.moving_joint_names):
+            joint_id = self.pin_model.getJointId(joint_name)
+            jmodel = self.pin_model.joints[joint_id]
+            idx_q = jmodel.idx_q
+            nq_j = jmodel.nq
+
+            if nq_j == 1:
+                q[idx_q] = q_joint[k]
+            elif nq_j == 2:
+                theta = q_joint[k]
+                q[idx_q] = np.cos(theta)
+                q[idx_q + 1] = np.sin(theta)
+            else:
+                raise ValueError(
+                    f"Unsupported joint nq={nq_j} for joint '{joint_name}' "
+                    f"(id={joint_id})"
+                )
+
+        return q
 
     def robot_description_callback(self, msg: String):
         pin_model_complete = pin.buildModelFromXML(msg.data)
@@ -179,7 +208,8 @@ class PDPlusController(Node):
         )
         q_ref = self.q0 + delta_q
 
-        tau_g = pin.computeGeneralizedGravity(self.pin_model, self.pin_data, self.q_m)
+        q_pin = self.joint_positions_to_configuration(self.q_m)
+        tau_g = pin.computeGeneralizedGravity(self.pin_model, self.pin_data, q_pin)
         tau = (
             tau_g
             - self.p_gains * (self.q_m - q_ref)
