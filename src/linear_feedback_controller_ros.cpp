@@ -245,72 +245,62 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
 
   if (lfc_.get_robot_model()->get_robot_has_free_flyer()) {
-    constexpr Eigen::Index base_pose_size  = 7;
+    constexpr Eigen::Index base_pose_size = 7;
     constexpr Eigen::Index base_twist_size = 6;
 
     // Offsets in reference_interfaces_.
-    const Eigen::Index offset_base_pose   = 0;
-    const Eigen::Index offset_joint_pos   = offset_base_pose + base_pose_size;
-    const Eigen::Index offset_base_twist  = offset_joint_pos + joint_nv;
-    const Eigen::Index offset_joint_vel   = offset_base_twist + base_twist_size;
-    const Eigen::Index offset_joint_eff   = offset_joint_vel + joint_nv;
-    const Eigen::Index expected_size      = offset_joint_eff + joint_nv;
+    const Eigen::Index offset_base_pose = 0;
+    const Eigen::Index offset_joint_pos = offset_base_pose + base_pose_size;
+    const Eigen::Index offset_base_twist = offset_joint_pos + joint_nv;
+    const Eigen::Index offset_joint_vel = offset_base_twist + base_twist_size;
+    const Eigen::Index offset_joint_eff = offset_joint_vel + joint_nv;
+    const Eigen::Index expected_size = offset_joint_eff + joint_nv;
 
     if (reference_interfaces_.size() != static_cast<size_t>(expected_size)) {
       RCLCPP_ERROR_STREAM(
           get_node()->get_logger(),
           "Inconsistent size for reference_interfaces_ (free-flyer): "
-              << "got " << reference_interfaces_.size()
-              << ", expected " << expected_size);
+              << "got " << reference_interfaces_.size() << ", expected "
+              << expected_size);
       return false;
     }
 
-    input_sensor_.base_pose =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_base_pose],
-                             base_pose_size);
-    input_sensor_.joint_state.position =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_pos],
-                             joint_nv);
-    input_sensor_.base_twist =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_base_twist],
-                             base_twist_size);
-    new_joint_velocity_ =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_vel],
-                             joint_nv);
-    input_sensor_.joint_state.effort =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_eff],
-                             joint_nv);
+    input_sensor_.base_pose = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_base_pose], base_pose_size);
+    input_sensor_.joint_state.position = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_pos], joint_nv);
+    input_sensor_.base_twist = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_base_twist], base_twist_size);
+    new_joint_velocity_ = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_vel], joint_nv);
+    input_sensor_.joint_state.effort = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_eff], joint_nv);
 
   } else {
     // no free-flyer: only controlled joints.
     const Eigen::Index offset_joint_pos = 0;
     const Eigen::Index offset_joint_vel = offset_joint_pos + joint_nv;
     const Eigen::Index offset_joint_eff = offset_joint_vel + joint_nv;
-    const Eigen::Index expected_size    = offset_joint_eff + joint_nv;
+    const Eigen::Index expected_size = offset_joint_eff + joint_nv;
 
     if (reference_interfaces_.size() != static_cast<size_t>(expected_size)) {
       RCLCPP_ERROR_STREAM(
           get_node()->get_logger(),
           "Inconsistent size for reference_interfaces_ (fixed base): "
-              << "got " << reference_interfaces_.size()
-              << ", expected " << expected_size);
+              << "got " << reference_interfaces_.size() << ", expected "
+              << expected_size);
       return false;
     }
 
-    input_sensor_.base_pose.fill(
-        std::numeric_limits<double>::signaling_NaN());
-    input_sensor_.base_twist.fill(
-        std::numeric_limits<double>::signaling_NaN());
+    input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
+    input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
 
-    input_sensor_.joint_state.position =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_pos],
-                             joint_nv);
-    new_joint_velocity_ =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_vel],
-                             joint_nv);
-    input_sensor_.joint_state.effort =
-        Eigen::VectorXd::Map(&reference_interfaces_[offset_joint_eff],
-                             joint_nv);
+    input_sensor_.joint_state.position = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_pos], joint_nv);
+    new_joint_velocity_ = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_vel], joint_nv);
+    input_sensor_.joint_state.effort = Eigen::VectorXd::Map(
+        &reference_interfaces_[offset_joint_eff], joint_nv);
   }
 
   // Ensure that velocity has the correct size.
@@ -560,7 +550,7 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
 }
 
 bool LinearFeedbackControllerRos::allocate_memory() {
-  const auto nv       = lfc_.get_robot_model()->get_nv();
+  const auto nv = lfc_.get_robot_model()->get_nv();
   const auto joint_nv = lfc_.get_robot_model()->get_joint_nv();
 
   // Command vector (efforts) : one effort per controlled joint
@@ -575,7 +565,7 @@ bool LinearFeedbackControllerRos::allocate_memory() {
   // States of the controlled joints (PD space)
   input_sensor_.joint_state.position = Eigen::VectorXd::Zero(joint_nv);
   input_sensor_.joint_state.velocity = Eigen::VectorXd::Zero(joint_nv);
-  input_sensor_.joint_state.effort   = Eigen::VectorXd::Zero(joint_nv);
+  input_sensor_.joint_state.effort = Eigen::VectorXd::Zero(joint_nv);
 
   input_sensor_.joint_state.position.fill(
       std::numeric_limits<double>::signaling_NaN());
@@ -607,8 +597,7 @@ bool LinearFeedbackControllerRos::allocate_memory() {
 
   // The feedforward is also an effort per controlled joint
   input_control_.feedforward = Eigen::VectorXd::Zero(joint_nv);
-  input_control_.feedforward.fill(
-      std::numeric_limits<double>::signaling_NaN());
+  input_control_.feedforward.fill(std::numeric_limits<double>::signaling_NaN());
 
   new_joint_velocity_ = Eigen::VectorXd::Zero(joint_nv);
   new_joint_velocity_.fill(std::numeric_limits<double>::signaling_NaN());

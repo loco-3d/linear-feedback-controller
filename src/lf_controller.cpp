@@ -45,14 +45,14 @@ const Eigen::VectorXd& LFController::compute_control(
   const linear_feedback_controller_msgs::Eigen::Sensor& ctrl_init =
       control_msg.initial_state;
 
-//   // DEBUG 
-//   std::cout << "[LFC] compute_control: sensor_js.pos.size="
-//             << sensor_js.position.size()
-//             << ", ctrl_js.pos.size=" << ctrl_js.position.size()
-//             << ", feedforward size=" << control_msg.feedforward.size()
-//             << ", feedback_gain rows=" << control_msg.feedback_gain.rows()
-//             << ", cols=" << control_msg.feedback_gain.cols()
-//             << std::endl;
+  //   // DEBUG
+  //   std::cout << "[LFC] compute_control: sensor_js.pos.size="
+  //             << sensor_js.position.size()
+  //             << ", ctrl_js.pos.size=" << ctrl_js.position.size()
+  //             << ", feedforward size=" << control_msg.feedforward.size()
+  //             << ", feedback_gain rows=" << control_msg.feedback_gain.rows()
+  //             << ", cols=" << control_msg.feedback_gain.cols()
+  //             << std::endl;
 
   // Reconstruct the state vector: x = [q, v]
   rmb_->construct_robot_state(ctrl_init, desired_configuration_,
@@ -69,9 +69,9 @@ const Eigen::VectorXd& LFController::compute_control(
   control_.noalias() =
       control_msg.feedforward + control_msg.feedback_gain * diff_state_;
 
-//     // DEBUG
-//   std::cout << "[LFC] compute_control: control_ size=" << control_.size()
-//             << ", norm=" << control_.norm() << std::endl;
+  //     // DEBUG
+  //   std::cout << "[LFC] compute_control: control_ size=" << control_.size()
+  //             << ", norm=" << control_.norm() << std::endl;
 
   return control_;
 }

@@ -129,7 +129,7 @@ class PDPlusController(Node):
         delta_q = c + a * np.cos(w * dt)
         dq = -w * a * np.sin(w * dt)
         return delta_q, dq
-    
+
     def joint_positions_to_configuration(self, q_joint: np.ndarray) -> np.ndarray:
         if q_joint.shape[0] != len(self.moving_joint_names):
             raise ValueError(
