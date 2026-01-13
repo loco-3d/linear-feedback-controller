@@ -1,11 +1,10 @@
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
+#include <cmath>  // pour std::cos, std::sin
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/parsers/srdf.hpp>
 #include <pinocchio/parsers/urdf.hpp>
-
-#include <cmath>  // pour std::cos, std::sin
 
 namespace linear_feedback_controller {
 
@@ -100,7 +99,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
   joint_nq_per_joint_.reserve(moving_joint_ids_.size());
   joint_nv_per_joint_.reserve(moving_joint_ids_.size());
   for (auto jid : moving_joint_ids_) {
-    const auto & jmodel = pinocchio_model_complete.joints[jid];
+    const auto& jmodel = pinocchio_model_complete.joints[jid];
     joint_nq_per_joint_.push_back(static_cast<int>(jmodel.nq()));
     joint_nv_per_joint_.push_back(static_cast<int>(jmodel.nv()));
   }
@@ -122,7 +121,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
   // remove the "root_joint" if it exists in the moving_joint_names_, we needed
   // it to create the above locked_joint_ids needed for the reduced model.
   auto root_name = std::find(moving_joint_names_.begin(),
-                               moving_joint_names_.end(), "root_joint");
+                             moving_joint_names_.end(), "root_joint");
   if (root_name != moving_joint_names_.end()) {
     const std::size_t idx_root =
         static_cast<std::size_t>(root_name - moving_joint_names_.begin());
@@ -133,8 +132,8 @@ bool RobotModelBuilder::parse_moving_joint_names(
     // also remove the id
     const auto root_joint_id =
         pinocchio_model_complete.getJointId("root_joint");
-    auto root_id = std::find(moving_joint_ids_.begin(),
-                                moving_joint_ids_.end(), root_joint_id);
+    auto root_id = std::find(moving_joint_ids_.begin(), moving_joint_ids_.end(),
+                             root_joint_id);
     if (root_id != moving_joint_ids_.end()) {
       moving_joint_ids_.erase(root_id);
     }
@@ -173,11 +172,12 @@ bool RobotModelBuilder::parse_moving_joint_names(
     pin_to_hwi_.emplace(std::make_pair(i, it_dist));
   }
 
-  // ---------------------------- AJOUT ICI ---------------------------- //  
+  // ---------------------------- AJOUT ICI ---------------------------- //
   // DEBUG : mapping Pinocchio -> HWI
   std::cout << "[RMB] Pinocchio -> HW index map:" << std::endl;
-  for (const auto & kv : pin_to_hwi_) {
-    std::cout << "[RMB]   pin " << kv.first << " -> hwi " << kv.second << std::endl;
+  for (const auto& kv : pin_to_hwi_) {
+    std::cout << "[RMB]   pin " << kv.first << " -> hwi " << kv.second
+              << std::endl;
   }
   // ---------------------------- FIN AJOUT ICI --------------------------- //
 
@@ -216,9 +216,7 @@ RobotModelBuilder::get_pinocchio_to_hardware_interface_map() const {
 
 void RobotModelBuilder::construct_robot_state(
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
-    Eigen::VectorXd& robot_configuration,
-    Eigen::VectorXd& robot_velocity)
-{
+    Eigen::VectorXd& robot_configuration, Eigen::VectorXd& robot_velocity) {
   assert(robot_configuration.size() == get_nq() &&
          "robot_configuration has the wrong size");
   assert(robot_velocity.size() == get_nv() &&
@@ -227,13 +225,15 @@ void RobotModelBuilder::construct_robot_state(
   robot_configuration.setZero();
   robot_velocity.setZero();
 
-  const int joint_cfg_nq = get_joint_configuration_nq();  // nq joints (Pinocchio, without free-flyer)
-  const int joint_cfg_nv = get_joint_nv();                // nv joints (Pinocchio, without free-flyer)
+  const int joint_cfg_nq =
+      get_joint_configuration_nq();  // nq joints (Pinocchio, without
+                                     // free-flyer)
+  const int joint_cfg_nv =
+      get_joint_nv();  // nv joints (Pinocchio, without free-flyer)
 
   // DEBUG de base
   std::cout << "[RMB] construct_robot_state(): get_nq=" << get_nq()
-            << ", get_nv=" << get_nv()
-            << ", joint_cfg_nq=" << joint_cfg_nq
+            << ", get_nv=" << get_nv() << ", joint_cfg_nq=" << joint_cfg_nq
             << ", joint_cfg_nv=" << joint_cfg_nv
             << ", sensor.pos.size=" << sensor.joint_state.position.size()
             << ", sensor.vel.size=" << sensor.joint_state.velocity.size()
@@ -270,9 +270,9 @@ void RobotModelBuilder::construct_robot_state(
 
     // DEBUG
     std::cout << "[RMB]   filling joint " << moving_joint_names_[k]
-              << " (k=" << k << ", hwi=" << hwi_index
-              << ") with (nq=" << jnq << ", nv=" << jnv
-              << "), pos=" << pos << ", vel=" << vel << std::endl;
+              << " (k=" << k << ", hwi=" << hwi_index << ") with (nq=" << jnq
+              << ", nv=" << jnv << "), pos=" << pos << ", vel=" << vel
+              << std::endl;
 
     // revolute / prismatique case : 1 DOF config, 1 DOF speed
     if (jnq == 1 && jnv == 1) {
@@ -280,7 +280,7 @@ void RobotModelBuilder::construct_robot_state(
       assert(iv + 1 <= get_nv());
 
       robot_configuration[iq] = pos;
-      robot_velocity[iv]      = vel;
+      robot_velocity[iv] = vel;
       iq += 1;
       iv += 1;
     }
@@ -289,13 +289,12 @@ void RobotModelBuilder::construct_robot_state(
       assert(iq + 2 <= get_nq());
       assert(iv + 1 <= get_nv());
 
-      robot_configuration[iq]     = std::cos(pos);
+      robot_configuration[iq] = std::cos(pos);
       robot_configuration[iq + 1] = std::sin(pos);
-      robot_velocity[iv]          = vel;
+      robot_velocity[iv] = vel;
       iq += 2;
       iv += 1;
-    }
-    else {
+    } else {
       std::cerr << "RobotModelBuilder::construct_robot_state(): joint '"
                 << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
                 << jnq << ", " << jnv << ")." << std::endl;
@@ -306,10 +305,8 @@ void RobotModelBuilder::construct_robot_state(
   // Sanity checks
   assert(iq == get_nq() &&
          "Did not fill the expected number of configuration DOFs");
-  assert(iv == get_nv() &&
-         "Did not fill the expected number of velocity DOFs");
+  assert(iv == get_nv() && "Did not fill the expected number of velocity DOFs");
 }
-
 
 int RobotModelBuilder::get_nq() const { return pinocchio_model_.nq; }
 
@@ -332,15 +329,12 @@ int RobotModelBuilder::get_joint_position_nq() const {
     if (jnq == 1 && jnv == 1) {
       // revolute / prismatique
       nq += 1;
-    }
-    else if (jnq == 2 && jnv == 1) {
+    } else if (jnq == 2 && jnv == 1) {
       // continuous joint, represented by (cos, sin) in Pinocchio
       nq += 1;
-    }
-    else {
+    } else {
       std::cerr << "[RMB] get_joint_position_nq(): joint '"
-                << moving_joint_names_[k]
-                << "' has unsupported (nq, nv) = ("
+                << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
                 << jnq << ", " << jnv << ")." << std::endl;
       throw std::runtime_error(
           "RobotModelBuilder::get_joint_position_nq: unsupported joint type");
@@ -357,13 +351,10 @@ int RobotModelBuilder::get_joint_nv() const {
   return nv;
 }
 
-
-
 Eigen::VectorXd RobotModelBuilder::jointConfigToJointPositions(
-    const Eigen::VectorXd& q_joint) const
-{
+    const Eigen::VectorXd& q_joint) const {
   const int nb_dof_q_config = get_joint_configuration_nq();
-  const int nb_dof_q_pos    = get_joint_position_nq();
+  const int nb_dof_q_pos = get_joint_position_nq();
 
   if (q_joint.size() != nb_dof_q_config) {
     std::cerr << "[RMB] jointConfigToJointPositions: q_joint.size() = "
@@ -398,11 +389,9 @@ Eigen::VectorXd RobotModelBuilder::jointConfigToJointPositions(
       q_pos[ip] = theta;
       iq += 2;
       ip += 1;
-    }
-    else {
+    } else {
       std::cerr << "[RMB] jointConfigToJointPositions(): joint '"
-                << moving_joint_names_[k]
-                << "' has unsupported (nq, nv) = ("
+                << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
                 << jnq << ", " << jnv << ")." << std::endl;
       throw std::runtime_error(
           "Unsupported joint type in jointConfigToJointPositions");
@@ -415,17 +404,17 @@ Eigen::VectorXd RobotModelBuilder::jointConfigToJointPositions(
               << " (expected " << nb_dof_q_config << "), ip=" << ip
               << " (expected " << nb_dof_q_pos << ")" << std::endl;
     throw std::runtime_error(
-        "RobotModelBuilder::jointConfigToJointPositions: size mismatch after fill");
+        "RobotModelBuilder::jointConfigToJointPositions: size mismatch after "
+        "fill");
   }
 
   return q_pos;
 }
 
 Eigen::VectorXd RobotModelBuilder::jointPositionsToJointConfig(
-    const Eigen::VectorXd& q_position) const
-{
+    const Eigen::VectorXd& q_position) const {
   const int nb_dof_q_config = get_joint_configuration_nq();
-  const int nb_dof_q_pos    = get_joint_position_nq();
+  const int nb_dof_q_pos = get_joint_position_nq();
 
   if (q_position.size() != nb_dof_q_pos) {
     std::cerr << "[RMB] jointPositionsToJointConfig: q_position.size() = "
@@ -455,15 +444,13 @@ Eigen::VectorXd RobotModelBuilder::jointPositionsToJointConfig(
     // continuous joint : q = [cos(theta), sin(theta)], v = theta_dot
     else if (jnq == 2 && jnv == 1) {
       const double theta = pos;
-      q_joint[iq]     = std::cos(theta);
+      q_joint[iq] = std::cos(theta);
       q_joint[iq + 1] = std::sin(theta);
       iq += 2;
       ip += 1;
-    }
-    else {
+    } else {
       std::cerr << "[RMB] jointPositionsToJointConfig(): joint '"
-                << moving_joint_names_[k]
-                << "' has unsupported (nq, nv) = ("
+                << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
                 << jnq << ", " << jnv << ")." << std::endl;
       throw std::runtime_error(
           "Unsupported joint type in jointPositionsToJointConfig");
@@ -476,7 +463,8 @@ Eigen::VectorXd RobotModelBuilder::jointPositionsToJointConfig(
               << " (expected " << nb_dof_q_config << "), ip=" << ip
               << " (expected " << nb_dof_q_pos << ")" << std::endl;
     throw std::runtime_error(
-        "RobotModelBuilder::jointPositionsToJointConfig: size mismatch after fill");
+        "RobotModelBuilder::jointPositionsToJointConfig: size mismatch after "
+        "fill");
   }
 
   return q_joint;

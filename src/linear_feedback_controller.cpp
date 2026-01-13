@@ -22,13 +22,11 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 
   // DEBUG
   std::cout << "[LFC] load(): nq=" << robot_model_builder_->get_nq()
-            << ", nv=" << robot_model_builder_->get_nv()
-            << ", joint_cfg_nq="
+            << ", nv=" << robot_model_builder_->get_nv() << ", joint_cfg_nq="
             << robot_model_builder_->get_joint_configuration_nq()
             << ", joint_pos_nq="
             << robot_model_builder_->get_joint_position_nq()
-            << ", joint_nv="
-            << robot_model_builder_->get_joint_nv()
+            << ", joint_nv=" << robot_model_builder_->get_joint_nv()
             << std::endl;
 
   // Setup the pd controller.
@@ -49,13 +47,13 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 
   // Allocate memory
   robot_configuration_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nq());
-  robot_velocity_      = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
+  robot_velocity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
   robot_velocity_null_ = Eigen::VectorXd::Zero(robot_model_builder_->get_nv());
 
-  tau_init_    = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  tau_init_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
   tau_gravity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
-  control_pd_  = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
-  control_lf_  = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  control_pd_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
+  control_lf_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
 
   // DEBUG
   std::cout << "[LFC] load(): tau_init size=" << tau_init_.size()
@@ -66,13 +64,11 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 
 bool LinearFeedbackController::set_initial_state(
     const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
-
   const int joint_nq = robot_model_builder_->get_joint_position_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
   std::cout << "[LFC] set_initial_state: tau_init size=" << tau_init.size()
-            << ", jq_init size=" << jq_init.size()
-            << ", joint_nq=" << joint_nq
+            << ", jq_init size=" << jq_init.size() << ", joint_nq=" << joint_nq
             << ", joint_nv=" << joint_nv << std::endl;
 
   // Vérif sur tau_init
@@ -96,14 +92,12 @@ bool LinearFeedbackController::set_initial_state(
   Eigen::VectorXd q_ref_pd = jq_init;
 
   // DEBUG
-  std::cout << "[LFC] set_initial_state : tau_init size="
-            << tau_init.size()
+  std::cout << "[LFC] set_initial_state : tau_init size=" << tau_init.size()
             << ", q_ref_pd size=" << q_ref_pd.size() << std::endl;
-  std::cout << "[LFC] set_initial_state: q_ref_pd = "
-            << q_ref_pd.transpose() << std::endl;
-  std::cout << "[LFC] set_initial_state: tau_init = "
-            << tau_init.transpose() << std::endl;
-
+  std::cout << "[LFC] set_initial_state: q_ref_pd = " << q_ref_pd.transpose()
+            << std::endl;
+  std::cout << "[LFC] set_initial_state: tau_init = " << tau_init.transpose()
+            << std::endl;
 
   pd_controller_.set_reference(tau_init, q_ref_pd);
   tau_init_ = tau_init;
@@ -142,7 +136,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   }
 
   // inputs for PD controller
-  const int joint_pos_nq = robot_model_builder_->get_joint_position_nq(); 
+  const int joint_pos_nq = robot_model_builder_->get_joint_position_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
   // Sanity check design : PD / hardware vivent en joint_position_nq == joint_nv
@@ -158,8 +152,8 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   if (sensor_js.position.size() != joint_pos_nq) {
     std::stringstream ss;
     ss << "[LFC] compute_control: unexpected sensor_js.position size="
-       << sensor_js.position.size()
-       << " (expected " << joint_pos_nq << " = joint_position_nq)";
+       << sensor_js.position.size() << " (expected " << joint_pos_nq
+       << " = joint_position_nq)";
     std::cerr << ss.str() << std::endl;
     throw std::invalid_argument(ss.str());
   }
@@ -167,8 +161,8 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   if (sensor_js.velocity.size() != joint_nv) {
     std::stringstream ss;
     ss << "[LFC] compute_control: unexpected sensor_js.velocity size="
-       << sensor_js.velocity.size()
-       << " (expected " << joint_nv << " = joint_nv)";
+       << sensor_js.velocity.size() << " (expected " << joint_nv
+       << " = joint_nv)";
     std::cerr << ss.str() << std::endl;
     throw std::invalid_argument(ss.str());
   }
