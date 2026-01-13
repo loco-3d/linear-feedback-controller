@@ -64,7 +64,7 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, BuilderParametersAreCorrect) {
   // *_join_* represent the idea of considering only the joints provided by the
   // model. So it is different only in case of free flyer nv(+6) and nq(+7)
   EXPECT_EQ(builder->get_joint_nv(), builder->get_nv());
-  EXPECT_EQ(builder->get_joint_nq(), builder->get_nq());
+  EXPECT_EQ(builder->get_joint_position_nq(), builder->get_nq());
 }
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, RobotHasFreeFlyerFlagIsFalse) {
@@ -108,7 +108,7 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest,
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, ConstructRobotStateCorrectly) {
   linear_feedback_controller_msgs::Eigen::Sensor sensor;
-  const int n_joints = builder->get_joint_nq();  // 3
+  const int n_joints = builder->get_joint_configuration_nq();  // 3
 
   Eigen::VectorXd joint_positions(n_joints);
   joint_positions << 0.1, 0.2, 0.3;
@@ -164,7 +164,7 @@ TEST_F(RobotModelBuilderFreeFlyerTest, BuilderParametersAreCorrect) {
   // *_join_* represent the idea of considering only the joints provided by the
   // model. So it is different only in case of free flyer
   EXPECT_NE(builder->get_joint_nv(), builder->get_nv());
-  EXPECT_NE(builder->get_joint_nq(), builder->get_nq());
+  EXPECT_NE(builder->get_joint_position_nq(), builder->get_nq());
 }
 
 TEST_F(RobotModelBuilderFreeFlyerTest, RobotHasFreeFlyerFlagIsTrue) {
@@ -214,7 +214,7 @@ TEST_F(RobotModelBuilderFreeFlyerTest, ConstructRobotStateCorrectly) {
   sensor.base_twist = base_twist;
 
   // Data for joints
-  const int n_joints = builder->get_joint_nq();  // 3
+  const int n_joints = builder->get_joint_configuration_nq();  // 3
   Eigen::VectorXd joint_positions(n_joints);
   joint_positions << 0.7, 0.8, 0.9;
   sensor.joint_state.position = joint_positions;
