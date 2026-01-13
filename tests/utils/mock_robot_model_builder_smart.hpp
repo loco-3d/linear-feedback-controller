@@ -76,9 +76,22 @@ class SmartMockRobotModelBuilder : public RobotModelBuilder {
 
   int get_nq() const override { return model_.nq; }
   int get_nv() const override { return model_.nv; }
-  int get_joint_nq() const override { return model_.nq; }
+  int get_joint_configuration_nq() const override { return model_.nq; }
+  int get_joint_position_nq() const override { return model_.nq; }
   int get_joint_nv() const override { return model_.nv; }
   bool get_robot_has_free_flyer() const override { return false; }
+
+  Eigen::VectorXd jointConfigToJointPositions(
+      const Eigen::VectorXd& q_joint) const override {
+    return q_joint;  // For revolute joints without free-flyer, config =
+                     // position
+  }
+
+  Eigen::VectorXd jointPositionsToJointConfig(
+      const Eigen::VectorXd& q_position) const override {
+    return q_position;  // For revolute joints without free-flyer, position =
+                        // config
+  }
 
   MOCK_METHOD(void, construct_robot_state,
               (const linear_feedback_controller_msgs::Eigen::Sensor& Sensor,
