@@ -1,6 +1,6 @@
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
-#include <cmath>  // pour std::cos, std::sin
+#include <cmath>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/parsers/srdf.hpp>
@@ -94,7 +94,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
         pinocchio_model_complete.names[moving_joint_ids_[i]]);
   }
 
-  // ---------------------------- AJOUT ICI ---------------------------- //
   // Store nq and nv per moving joint in Pinocchio order
   joint_nq_per_joint_.reserve(moving_joint_ids_.size());
   joint_nv_per_joint_.reserve(moving_joint_ids_.size());
@@ -103,7 +102,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
     joint_nq_per_joint_.push_back(static_cast<int>(jmodel.nq()));
     joint_nv_per_joint_.push_back(static_cast<int>(jmodel.nv()));
   }
-  // ---------------------------- FIN AJOUT ICI --------------------------- //
 
   // Locked joint ids in the Pinocchio order.
   locked_joint_ids_.clear();
@@ -145,7 +143,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
     }
   }
 
-  // ---------------------------- AJOUT ICI ---------------------------- //
   // DEBUG : afficher les joints mobiles et leurs (nq, nv)
   std::cout << "[RMB] === Moving joints (Pinocchio order) ===" << std::endl;
   for (std::size_t i = 0; i < moving_joint_names_.size(); ++i) {
@@ -153,7 +150,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
               << " | nq = " << joint_nq_per_joint_[i]
               << ", nv = " << joint_nv_per_joint_[i] << std::endl;
   }
-  // ---------------------------- FIN AJOUT ICI --------------------------- //
 
   // Create the joint name joint id mapping of the hardware interface.
   for (std::size_t i = 0; i < moving_joint_names_.size(); ++i) {

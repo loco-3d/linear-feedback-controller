@@ -71,7 +71,7 @@ bool LinearFeedbackController::set_initial_state(
             << ", jq_init size=" << jq_init.size() << ", joint_nq=" << joint_nq
             << ", joint_nv=" << joint_nv << std::endl;
 
-  // Vérif sur tau_init
+  // verification of tau_init size
   if (tau_init.size() != joint_nv) {
     std::stringstream ss;
     ss << "[LFC] set_initial_state: tau_init size=" << tau_init.size()
@@ -80,7 +80,7 @@ bool LinearFeedbackController::set_initial_state(
     throw std::invalid_argument(ss.str());
   }
 
-  // vérif jq_init size
+  // verification of jq_init size
   if (jq_init.size() != joint_nq) {
     std::stringstream ss;
     ss << "[LFC] set_initial_state: jq_init size= " << jq_init.size()
@@ -88,8 +88,6 @@ bool LinearFeedbackController::set_initial_state(
     std::cerr << ss.str() << std::endl;
     throw std::invalid_argument(ss.str());
   }
-
-  Eigen::VectorXd q_ref_pd = jq_init;
 
   // DEBUG
   std::cout << "[LFC] set_initial_state : tau_init size=" << tau_init.size()
@@ -99,7 +97,7 @@ bool LinearFeedbackController::set_initial_state(
   std::cout << "[LFC] set_initial_state: tau_init = " << tau_init.transpose()
             << std::endl;
 
-  pd_controller_.set_reference(tau_init, q_ref_pd);
+  pd_controller_.set_reference(tau_init, jq_init);
   tau_init_ = tau_init;
   return true;
 }
@@ -139,7 +137,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   const int joint_pos_nq = robot_model_builder_->get_joint_position_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
-  // Sanity check design : PD / hardware vivent en joint_position_nq == joint_nv
+  // Sanity check design : PD / hardware are using joint_position_nq == joint_nv
   if (joint_pos_nq != joint_nv) {
     std::stringstream ss;
     ss << "[LFC] compute_control: design error, joint_pos_nq=" << joint_pos_nq
@@ -148,7 +146,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     throw std::logic_error(ss.str());
   }
 
-  // Size verification on the sizes coming from ROS
+  // Verification on the sizes coming from ROS
   if (sensor_js.position.size() != joint_pos_nq) {
     std::stringstream ss;
     ss << "[LFC] compute_control: unexpected sensor_js.position size="
@@ -167,11 +165,9 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
     throw std::invalid_argument(ss.str());
   }
 
-  Eigen::VectorXd q_pd = sensor_js.position;
-  Eigen::VectorXd v_pd = sensor_js.velocity;
-
   if (!first_control_received_time_initialized) {
-    control_ = pd_controller_.compute_control(q_pd, v_pd);
+    control_ =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
 
     if (remove_gravity_compensation_effort) {
       control_ -= tau_init_;
@@ -181,7 +177,8 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
                     params_.pd_to_lf_transition_duration.count();
     weight = std::clamp(weight, 0.0, 1.0);
 
-    control_pd_ = pd_controller_.compute_control(q_pd, v_pd);
+    control_pd_ =
+        pd_controller_.compute_control(sensor_js.position, sensor_js.velocity);
     control_lf_ = lf_controller_.compute_control(sensor, control);
 
     if (remove_gravity_compensation_effort) {
