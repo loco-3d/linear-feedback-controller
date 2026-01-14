@@ -143,14 +143,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
     }
   }
 
-  // DEBUG : afficher les joints mobiles et leurs (nq, nv)
-  std::cout << "[RMB] === Moving joints (Pinocchio order) ===" << std::endl;
-  for (std::size_t i = 0; i < moving_joint_names_.size(); ++i) {
-    std::cout << "[RMB] " << i << " : " << moving_joint_names_[i]
-              << " | nq = " << joint_nq_per_joint_[i]
-              << ", nv = " << joint_nv_per_joint_[i] << std::endl;
-  }
-
   // Create the joint name joint id mapping of the hardware interface.
   for (std::size_t i = 0; i < moving_joint_names_.size(); ++i) {
     auto it = std::find(controlled_joint_names.begin(),
@@ -167,15 +159,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
         (size_t)std::distance(controlled_joint_names.begin(), it);
     pin_to_hwi_.emplace(std::make_pair(i, it_dist));
   }
-
-  // ---------------------------- AJOUT ICI ---------------------------- //
-  // DEBUG : mapping Pinocchio -> HWI
-  std::cout << "[RMB] Pinocchio -> HW index map:" << std::endl;
-  for (const auto& kv : pin_to_hwi_) {
-    std::cout << "[RMB]   pin " << kv.first << " -> hwi " << kv.second
-              << std::endl;
-  }
-  // ---------------------------- FIN AJOUT ICI --------------------------- //
 
   return true;
 }
@@ -226,14 +209,6 @@ void RobotModelBuilder::construct_robot_state(
   const int joint_cfg_nv =
       get_joint_nv();  // nv joints (Pinocchio, without free-flyer)
 
-  // DEBUG de base
-  // std::cout << "[RMB] construct_robot_state(): get_nq=" << get_nq()
-  //           << ", get_nv=" << get_nv() << ", joint_cfg_nq=" << joint_cfg_nq
-  //           << ", joint_cfg_nv=" << joint_cfg_nv
-  //           << ", sensor.pos.size=" << sensor.joint_state.position.size()
-  //           << ", sensor.vel.size=" << sensor.joint_state.velocity.size()
-  //           << std::endl;
-
   // Add free flyer to the state vector: x = [q, v]
   if (get_robot_has_free_flyer()) {
     robot_configuration.head<7>() = sensor.base_pose;
@@ -262,12 +237,6 @@ void RobotModelBuilder::construct_robot_state(
 
     const int jnq = joint_nq_per_joint_.at(k);
     const int jnv = joint_nv_per_joint_.at(k);
-
-    // DEBUG
-    // std::cout << "[RMB]   filling joint " << moving_joint_names_[k]
-    //           << " (k=" << k << ", hwi=" << hwi_index << ") with (nq=" << jnq
-    //           << ", nv=" << jnv << "), pos=" << pos << ", vel=" << vel
-    //           << std::endl;
 
     // revolute / prismatique case : 1 DOF config, 1 DOF speed
     if (jnq == 1 && jnv == 1) {
