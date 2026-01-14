@@ -106,12 +106,12 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    * @brief Get Pinocchio joint space dimension (position) excluding free-flyer
    * joint. In case of a continuous joint, it will add 2 to nq (cos, sin)
    */
-  virtual int get_joint_configuration_nq() const;
+  virtual int get_joint_pin_nq() const;
   /**
    * @brief Get Hardware joint space dimension (position) excluding free-flyer
    * joint. In case of a continuous joint, it will add only 1 to nq
    */
-  virtual int get_joint_position_nq() const;
+  virtual int get_joint_hw_nq() const;
   /**
    * @brief Get Pinocchio joint space dimension (velocity) excluding free-flyer
    * joint.

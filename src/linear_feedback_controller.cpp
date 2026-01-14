@@ -22,10 +22,9 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 
   // DEBUG
   std::cout << "[LFC] load(): nq=" << robot_model_builder_->get_nq()
-            << ", nv=" << robot_model_builder_->get_nv() << ", joint_cfg_nq="
-            << robot_model_builder_->get_joint_configuration_nq()
-            << ", joint_pos_nq="
-            << robot_model_builder_->get_joint_position_nq()
+            << ", nv=" << robot_model_builder_->get_nv()
+            << ", joint_cfg_nq=" << robot_model_builder_->get_joint_pin_nq()
+            << ", joint_pos_nq=" << robot_model_builder_->get_joint_hw_nq()
             << ", joint_nv=" << robot_model_builder_->get_joint_nv()
             << std::endl;
 
@@ -64,7 +63,7 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
 
 bool LinearFeedbackController::set_initial_state(
     const Eigen::VectorXd& tau_init, const Eigen::VectorXd& jq_init) {
-  const int joint_nq = robot_model_builder_->get_joint_position_nq();
+  const int joint_nq = robot_model_builder_->get_joint_hw_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
   std::cout << "[LFC] set_initial_state: tau_init size=" << tau_init.size()
@@ -134,7 +133,7 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   }
 
   // inputs for PD controller
-  const int joint_pos_nq = robot_model_builder_->get_joint_position_nq();
+  const int joint_pos_nq = robot_model_builder_->get_joint_hw_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
   // Sanity check design : PD / hardware are using joint_position_nq == joint_nv
