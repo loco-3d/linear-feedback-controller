@@ -20,26 +20,8 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
     return false;
   }
 
-  // DEBUG
-  std::cout << "[LFC] load(): nq=" << robot_model_builder_->get_nq()
-            << ", nv=" << robot_model_builder_->get_nv()
-            << ", joint_cfg_nq=" << robot_model_builder_->get_joint_pin_nq()
-            << ", joint_pos_nq=" << robot_model_builder_->get_joint_hw_nq()
-            << ", joint_nv=" << robot_model_builder_->get_joint_nv()
-            << std::endl;
-
   // Setup the pd controller.
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
-
-  // DEBUG : ordre des joints / indices <<<
-  std::cout << "[LFC] load(): controlled joints from params ("
-            << params_.controlled_joint_names.size() << "):" << std::endl;
-  for (int i = 0; i < (int)params_.controlled_joint_names.size(); ++i) {
-    std::cout << "  idx " << i << " -> " << params_.controlled_joint_names[i]
-              << std::endl;
-  }
-  std::cout << "[LFC] load(): p_gains size=" << params_.p_gains.size()
-            << ", d_gains size=" << params_.d_gains.size() << std::endl;
 
   // Setup the lfc controller.
   lf_controller_.initialize(robot_model_builder_);
@@ -53,10 +35,6 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   tau_gravity_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
   control_pd_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
   control_lf_ = Eigen::VectorXd::Zero(robot_model_builder_->get_joint_nv());
-
-  // DEBUG
-  std::cout << "[LFC] load(): tau_init size=" << tau_init_.size()
-            << ", p_gains size=" << params_.p_gains.size() << std::endl;
 
   return true;
 }
@@ -87,14 +65,6 @@ bool LinearFeedbackController::set_initial_state(
     std::cerr << ss.str() << std::endl;
     throw std::invalid_argument(ss.str());
   }
-
-  // DEBUG
-  std::cout << "[LFC] set_initial_state : tau_init size=" << tau_init.size()
-            << ", jq_init size=" << jq_init.size() << std::endl;
-  std::cout << "[LFC] set_initial_state: jq_init = " << jq_init.transpose()
-            << std::endl;
-  std::cout << "[LFC] set_initial_state: tau_init = " << tau_init.transpose()
-            << std::endl;
 
   pd_controller_.set_reference(tau_init, jq_init);
   tau_init_ = tau_init;
