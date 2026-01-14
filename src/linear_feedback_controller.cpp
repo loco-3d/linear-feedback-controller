@@ -91,8 +91,8 @@ bool LinearFeedbackController::set_initial_state(
 
   // DEBUG
   std::cout << "[LFC] set_initial_state : tau_init size=" << tau_init.size()
-            << ", q_ref_pd size=" << q_ref_pd.size() << std::endl;
-  std::cout << "[LFC] set_initial_state: q_ref_pd = " << q_ref_pd.transpose()
+            << ", jq_init size=" << jq_init.size() << std::endl;
+  std::cout << "[LFC] set_initial_state: jq_init = " << jq_init.transpose()
             << std::endl;
   std::cout << "[LFC] set_initial_state: tau_init = " << tau_init.transpose()
             << std::endl;
