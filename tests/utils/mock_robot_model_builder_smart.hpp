@@ -76,8 +76,12 @@ class SmartMockRobotModelBuilder : public RobotModelBuilder {
 
   int get_nq() const override { return model_.nq; }
   int get_nv() const override { return model_.nv; }
-  int get_joint_configuration_nq() const override { return model_.nq; }
-  int get_joint_position_nq() const override { return model_.nq; }
+  int get_joint_pin_nq() const override {
+    return model_.nq;
+  }  // works only for non freeflyer
+  int get_joint_hw_nq() const override {
+    return model_.nv;
+  }  // works only for non freeflyer
   int get_joint_nv() const override { return model_.nv; }
   bool get_robot_has_free_flyer() const override { return false; }
 

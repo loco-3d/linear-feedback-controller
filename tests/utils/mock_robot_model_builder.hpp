@@ -50,8 +50,8 @@ class MockRobotModelBuilder : public RobotModelBuilder {
 
   MOCK_METHOD(int, get_nq, (), (const, override));
   MOCK_METHOD(int, get_nv, (), (const, override));
-  MOCK_METHOD(int, get_joint_configuration_nq, (), (const, override));
-  MOCK_METHOD(int, get_joint_position_nq, (), (const, override));
+  MOCK_METHOD(int, get_joint_pin_nq, (), (const, override));
+  MOCK_METHOD(int, get_joint_hw_nq, (), (const, override));
   MOCK_METHOD(int, get_joint_nv, (), (const, override));
 
   MOCK_METHOD(Eigen::VectorXd, jointConfigToJointPositions,
