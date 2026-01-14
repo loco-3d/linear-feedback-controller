@@ -19,7 +19,7 @@ const std::string simple_urdf_content = R"(
         <child link="link2"/>
         <limit effort="54.0" lower="-3.14159265" upper="3.14159265" velocity="3.2"/>
       </joint>
-      <joint name="joint3" type="revolute">
+      <joint name="joint3" type="continuous">
         <parent link="link2"/>
         <child link="link3"/>
         <limit effort="54.0" lower="-3.14159265" upper="3.14159265" velocity="3.2"/>
@@ -51,7 +51,8 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioModelAndDataAreCorrect) {
   // Pinocchio add a "universe" joint, so we get 3+1 joints
   EXPECT_EQ(model.njoints, 4);
   EXPECT_EQ(model.nv, 3);
-  EXPECT_EQ(model.nq, 3);
+  // continuous joint adds 2 DoF (cos, sin)
+  EXPECT_EQ(model.nq, 4);
 
   const auto& data = builder->get_data();
   EXPECT_EQ(data.f.size(), model.njoints);
@@ -59,12 +60,15 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest, PinocchioModelAndDataAreCorrect) {
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, BuilderParametersAreCorrect) {
   EXPECT_EQ(builder->get_nv(), 3);
-  EXPECT_EQ(builder->get_nq(), 3);
+  // continuous joint adds 2 DoF (cos, sin)
+  EXPECT_EQ(builder->get_nq(), 4);
 
   // *_join_* represent the idea of considering only the joints provided by the
   // model. So it is different only in case of free flyer nv(+6) and nq(+7)
   EXPECT_EQ(builder->get_joint_nv(), builder->get_nv());
-  EXPECT_EQ(builder->get_joint_position_nq(), builder->get_nq());
+  EXPECT_EQ(builder->get_joint_pin_nq(), builder->get_nq());
+  // get_joint_hw_nq() should return nq -1 for continuous joint
+  EXPECT_EQ(builder->get_joint_hw_nq(), builder->get_nq() - 1);
 }
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, RobotHasFreeFlyerFlagIsFalse) {
@@ -108,23 +112,41 @@ TEST_F(RobotModelBuilderNonFreeFlyerTest,
 
 TEST_F(RobotModelBuilderNonFreeFlyerTest, ConstructRobotStateCorrectly) {
   linear_feedback_controller_msgs::Eigen::Sensor sensor;
-  const int n_joints = builder->get_joint_configuration_nq();  // 3
+  const int n_hw = builder->get_joint_hw_nq();  // 3 : 3 joints for the hw
+  const int nq = builder->get_nq();             // 4 : 1+1+2 for pinocchio
+  const int nv = builder->get_nv();             // 3
 
-  Eigen::VectorXd joint_positions(n_joints);
+  Eigen::VectorXd joint_positions(n_hw);
   joint_positions << 0.1, 0.2, 0.3;
   sensor.joint_state.position = joint_positions;
 
-  Eigen::VectorXd joint_velocities(n_joints);
+  Eigen::VectorXd joint_velocities(n_hw);
   joint_velocities << 1.1, 1.2, 1.3;
   sensor.joint_state.velocity = joint_velocities;
 
-  Eigen::VectorXd robot_configuration(builder->get_nq());
-  Eigen::VectorXd robot_velocity(builder->get_nv());
+  Eigen::VectorXd robot_configuration(nq);
+  Eigen::VectorXd robot_velocity(nv);
 
   builder->construct_robot_state(sensor, robot_configuration, robot_velocity);
 
-  EXPECT_EQ(robot_configuration, sensor.joint_state.position);
-  EXPECT_EQ(robot_velocity, sensor.joint_state.velocity);
+  ASSERT_EQ(robot_configuration.size(), nq);
+
+  const double th1 = joint_positions[0];  // joint1 (revolute)
+  const double th2 = joint_positions[1];  // joint2 (revolute)
+  const double th3 = joint_positions[2];  // joint3 (continuous)
+
+  // joint1 (nq=1)
+  EXPECT_NEAR(robot_configuration[0], th1, 1e-12);
+
+  // joint2 (nq=1)
+  EXPECT_NEAR(robot_configuration[1], th2, 1e-12);
+
+  // joint3 (nq=2): [cos θ3, sin θ3]
+  EXPECT_NEAR(robot_configuration[2], std::cos(th3), 1e-12);
+  EXPECT_NEAR(robot_configuration[3], std::sin(th3), 1e-12);
+
+  ASSERT_EQ(robot_velocity.size(), nv);
+  EXPECT_TRUE(robot_velocity.isApprox(joint_velocities, 1e-12));
 }
 
 // Create a fixture to test free-flyer cases
@@ -148,23 +170,25 @@ class RobotModelBuilderFreeFlyerTest : public ::testing::Test {
 
 TEST_F(RobotModelBuilderFreeFlyerTest, PinocchioModelIsCorrect) {
   const auto& model = builder->get_model();
-  // Pinocchio add a "universe" joint add a "root_joint" joint for freeflyers,
-  // so we get 3+1+1 joints
+  // Pinocchio add a "universe" joint and add a "root_joint" joint for
+  // freeflyers, so we get 3+1+1 joints
   EXPECT_EQ(model.njoints, 5);
   // The "root_joint" is a 6 DoF freedown movement - represented by nv += 6
   EXPECT_EQ(model.nv, 9);
   // and nq += 7
-  EXPECT_EQ(model.nq, 10);
+  // continuous joint adds 2 DoF (cos, sin) so we add 1 here because we have 1
+  // continuous joint
+  EXPECT_EQ(model.nq, 11);
 }
 
 TEST_F(RobotModelBuilderFreeFlyerTest, BuilderParametersAreCorrect) {
   EXPECT_EQ(builder->get_nv(), 9);
-  EXPECT_EQ(builder->get_nq(), 10);
+  EXPECT_EQ(builder->get_nq(), 11);
 
   // *_join_* represent the idea of considering only the joints provided by the
   // model. So it is different only in case of free flyer
   EXPECT_NE(builder->get_joint_nv(), builder->get_nv());
-  EXPECT_NE(builder->get_joint_position_nq(), builder->get_nq());
+  EXPECT_NE(builder->get_joint_pin_nq(), builder->get_nq());
 }
 
 TEST_F(RobotModelBuilderFreeFlyerTest, RobotHasFreeFlyerFlagIsTrue) {
@@ -214,28 +238,49 @@ TEST_F(RobotModelBuilderFreeFlyerTest, ConstructRobotStateCorrectly) {
   sensor.base_twist = base_twist;
 
   // Data for joints
-  const int n_joints = builder->get_joint_configuration_nq();  // 3
-  Eigen::VectorXd joint_positions(n_joints);
+  const int n_hw = builder->get_joint_hw_nq();  // 3 : 3 joints
+  const int nq = builder->get_nq();  // 7 (FF) + 1 + 1 + 2 (continuous) = 11
+  const int nv = builder->get_nv();  // 6 (FF) + 1 + 1 + 1 = 9
+
+  Eigen::VectorXd joint_positions(n_hw);
   joint_positions << 0.7, 0.8, 0.9;
   sensor.joint_state.position = joint_positions;
 
-  Eigen::VectorXd joint_velocities(n_joints);
+  Eigen::VectorXd joint_velocities(n_hw);
   joint_velocities << 1.7, 1.8, 1.9;
   sensor.joint_state.velocity = joint_velocities;
 
-  Eigen::VectorXd robot_configuration(builder->get_nq());
-  Eigen::VectorXd robot_velocity(builder->get_nv());
+  Eigen::VectorXd robot_configuration(nq);
+  Eigen::VectorXd robot_velocity(nv);
 
   builder->construct_robot_state(sensor, robot_configuration, robot_velocity);
 
-  // 3. Vérification (Assert)
-  // Ferify "free-flyer" part (beginning)
-  EXPECT_EQ(robot_configuration.head<7>(), sensor.base_pose);
-  EXPECT_EQ(robot_velocity.head<6>(), sensor.base_twist);
+  // Verify "free-flyer" part (beginning)
+  EXPECT_TRUE(robot_configuration.head<7>().isApprox(base_pose, 1e-12));
+  EXPECT_TRUE(robot_velocity.head<6>().isApprox(base_twist, 1e-12));
 
-  // Verifu joint part (end)
-  EXPECT_EQ(robot_configuration.tail(n_joints), sensor.joint_state.position);
-  EXPECT_EQ(robot_velocity.tail(n_joints), sensor.joint_state.velocity);
+  // Verify joint part (end)
+
+  const int iq0 = 7;  // offset en q après la base
+  const int iv0 = 6;  // offset en v après la base
+
+  const double th1 = joint_positions[0];  // joint1 (revolute)
+  const double th2 = joint_positions[1];  // joint2 (revolute)
+  const double th3 = joint_positions[2];  // joint3 (continuous)
+
+  // joint1 (nq=1)
+  EXPECT_NEAR(robot_configuration[iq0 + 0], th1, 1e-12);
+
+  // joint2 (nq=1)
+  EXPECT_NEAR(robot_configuration[iq0 + 1], th2, 1e-12);
+
+  // joint3 (nq=2): q = [cos θ3, sin θ3]
+  EXPECT_NEAR(robot_configuration[iq0 + 2], std::cos(th3), 1e-12);
+  EXPECT_NEAR(robot_configuration[iq0 + 3], std::sin(th3), 1e-12);
+
+  // Velocity part
+  EXPECT_TRUE(
+      robot_velocity.segment(iv0, n_hw).isApprox(joint_velocities, 1e-12));
 }
 
 // Fixture to test filtering functionalities
