@@ -221,9 +221,8 @@ void RobotModelBuilder::construct_robot_state(
   robot_configuration.setZero();
   robot_velocity.setZero();
 
-  const int joint_cfg_nq =
-      get_joint_configuration_nq();  // nq joints (Pinocchio, without
-                                     // free-flyer)
+  const int joint_cfg_nq = get_joint_pin_nq();  // nq joints (Pinocchio, without
+                                                // free-flyer)
   const int joint_cfg_nv =
       get_joint_nv();  // nv joints (Pinocchio, without free-flyer)
 
@@ -308,7 +307,7 @@ int RobotModelBuilder::get_nq() const { return pinocchio_model_.nq; }
 
 int RobotModelBuilder::get_nv() const { return pinocchio_model_.nv; }
 
-int RobotModelBuilder::get_joint_configuration_nq() const {
+int RobotModelBuilder::get_joint_pin_nq() const {
   int nq = 0;
   for (std::size_t k = 0; k < joint_nq_per_joint_.size(); ++k) {
     nq += joint_nq_per_joint_[k];
@@ -316,7 +315,7 @@ int RobotModelBuilder::get_joint_configuration_nq() const {
   return nq;
 }
 
-int RobotModelBuilder::get_joint_position_nq() const {
+int RobotModelBuilder::get_joint_hw_nq() const {
   int nq = 0;
   for (std::size_t k = 0; k < joint_nq_per_joint_.size(); ++k) {
     const int jnq = joint_nq_per_joint_[k];
@@ -329,11 +328,11 @@ int RobotModelBuilder::get_joint_position_nq() const {
       // continuous joint, represented by (cos, sin) in Pinocchio
       nq += 1;
     } else {
-      std::cerr << "[RMB] get_joint_position_nq(): joint '"
-                << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
-                << jnq << ", " << jnv << ")." << std::endl;
+      std::cerr << "[RMB] get_joint_hw_nq(): joint '" << moving_joint_names_[k]
+                << "' has unsupported (nq, nv) = (" << jnq << ", " << jnv
+                << ")." << std::endl;
       throw std::runtime_error(
-          "RobotModelBuilder::get_joint_position_nq: unsupported joint type");
+          "RobotModelBuilder::get_joint_hw_nq: unsupported joint type");
     }
   }
   return nq;
@@ -349,8 +348,8 @@ int RobotModelBuilder::get_joint_nv() const {
 
 Eigen::VectorXd RobotModelBuilder::jointConfigToJointPositions(
     const Eigen::VectorXd& q_joint) const {
-  const int nb_dof_q_config = get_joint_configuration_nq();
-  const int nb_dof_q_pos = get_joint_position_nq();
+  const int nb_dof_q_config = get_joint_pin_nq();
+  const int nb_dof_q_pos = get_joint_hw_nq();
 
   if (q_joint.size() != nb_dof_q_config) {
     std::cerr << "[RMB] jointConfigToJointPositions: q_joint.size() = "
@@ -409,8 +408,8 @@ Eigen::VectorXd RobotModelBuilder::jointConfigToJointPositions(
 
 Eigen::VectorXd RobotModelBuilder::jointPositionsToJointConfig(
     const Eigen::VectorXd& q_position) const {
-  const int nb_dof_q_config = get_joint_configuration_nq();
-  const int nb_dof_q_pos = get_joint_position_nq();
+  const int nb_dof_q_config = get_joint_pin_nq();
+  const int nb_dof_q_pos = get_joint_hw_nq();
 
   if (q_position.size() != nb_dof_q_pos) {
     std::cerr << "[RMB] jointPositionsToJointConfig: q_position.size() = "
