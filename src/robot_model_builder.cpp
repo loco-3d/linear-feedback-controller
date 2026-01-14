@@ -228,12 +228,12 @@ void RobotModelBuilder::construct_robot_state(
       get_joint_nv();  // nv joints (Pinocchio, without free-flyer)
 
   // DEBUG de base
-  std::cout << "[RMB] construct_robot_state(): get_nq=" << get_nq()
-            << ", get_nv=" << get_nv() << ", joint_cfg_nq=" << joint_cfg_nq
-            << ", joint_cfg_nv=" << joint_cfg_nv
-            << ", sensor.pos.size=" << sensor.joint_state.position.size()
-            << ", sensor.vel.size=" << sensor.joint_state.velocity.size()
-            << std::endl;
+  // std::cout << "[RMB] construct_robot_state(): get_nq=" << get_nq()
+  //           << ", get_nv=" << get_nv() << ", joint_cfg_nq=" << joint_cfg_nq
+  //           << ", joint_cfg_nv=" << joint_cfg_nv
+  //           << ", sensor.pos.size=" << sensor.joint_state.position.size()
+  //           << ", sensor.vel.size=" << sensor.joint_state.velocity.size()
+  //           << std::endl;
 
   // Add free flyer to the state vector: x = [q, v]
   if (get_robot_has_free_flyer()) {
@@ -265,10 +265,10 @@ void RobotModelBuilder::construct_robot_state(
     const int jnv = joint_nv_per_joint_.at(k);
 
     // DEBUG
-    std::cout << "[RMB]   filling joint " << moving_joint_names_[k]
-              << " (k=" << k << ", hwi=" << hwi_index << ") with (nq=" << jnq
-              << ", nv=" << jnv << "), pos=" << pos << ", vel=" << vel
-              << std::endl;
+    // std::cout << "[RMB]   filling joint " << moving_joint_names_[k]
+    //           << " (k=" << k << ", hwi=" << hwi_index << ") with (nq=" << jnq
+    //           << ", nv=" << jnv << "), pos=" << pos << ", vel=" << vel
+    //           << std::endl;
 
     // revolute / prismatique case : 1 DOF config, 1 DOF speed
     if (jnq == 1 && jnv == 1) {
