@@ -588,8 +588,8 @@ bool LinearFeedbackControllerRos::allocate_memory() {
    *  - nb of rows = joint_nv = nb of controlled joints
    *  - nb of columns = 2 * nv  (e.g. [q; v] truncated/filtred on LFC side)
    *
-   * When there is no free-flyer, in general joint_nv == nv.
-   * With free-flyer, joint_nv can be < nv (we don't control the base).
+   * When there is no free-flyer, joint_nv == nv.
+   * With free-flyer, joint_nv is < nv (we don't control the base).
    */
   input_control_.feedback_gain = Eigen::MatrixXd::Zero(joint_nv, 2 * nv);
   input_control_.feedback_gain.fill(
