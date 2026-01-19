@@ -3,6 +3,7 @@
 """
 Test PD+gravity tracking sinusoidal joint trajectory for Panda robot (7Dof).
 """
+
 import numpy as np
 import pinocchio as pin
 import rclpy
