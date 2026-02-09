@@ -277,7 +277,7 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         &reference_interfaces_[offset_joint_eff], joint_nv);
 
   } else {
-    // no free-flyer: only controlled joints.
+    // No free-flyer: only controlled joints.
     const Eigen::Index offset_joint_pos = 0;
     const Eigen::Index offset_joint_vel = offset_joint_pos + joint_nv;
     const Eigen::Index offset_joint_eff = offset_joint_vel + joint_nv;

@@ -124,7 +124,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    *
    * @return Eigen::VectorXd
    */
-  virtual Eigen::VectorXd jointConfigToJointPositions(
+  virtual Eigen::VectorXd jointPinToJointHw(
       const Eigen::VectorXd& q_joint) const;
   /**
    * @brief Convert joint positions vector (used by the hardware interface) to
@@ -132,7 +132,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    *
    * @return Eigen::VectorXd
    */
-  virtual Eigen::VectorXd jointPositionsToJointConfig(
+  virtual Eigen::VectorXd jointHwToJointPin(
       const Eigen::VectorXd& q_position) const;
 
  private:
@@ -150,6 +150,7 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
   /// @brief Sort the locked (position moving) joint names using the urdf order.
   std::vector<pinocchio::JointIndex> locked_joint_ids_;
 
+  /// @brief Store the number of nq and nv per moving joint in Pinocchio order.
   std::vector<int> joint_nq_per_joint_;
   std::vector<int> joint_nv_per_joint_;
 
