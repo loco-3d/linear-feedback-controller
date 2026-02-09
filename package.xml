@@ -16,6 +16,7 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <build_depend>ament_package</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>fmt</build_depend>
   <build_depend>jrl_cmakemodules</build_depend>
