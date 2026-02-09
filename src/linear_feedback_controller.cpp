@@ -50,7 +50,7 @@ bool LinearFeedbackController::set_initial_state(
     ss << "[LFC] set_initial_state: tau_init size=" << tau_init.size()
        << " but expected " << joint_nv;
     std::cerr << ss.str() << std::endl;
-    throw std::invalid_argument(ss.str());
+    return false;
   }
 
   // verification of jq_init size
@@ -59,7 +59,7 @@ bool LinearFeedbackController::set_initial_state(
     ss << "[LFC] set_initial_state: jq_init size= " << jq_init.size()
        << " but expected " << joint_nq;
     std::cerr << ss.str() << std::endl;
-    throw std::invalid_argument(ss.str());
+    return false;
   }
 
   pd_controller_.set_reference(tau_init, jq_init);
