@@ -1,6 +1,7 @@
 #include "linear_feedback_controller/robot_model_builder.hpp"
 
 #include <cmath>
+#include <numeric>
 #include <pinocchio/algorithm/frames.hpp>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/parsers/srdf.hpp>
@@ -58,6 +59,7 @@ bool RobotModelBuilder::parse_moving_joint_names(
   pin_to_hwi_.clear();
   joint_nq_per_joint_.clear();
   joint_nv_per_joint_.clear();
+  joint_categories_.clear();
 
   bool failure = false;
 
@@ -92,15 +94,6 @@ bool RobotModelBuilder::parse_moving_joint_names(
   for (std::size_t i = 0; i < moving_joint_ids_.size(); ++i) {
     moving_joint_names_.push_back(
         pinocchio_model_complete.names[moving_joint_ids_[i]]);
-  }
-
-  // Store nq and nv per moving joint in Pinocchio order
-  joint_nq_per_joint_.reserve(moving_joint_ids_.size());
-  joint_nv_per_joint_.reserve(moving_joint_ids_.size());
-  for (auto jid : moving_joint_ids_) {
-    const auto& jmodel = pinocchio_model_complete.joints[jid];
-    joint_nq_per_joint_.push_back(static_cast<int>(jmodel.nq()));
-    joint_nv_per_joint_.push_back(static_cast<int>(jmodel.nv()));
   }
 
   // Locked joint ids in the Pinocchio order.
@@ -140,6 +133,33 @@ bool RobotModelBuilder::parse_moving_joint_names(
     if (idx_root < joint_nq_per_joint_.size()) {
       joint_nq_per_joint_.erase(joint_nq_per_joint_.begin() + idx_root);
       joint_nv_per_joint_.erase(joint_nv_per_joint_.begin() + idx_root);
+    }
+  }
+
+  // Store joint type, nq and nv per moving joint in Pinocchio order
+  joint_nq_per_joint_.reserve(moving_joint_ids_.size());
+  joint_nv_per_joint_.reserve(moving_joint_ids_.size());
+  joint_categories_.reserve(moving_joint_ids_.size());
+
+  for (auto jid : moving_joint_ids_) {
+    const auto& jmodel = pinocchio_model_complete.joints[jid];
+    joint_nq_per_joint_.push_back(static_cast<int>(jmodel.nq()));
+    joint_nv_per_joint_.push_back(static_cast<int>(jmodel.nv()));
+
+    // Determine joint category based on joint type
+    const std::string jtype = jmodel.shortname();
+    if (jtype == "JointModelRX" || jtype == "JointModelRY" ||
+        jtype == "JointModelRZ" || jtype == "JointModelPX" ||
+        jtype == "JointModelPY" || jtype == "JointModelPZ") {
+      joint_categories_.push_back(JointCategory::STANDARD_1DOF);
+    } else if (jtype == "JointModelRUBX" || jtype == "JointModelRUBY" ||
+               jtype == "JointModelRUBZ") {
+      joint_categories_.push_back(JointCategory::CONTINUOUS_1DOF);
+    } else {
+      std::cerr << "RobotModelBuilder::parse_moving_joint_names(): "
+                << "Unsupported joint type '" << jtype << "' for joint '"
+                << pinocchio_model_complete.names[jid] << "'" << std::endl;
+      return false;
     }
   }
 
@@ -205,10 +225,10 @@ void RobotModelBuilder::construct_robot_state(
   robot_velocity.setZero();
 
   // nq joints (Pinocchio, without free-flyer).
-  const int joint_cfg_nq = get_joint_pin_nq();
+  const int joint_pin_nq = get_joint_pin_nq();
 
   // nv joints (Pinocchio, without free-flyer)
-  const int joint_cfg_nv = get_joint_nv();
+  const int joint_pin_nv = get_joint_nv();
 
   // Add free flyer to the state vector: x = [q, v]
   if (get_robot_has_free_flyer()) {
@@ -224,13 +244,11 @@ void RobotModelBuilder::construct_robot_state(
              static_cast<int>(moving_joint_names_.size()) &&
          "sensor.joint_state.velocity size must equal number of moving joints");
 
-  // this is the confusing part. TODO : modify the way of storing nq/nv pin and
-  // nq/nv hw ??
-  assert(joint_nq_per_joint_.size() == moving_joint_names_.size());
-  assert(joint_nv_per_joint_.size() == moving_joint_names_.size());
+  assert(joint_categories_.size() == moving_joint_names_.size() &&
+         "joint_categories_ size must equal number of moving joints");
 
-  int iq = get_nq() - joint_cfg_nq;
-  int iv = get_nv() - joint_cfg_nv;
+  int iq = get_nq() - joint_pin_nq;
+  int iv = get_nv() - joint_pin_nv;
 
   // add joints to the state vector: x = [q, v]
   for (std::size_t k = 0; k < moving_joint_names_.size(); ++k) {
@@ -239,34 +257,27 @@ void RobotModelBuilder::construct_robot_state(
     const double pos = sensor.joint_state.position[hwi_index];
     const double vel = sensor.joint_state.velocity[hwi_index];
 
-    const int jnq = joint_nq_per_joint_.at(k);
-    const int jnv = joint_nv_per_joint_.at(k);
+    switch (joint_categories_[k]) {
+      case JointCategory::STANDARD_1DOF:
+        robot_configuration[iq] = pos;
+        robot_velocity[iv] = vel;
+        iq += 1;
+        iv += 1;
+        break;
 
-    // revolute / prismatique case : 1 DOF config, 1 DOF speed
-    if (jnq == 1 && jnv == 1) {
-      assert(iq + 1 <= get_nq());
-      assert(iv + 1 <= get_nv());
+      case JointCategory::CONTINUOUS_1DOF:
+        robot_configuration[iq] = std::cos(pos);
+        robot_configuration[iq + 1] = std::sin(pos);
+        robot_velocity[iv] = vel;
+        iq += 2;
+        iv += 1;
+        break;
 
-      robot_configuration[iq] = pos;
-      robot_velocity[iv] = vel;
-      iq += 1;
-      iv += 1;
-    }
-    // Continuous case : q = [cos θ, sin θ], v = θ_dot in Pinocchio
-    else if (jnq == 2 && jnv == 1) {
-      assert(iq + 2 <= get_nq());
-      assert(iv + 1 <= get_nv());
-
-      robot_configuration[iq] = std::cos(pos);
-      robot_configuration[iq + 1] = std::sin(pos);
-      robot_velocity[iv] = vel;
-      iq += 2;
-      iv += 1;
-    } else {
-      std::cerr << "RobotModelBuilder::construct_robot_state(): joint '"
-                << moving_joint_names_[k] << "' has unsupported (nq, nv) = ("
-                << jnq << ", " << jnv << ")." << std::endl;
-      assert(false && "Unsupported joint type in construct_robot_state");
+      default:
+        std::cerr << "RobotModelBuilder::construct_robot_state(): joint '"
+                  << moving_joint_names_[k]
+                  << "' has unknown category (should not happen)." << std::endl;
+        assert(false && "Unknown joint category in construct_robot_state");
     }
   }
 
@@ -281,42 +292,19 @@ int RobotModelBuilder::get_nq() const { return pinocchio_model_.nq; }
 int RobotModelBuilder::get_nv() const { return pinocchio_model_.nv; }
 
 int RobotModelBuilder::get_joint_pin_nq() const {
-  int nq = 0;
-  for (std::size_t k = 0; k < joint_nq_per_joint_.size(); ++k) {
-    nq += joint_nq_per_joint_[k];
-  }
-  return nq;
+  return std::accumulate(joint_nq_per_joint_.begin(), joint_nq_per_joint_.end(),
+                         0);
 }
 
 int RobotModelBuilder::get_joint_hw_nq() const {
-  int nq = 0;
-  for (std::size_t k = 0; k < joint_nq_per_joint_.size(); ++k) {
-    const int jnq = joint_nq_per_joint_[k];
-    const int jnv = joint_nv_per_joint_[k];
-
-    if (jnq == 1 && jnv == 1) {
-      // revolute / prismatique
-      nq += 1;
-    } else if (jnq == 2 && jnv == 1) {
-      // continuous joint, represented by (cos, sin) in Pinocchio
-      nq += 1;
-    } else {
-      std::cerr << "[RMB] get_joint_hw_nq(): joint '" << moving_joint_names_[k]
-                << "' has unsupported (nq, nv) = (" << jnq << ", " << jnv
-                << ")." << std::endl;
-      throw std::runtime_error(
-          "RobotModelBuilder::get_joint_hw_nq: unsupported joint type");
-    }
-  }
-  return nq;
+  // Each joint in moving_joint_names_ corresponds to exactly 1 hardware DOF
+  // (whether it's a standard revolute/prismatic or a continuous joint)
+  return static_cast<int>(moving_joint_names_.size());
 }
 
 int RobotModelBuilder::get_joint_nv() const {
-  int nv = 0;
-  for (std::size_t k = 0; k < joint_nv_per_joint_.size(); ++k) {
-    nv += joint_nv_per_joint_[k];
-  }
-  return nv;
+  return std::accumulate(joint_nv_per_joint_.begin(), joint_nv_per_joint_.end(),
+                         0);
 }
 
 Eigen::VectorXd RobotModelBuilder::jointPinToJointHw(

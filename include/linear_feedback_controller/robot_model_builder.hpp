@@ -14,6 +14,12 @@
 
 namespace linear_feedback_controller {
 
+// Joint category enumeration
+enum class JointCategory {
+  STANDARD_1DOF,   // RX, RY, RZ, PX, PY, PZ (nq=1, nv=1)
+  CONTINUOUS_1DOF  // RUBX, RUBY, RUBZ (nq=2, nv=1)
+};
+
 class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -153,6 +159,9 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
   /// @brief Store the number of nq and nv per moving joint in Pinocchio order.
   std::vector<int> joint_nq_per_joint_;
   std::vector<int> joint_nv_per_joint_;
+
+  /// @brief Store the joint types for each moving joint in Pinocchio order.
+  std::vector<JointCategory> joint_categories_;
 
   /// @brief Pinocchio (Rigid body dynamics robot model) removing locked joints.
   pinocchio::Model pinocchio_model_;
