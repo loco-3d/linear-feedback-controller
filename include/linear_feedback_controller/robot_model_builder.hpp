@@ -124,23 +124,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    */
   virtual int get_joint_nv() const;
 
-  /**
-   * @brief Convert joint configuration vector (used by Pinocchio) to joint
-   * positions vector (used by the hardware interface).
-   *
-   * @return Eigen::VectorXd
-   */
-  virtual Eigen::VectorXd jointPinToJointHw(
-      const Eigen::VectorXd& q_joint) const;
-  /**
-   * @brief Convert joint positions vector (used by the hardware interface) to
-   * joint configuration vector (used by Pinocchio).
-   *
-   * @return Eigen::VectorXd
-   */
-  virtual Eigen::VectorXd jointHwToJointPin(
-      const Eigen::VectorXd& q_position) const;
-
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
   std::vector<std::string> moving_joint_names_;
