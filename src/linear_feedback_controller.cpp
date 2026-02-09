@@ -44,10 +44,6 @@ bool LinearFeedbackController::set_initial_state(
   const int joint_nq = robot_model_builder_->get_joint_hw_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
-  std::cout << "[LFC] set_initial_state: tau_init size=" << tau_init.size()
-            << ", jq_init size=" << jq_init.size() << ", joint_nq=" << joint_nq
-            << ", joint_nv=" << joint_nv << std::endl;
-
   // verification of tau_init size
   if (tau_init.size() != joint_nv) {
     std::stringstream ss;
@@ -103,23 +99,23 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   }
 
   // inputs for PD controller
-  const int joint_pos_nq = robot_model_builder_->get_joint_hw_nq();
+  const int joint_hw_nq = robot_model_builder_->get_joint_hw_nq();
   const int joint_nv = robot_model_builder_->get_joint_nv();
 
-  // Sanity check design : PD / hardware are using joint_position_nq == joint_nv
-  if (joint_pos_nq != joint_nv) {
+  // Sanity check design : PD / hardware are using joint_hw_nq == joint_nv
+  if (joint_hw_nq != joint_nv) {
     std::stringstream ss;
-    ss << "[LFC] compute_control: design error, joint_pos_nq=" << joint_pos_nq
+    ss << "[LFC] compute_control: design error, joint_hw_nq=" << joint_hw_nq
        << " but joint_nv=" << joint_nv;
     std::cerr << ss.str() << std::endl;
     throw std::logic_error(ss.str());
   }
 
   // Verification on the sizes coming from ROS
-  if (sensor_js.position.size() != joint_pos_nq) {
+  if (sensor_js.position.size() != joint_hw_nq) {
     std::stringstream ss;
     ss << "[LFC] compute_control: unexpected sensor_js.position size="
-       << sensor_js.position.size() << " (expected " << joint_pos_nq
+       << sensor_js.position.size() << " (expected " << joint_hw_nq
        << " = joint_position_nq)";
     std::cerr << ss.str() << std::endl;
     throw std::invalid_argument(ss.str());
