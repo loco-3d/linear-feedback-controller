@@ -89,7 +89,11 @@ controller_interface::return_type JointStateEstimator::update(
     const rclcpp::Time& /* time */, const rclcpp::Duration& /* period */) {
   for (size_t i = 0; i < command_ordered_interfaces_.size(); ++i) {
     double state_interface_value =
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 27, 0)
+        state_ordered_interfaces_[i].get().get_optional().value();
+#else
         state_ordered_interfaces_[i].get().get_value();
+#endif
     if (!std::isnan(state_interface_value)) {
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
       bool ret =
