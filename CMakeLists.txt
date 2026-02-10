@@ -107,7 +107,7 @@ target_compile_definitions(
   PUBLIC -DLINEAR_FEEDBACK_CONTROLLER_IS_SHARED
   PRIVATE -DLINEAR_FEEDBACK_CONTROLLER_DO_EXPORT)
 
-ament_target_dependencies(${PROJECT_NAME} Eigen3)
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 # Extract the version components of the controller_interface package.
 message(STATUS "controller_interface_VERSION: ${controller_interface_VERSION}")
 string(REPLACE "." ";" version_list ${controller_interface_VERSION})
