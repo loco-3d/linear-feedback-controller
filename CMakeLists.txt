@@ -137,8 +137,12 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
   endif()
 
-  set(TESTS_LIST test_pd_controller test_lf_controller
-                 test_linear_feedback_controller test_robot_model_builder)
+  set(TESTS_LIST test_pd_controller test_linear_feedback_controller
+                 test_robot_model_builder)
+
+  if(TARGET GTest::gmock)
+    set(TESTS_LIST ${TESTS_LIST} test_lf_controller)
+  endif()
 
   foreach(test_name ${TESTS_LIST})
     add_unit_test(${test_name} tests/${test_name}.cpp)
