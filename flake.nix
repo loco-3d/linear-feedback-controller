@@ -2,12 +2,12 @@
   description = "RosControl linear feedback controller with pal base estimator and RosTopics external interface.";
 
   inputs = {
-    gepetto.url = "github:gepetto/nix";
-    flake-parts.follows = "gepetto/flake-parts";
-    nixpkgs.follows = "gepetto/nixpkgs";
-    nix-ros-overlay.follows = "gepetto/nix-ros-overlay";
-    systems.follows = "gepetto/systems";
-    treefmt-nix.follows = "gepetto/treefmt-nix";
+    gazebros2nix.url = "github:gepetto/gazebros2nix";
+    flake-parts.follows = "gazebros2nix/flake-parts";
+    nixpkgs.follows = "gazebros2nix/nixpkgs";
+    nix-ros-overlay.follows = "gazebros2nix/nix-ros-overlay";
+    systems.follows = "gazebros2nix/systems";
+    treefmt-nix.follows = "gazebros2nix/treefmt-nix";
   };
 
   outputs =
@@ -17,14 +17,15 @@
       {
         systems = import inputs.systems;
         imports = [
-          inputs.gepetto.flakeModule
-          { gepetto-pkgs.overlays = [ self.overlays.default ]; }
+          inputs.gazebros2nix.flakeModule
+          { gazebros2nix-pkgs.overlays = [ self.overlays.default ]; }
         ];
         flake.overlays.default =
           _final: prev:
           let
-            override = _ros-final: ros-prev: {
+            scope = _ros-final: ros-prev: {
               linear-feedback-controller = ros-prev.linear-feedback-controller.overrideAttrs {
+                postPatch = "";
                 src = lib.fileset.toSource {
                   root = ./.;
                   fileset = lib.fileset.unions [
@@ -45,17 +46,21 @@
           in
           {
             rosPackages = prev.rosPackages // {
-              humble = prev.rosPackages.humble.overrideScope override;
-              jazzy = prev.rosPackages.jazzy.overrideScope override;
+              humble = prev.rosPackages.humble.overrideScope scope;
+              jazzy = prev.rosPackages.jazzy.overrideScope scope;
+              kilted = prev.rosPackages.kilted.overrideScope scope;
+              rolling = prev.rosPackages.rolling.overrideScope scope;
             };
           };
         perSystem =
           { pkgs, ... }:
           {
             packages = lib.filterAttrs (_n: v: v.meta.available && !v.meta.broken) (rec {
-              default = humble-linear-feedback-controller;
+              default = rolling-linear-feedback-controller;
               humble-linear-feedback-controller = pkgs.rosPackages.humble.linear-feedback-controller;
               jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller;
+              kilted-linear-feedback-controller = pkgs.rosPackages.kilted.linear-feedback-controller;
+              rolling-linear-feedback-controller = pkgs.rosPackages.rolling.linear-feedback-controller;
             });
           };
       }

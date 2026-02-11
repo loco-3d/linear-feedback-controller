@@ -11,13 +11,33 @@ on:
       - master
       - main
 jobs:
-  nix:
+  populate-cache:
+    name: "${{ matrix.build }} on ${{ matrix.os }}"
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        build: ["humble", "jazzy", "kilted", "rolling"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v16
+        with:
+          name: gepetto
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          extraPullNames: ros
+      - run: nix build -L ".#${{ matrix.build }}-linear-feedback-controller"
+  complete:
+    needs: populate-cache
+    name: "${{ matrix.os }}"
     runs-on: "${{ matrix.os }}-latest"
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu, macos]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
       - uses: cachix/cachix-action@v16
         with:
@@ -30,7 +50,8 @@ jobs:
     name: check-macos-linux-nix
     runs-on: ubuntu-latest
     needs:
-      - nix
+      - populate-cache
+      - complete
     steps:
       - uses: re-actors/alls-green@release/v1
         with:
