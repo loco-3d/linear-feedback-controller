@@ -405,7 +405,8 @@ void LinearFeedbackControllerRos::register_var(
 
 bool LinearFeedbackControllerRos::wait_for_robot_description() {
   robot_description_node_ = std::make_shared<rclcpp::Node>(
-      get_node()->get_name() + std::string("_") + robot_description_name_);
+      get_node()->get_name() + std::string("_") + robot_description_name_,
+      get_node()->get_namespace());
   robot_description_parameter_client_ =
       std::make_shared<rclcpp::SyncParametersClient>(robot_description_node_,
                                                      "robot_state_publisher");
