@@ -14,6 +14,12 @@
 
 namespace linear_feedback_controller {
 
+// Joint category enumeration
+enum class JointCategory {
+  STANDARD_1DOF,   // RX, RY, RZ, PX, PY, PZ (nq=1, nv=1)
+  CONTINUOUS_1DOF  // RUBX, RUBY, RUBZ (nq=2, nv=1)
+};
+
 class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -92,10 +98,31 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
       const linear_feedback_controller_msgs::Eigen::Sensor& Sensor,
       Eigen::VectorXd& robot_configuration, Eigen::VectorXd& robot_velocity);
 
-  virtual int get_joint_nv() const;
-  virtual int get_joint_nq() const;
-  virtual int get_nv() const;
+  /**
+   * @brief Get Pinocchio joint space dimension (position) including free-flyer
+   * joint.
+   */
   virtual int get_nq() const;
+  /**
+   * @brief Get Pinocchio joint space dimension (velocity) including free-flyer
+   * joint.
+   */
+  virtual int get_nv() const;
+  /**
+   * @brief Get Pinocchio joint space dimension (position) excluding free-flyer
+   * joint. In case of a continuous joint, it will add 2 to nq (cos, sin)
+   */
+  virtual int get_joint_pin_nq() const;
+  /**
+   * @brief Get Hardware joint space dimension (position) excluding free-flyer
+   * joint. In case of a continuous joint, it will add only 1 to nq
+   */
+  virtual int get_joint_hw_nq() const;
+  /**
+   * @brief Get Pinocchio joint space dimension (velocity) excluding free-flyer
+   * joint.
+   */
+  virtual int get_joint_nv() const;
 
  private:
   /// @brief List of names that correspond to the joints moving by the MPC.
@@ -111,6 +138,13 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
   std::vector<pinocchio::JointIndex> moving_joint_ids_;
   /// @brief Sort the locked (position moving) joint names using the urdf order.
   std::vector<pinocchio::JointIndex> locked_joint_ids_;
+
+  /// @brief Store the number of nq and nv per moving joint in Pinocchio order.
+  std::vector<int> joint_nq_per_joint_;
+  std::vector<int> joint_nv_per_joint_;
+
+  /// @brief Store the joint types for each moving joint in Pinocchio order.
+  std::vector<JointCategory> joint_categories_;
 
   /// @brief Pinocchio (Rigid body dynamics robot model) removing locked joints.
   pinocchio::Model pinocchio_model_;
@@ -133,7 +167,6 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC RobotModelBuilder {
    * @brief Parse the joint moving names given by the user and build the
    * rigid body models accordingly.
    *
-   * @param moving_joint_names
    * @param moving_joint_names
    * @param moving_joint_ids
    * @param locked_joint_ids
