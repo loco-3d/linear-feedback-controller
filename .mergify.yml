@@ -1,11 +1,12 @@
 pull_request_rules:
   - name: merge [bot] PRs when CI pass
     conditions:
-      - check-success = "check-macos-linux-ros"
+      - check-success = "check-macos-linux-nix"
       - check-success = "check-ros-ci"
       - check-success = "pre-commit.ci - pr"
       - or:
           - author = dependabot[bot]
+          - author = gepetto-flake-updater[bot]
           - author = github-actions[bot]
           - author = hrp2-14
           - author = pre-commit-ci[bot]
