@@ -21,6 +21,7 @@
           {
             gazebros2nix.rosPackages = {
               linear-feedback-controller = _final: _ros-final: {
+                postPatch = ""; # drop when >3.0.1 in gazebros2nix
                 src = lib.fileset.toSource {
                   root = ./.;
                   fileset = lib.fileset.unions [
