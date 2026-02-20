@@ -13,19 +13,14 @@
   outputs =
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } (
-      { lib, self, ... }:
+      { lib, ... }:
       {
         systems = import inputs.systems;
         imports = [
           inputs.gazebros2nix.flakeModule
-          { gazebros2nix-pkgs.overlays = [ self.overlays.default ]; }
-        ];
-        flake.overlays.default =
-          _final: prev:
-          let
-            scope = _ros-final: ros-prev: {
-              linear-feedback-controller = ros-prev.linear-feedback-controller.overrideAttrs {
-                postPatch = "";
+          {
+            gazebros2nix.rosPackages = {
+              linear-feedback-controller = _final: _ros-final: {
                 src = lib.fileset.toSource {
                   root = ./.;
                   fileset = lib.fileset.unions [
@@ -43,25 +38,12 @@
                 };
               };
             };
-          in
-          {
-            rosPackages = prev.rosPackages // {
-              humble = prev.rosPackages.humble.overrideScope scope;
-              jazzy = prev.rosPackages.jazzy.overrideScope scope;
-              kilted = prev.rosPackages.kilted.overrideScope scope;
-              rolling = prev.rosPackages.rolling.overrideScope scope;
-            };
-          };
+          }
+        ];
         perSystem =
-          { pkgs, ... }:
+          { self', ... }:
           {
-            packages = lib.filterAttrs (_n: v: v.meta.available && !v.meta.broken) (rec {
-              default = rolling-linear-feedback-controller;
-              humble-linear-feedback-controller = pkgs.rosPackages.humble.linear-feedback-controller;
-              jazzy-linear-feedback-controller = pkgs.rosPackages.jazzy.linear-feedback-controller;
-              kilted-linear-feedback-controller = pkgs.rosPackages.kilted.linear-feedback-controller;
-              rolling-linear-feedback-controller = pkgs.rosPackages.rolling.linear-feedback-controller;
-            });
+            packages.default = self'.packages.ros-rolling-linear-feedback-controller;
           };
       }
     );
