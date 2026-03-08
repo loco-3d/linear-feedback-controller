@@ -20,6 +20,7 @@
           inputs.gazebros2nix.flakeModule
           {
             gazebros2nix.rosOverrides.linear-feedback-controller = _final: _ros-final: {
+              postPatch = ""; # remove when >3.0.1 in gazebros2nix
               src = lib.fileset.toSource {
                 root = ./.;
                 fileset = lib.fileset.unions [
