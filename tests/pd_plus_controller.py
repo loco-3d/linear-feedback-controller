@@ -9,7 +9,6 @@ import pinocchio as pin
 import rclpy
 import rclpy.duration
 from rclpy.node import Node
-from rclpy.qos import qos_profile_system_default
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from rclpy.qos_overriding_options import QoSOverridingOptions
 import rclpy.time
