@@ -21,6 +21,7 @@ bool LinearFeedbackController::load(const ControllerParameters& params) {
   }
 
   // Setup the pd controller.
+  pd_controller_.initialize(robot_model_builder_);
   pd_controller_.set_gains(params_.p_gains, params_.d_gains);
 
   // Setup the lfc controller.
