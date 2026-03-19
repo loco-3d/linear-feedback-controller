@@ -17,7 +17,8 @@ void PDController::set_gains(const Eigen::VectorXd& p_gains,
                              const Eigen::VectorXd& d_gains) {
   if (!rmb_) {
     throw std::runtime_error(
-        "PDController is not initialized. Call initialize() before set_gains().");
+        "PDController is not initialized. Call initialize() before "
+        "set_gains().");
   }
   if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
     throw std::invalid_argument("p_gains.size() != model.nv.");
@@ -39,7 +40,8 @@ void PDController::set_gains(const std::vector<double>& p_gains,
                              const std::vector<double>& d_gains) {
   if (!rmb_) {
     throw std::runtime_error(
-        "PDController is not initialized. Call initialize() before set_gains().");
+        "PDController is not initialized. Call initialize() before "
+        "set_gains().");
   }
   if (p_gains.size() != static_cast<std::size_t>(rmb_->get_nv())) {
     throw std::invalid_argument("p_gains.size() != model.nv.");
@@ -65,12 +67,14 @@ void PDController::set_gains(const std::vector<double>& p_gains,
 }
 
 void PDController::set_reference(const Eigen::VectorXd& tau_ref,
-                                  const Eigen::VectorXd& q_ref) {
-  // We should not compare anymore tau_ref.size() and q_ref.size() — they live in different spaces (nv vs nq). 
-  // The consistency is now checked as following to handle case where we have a freeflyer (nq > nv):
+                                 const Eigen::VectorXd& q_ref) {
+  // We should not compare anymore tau_ref.size() and q_ref.size() — they live
+  // in different spaces (nv vs nq). The consistency is now checked as following
+  // to handle case where we have a freeflyer (nq > nv):
   if (!rmb_) {
     throw std::runtime_error(
-        "PDController is not initialized. Call initialize() before set_reference().");
+        "PDController is not initialized. Call initialize() before "
+        "set_reference().");
   }
   if (tau_ref.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
     throw std::invalid_argument("tau_ref.size() != model.nv");
@@ -83,16 +87,18 @@ void PDController::set_reference(const Eigen::VectorXd& tau_ref,
         "References should only contain valid data (no NaN or INF).");
   }
   tau_ref_ = tau_ref;
-  q_ref_   = q_ref;
+  q_ref_ = q_ref;
   control_ = Eigen::VectorXd::Zero(tau_ref.size());
 }
 
 const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
-                                                       const Eigen::VectorXd& v) {
-  // Check if the controller is properly initialized and the reference and gains are set
+                                                     const Eigen::VectorXd& v) {
+  // Check if the controller is properly initialized and the reference and gains
+  // are set
   if (!rmb_) {
     throw std::runtime_error(
-        "PDController is not initialized. Call initialize() before compute_control().");
+        "PDController is not initialized. Call initialize() before "
+        "compute_control().");
   }
   if (q_ref_.size() == 0 || tau_ref_.size() == 0) {
     throw std::runtime_error(
@@ -114,12 +120,12 @@ const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
         "v.size() != model.nv. Make sure v has the right size (model.nv)");
   }
   // Compute the configuration error
-  const Eigen::VectorXd error_q = pinocchio::difference(rmb_->get_model(), q_ref_, q);
+  const Eigen::VectorXd error_q =
+      pinocchio::difference(rmb_->get_model(), q_ref_, q);
   // Compute the control input using the PD control law:
   // tau = tau_ref - Kp * (q ⊖ q_ref) - Kd * v
-  control_ = tau_ref_.array()
-            - p_gains_.array() * error_q.array()
-            - d_gains_.array() * v.array();
+  control_ = tau_ref_.array() - p_gains_.array() * error_q.array() -
+             d_gains_.array() * v.array();
 
   return control_;
 }
