@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+- implement continuous joint support
+
 ## [3.1.0] - 2026-03-11
 
 - add support for rolling
