@@ -6,11 +6,25 @@ PDController::PDController() {}
 
 PDController::~PDController() {}
 
+void PDController::initialize(const RobotModelBuilder::SharedPtr& rmb) {
+  if (!rmb) {
+    throw std::invalid_argument("RobotModelBuilder pointer cannot be null.");
+  }
+  rmb_ = rmb;
+}
+
 void PDController::set_gains(const Eigen::VectorXd& p_gains,
                              const Eigen::VectorXd& d_gains) {
-  if (p_gains.size() != d_gains.size()) {
-    throw std::invalid_argument(
-        "Size missmatch between 'p_gains' and 'd_gains'.");
+  if (!rmb_) {
+    throw std::runtime_error(
+        "PDController is not initialized. Call initialize() before "
+        "set_gains().");
+  }
+  if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
+    throw std::invalid_argument("p_gains.size() != model.nv.");
+  }
+  if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
+    throw std::invalid_argument("d_gains.size() != model.nv.");
   }
   if (!p_gains.array().isFinite().all() || !d_gains.array().isFinite().all()) {
     throw std::invalid_argument(
@@ -24,9 +38,16 @@ void PDController::set_gains(const Eigen::VectorXd& p_gains,
 
 void PDController::set_gains(const std::vector<double>& p_gains,
                              const std::vector<double>& d_gains) {
-  if (p_gains.size() != d_gains.size()) {
-    throw std::invalid_argument(
-        "Size missmatch between 'p_gains' and 'd_gains'.");
+  if (!rmb_) {
+    throw std::runtime_error(
+        "PDController is not initialized. Call initialize() before "
+        "set_gains().");
+  }
+  if (p_gains.size() != static_cast<std::size_t>(rmb_->get_nv())) {
+    throw std::invalid_argument("p_gains.size() != model.nv.");
+  }
+  if (d_gains.size() != static_cast<std::size_t>(rmb_->get_nv())) {
+    throw std::invalid_argument("d_gains.size() != model.nv.");
   }
   for (const auto& val : p_gains) {
     if (!std::isfinite(val)) {
@@ -47,15 +68,24 @@ void PDController::set_gains(const std::vector<double>& p_gains,
 
 void PDController::set_reference(const Eigen::VectorXd& tau_ref,
                                  const Eigen::VectorXd& q_ref) {
-  if (tau_ref.size() != q_ref.size()) {
-    throw std::invalid_argument(
-        "Size missmatch between 'tau_ref' and 'q_ref'.");
+  // We should not compare anymore tau_ref.size() and q_ref.size() — they live
+  // in different spaces (nv vs nq). The consistency is now checked as following
+  // to handle case where we have a freeflyer (nq > nv):
+  if (!rmb_) {
+    throw std::runtime_error(
+        "PDController is not initialized. Call initialize() before "
+        "set_reference().");
+  }
+  if (tau_ref.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
+    throw std::invalid_argument("tau_ref.size() != model.nv");
+  }
+  if (q_ref.size() != static_cast<Eigen::Index>(rmb_->get_nq())) {
+    throw std::invalid_argument("q_ref.size() != model.nq");
   }
   if (!tau_ref.array().isFinite().all() || !q_ref.array().isFinite().all()) {
     throw std::invalid_argument(
         "References should only contain valid data (no NaN or INF).");
   }
-
   tau_ref_ = tau_ref;
   q_ref_ = q_ref;
   control_ = Eigen::VectorXd::Zero(tau_ref.size());
@@ -63,15 +93,38 @@ void PDController::set_reference(const Eigen::VectorXd& tau_ref,
 
 const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
                                                      const Eigen::VectorXd& v) {
-  if (q.size() != p_gains_.size() || v.size() != p_gains_.size() ||
-      q_ref_.size() != p_gains_.size()) {
-    throw std::invalid_argument(
-        "Incoherent vector sizes between inputs (q,v) and internal controller "
-        "state (gains, reference). Check configuration.");
+  // Check if the controller is properly initialized and the reference and gains
+  // are set
+  if (!rmb_) {
+    throw std::runtime_error(
+        "PDController is not initialized. Call initialize() before "
+        "compute_control().");
   }
-
-  // tau = tau_ref - Kp * (q - q_ref) - Kd * v
-  control_ = tau_ref_.array() - p_gains_.array() * (q - q_ref_).array() -
+  if (q_ref_.size() == 0 || tau_ref_.size() == 0) {
+    throw std::runtime_error(
+        "Reference is not set. Call set_reference() before compute_control().");
+  }
+  if (p_gains_.size() == 0 || d_gains_.size() == 0) {
+    throw std::runtime_error(
+        "Gains are not set. Call set_gains() before compute_control().");
+  }
+  const auto nq = rmb_->get_nq();
+  const auto nv = rmb_->get_nv();
+  // Check the size of q and v against the model dimensions
+  if (q.size() != static_cast<Eigen::Index>(nq)) {
+    throw std::invalid_argument(
+        "q.size() != model.nq. Make sure q is a full configuration vector.");
+  }
+  if (v.size() != static_cast<Eigen::Index>(nv)) {
+    throw std::invalid_argument(
+        "v.size() != model.nv. Make sure v has the right size (model.nv)");
+  }
+  // Compute the configuration error
+  const Eigen::VectorXd error_q =
+      pinocchio::difference(rmb_->get_model(), q_ref_, q);
+  // Compute the control input using the PD control law:
+  // tau = tau_ref - Kp * (q ⊖ q_ref) - Kd * v
+  control_ = tau_ref_.array() - p_gains_.array() * error_q.array() -
              d_gains_.array() * v.array();
 
   return control_;
