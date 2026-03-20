@@ -48,10 +48,11 @@ class MockRobotModelBuilder : public RobotModelBuilder {
                Eigen::VectorXd& robot_velocity),
               (override));
 
-  MOCK_METHOD(int, get_joint_nv, (), (const, override));
-  MOCK_METHOD(int, get_joint_nq, (), (const, override));
-  MOCK_METHOD(int, get_nv, (), (const, override));
   MOCK_METHOD(int, get_nq, (), (const, override));
+  MOCK_METHOD(int, get_nv, (), (const, override));
+  MOCK_METHOD(int, get_joint_pin_nq, (), (const, override));
+  MOCK_METHOD(int, get_joint_hw_nq, (), (const, override));
+  MOCK_METHOD(int, get_joint_nv, (), (const, override));
 
   using SharedPtr = std::shared_ptr<MockRobotModelBuilder>;
   using ConstSharedPtr = std::shared_ptr<const MockRobotModelBuilder>;
