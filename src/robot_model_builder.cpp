@@ -150,7 +150,8 @@ bool RobotModelBuilder::parse_moving_joint_names(
     const std::string jtype = jmodel.shortname();
     if (jtype == "JointModelRX" || jtype == "JointModelRY" ||
         jtype == "JointModelRZ" || jtype == "JointModelPX" ||
-        jtype == "JointModelPY" || jtype == "JointModelPZ") {
+        jtype == "JointModelPY" || jtype == "JointModelPZ" ||
+        jtype == "JointModelRevoluteUnaligned") {
       joint_categories_.push_back(JointCategory::STANDARD_1DOF);
     } else if (jtype == "JointModelRUBX" || jtype == "JointModelRUBY" ||
                jtype == "JointModelRUBZ") {
