@@ -2,13 +2,9 @@
   description = "RosControl linear feedback controller with pal base estimator and RosTopics external interface.";
 
   inputs = {
-    gazebros2nix.url = "github:gepetto/gazebros2nix";
-    flakoboros.follows = "gazebros2nix/flakoboros";
-    flake-parts.follows = "gazebros2nix/flake-parts";
-    nixpkgs.follows = "gazebros2nix/nixpkgs";
-    nix-ros-overlay.follows = "gazebros2nix/nix-ros-overlay";
-    systems.follows = "gazebros2nix/systems";
-    treefmt-nix.follows = "gazebros2nix/treefmt-nix";
+    gepetto.url = "github:gepetto/nix";
+    flake-parts.follows = "gepetto/flake-parts";
+    systems.follows = "gepetto/systems";
   };
 
   outputs =
@@ -18,7 +14,7 @@
       {
         systems = import inputs.systems;
         imports = [
-          inputs.gazebros2nix.flakeModule
+          inputs.gepetto.flakeModule
           {
             flakoboros.rosOverrideAttrs.linear-feedback-controller = _: _: {
               src = lib.fileset.toSource {
