@@ -10,6 +10,7 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 ## [Unreleased]
 
 - implement continuous joint support
+- add JointModelRevoluteUnalignedb for tiago pro
 
 ## [3.1.0] - 2026-03-11
 
