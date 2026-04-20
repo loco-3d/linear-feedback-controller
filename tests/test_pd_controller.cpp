@@ -62,13 +62,13 @@ TEST_F(PDControllerTest, SetGainsWithMismatchedSizesThrows) {
 
 // Verify error on references size
 TEST_F(PDControllerTest, SetReferenceWithMismatchedSizesThrows) {
-  Eigen::VectorXd tau_ref_bad(3); // wrong size (nv = 2)
+  Eigen::VectorXd tau_ref_bad(3);  // wrong size (nv = 2)
   Eigen::VectorXd q_ref_ok(2);
   EXPECT_THROW(controller_->set_reference(tau_ref_bad, q_ref_ok),
                std::invalid_argument);
 
   Eigen::VectorXd tau_ref_ok(2);
-  Eigen::VectorXd q_ref_bad(3); // mauvaise taille (nq = 2)
+  Eigen::VectorXd q_ref_bad(3);  // mauvaise taille (nq = 2)
   EXPECT_THROW(controller_->set_reference(tau_ref_ok, q_ref_bad),
                std::invalid_argument);
 }
@@ -140,7 +140,7 @@ TEST_F(PDControllerTest, SetGainsWithEmptyVectorsThrows) {
 class PDControllerComputationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    mock_rmb_ = std::make_shared<SmartMockRobotModelBuilder>(); // nv = nq = 2
+    mock_rmb_ = std::make_shared<SmartMockRobotModelBuilder>();  // nv = nq = 2
     controller_ = std::make_unique<linear_feedback_controller::PDController>();
     controller_->initialize(mock_rmb_);
     dof_ = mock_rmb_->get_nv();
@@ -148,7 +148,6 @@ class PDControllerComputationTest : public ::testing::Test {
     d_gains_.resize(dof_);
     tau_ref_.resize(dof_);
     q_ref_.resize(dof_);
-
 
     p_gains_ << 10.0, 20.0;
     d_gains_ << 1.0, 2.0;

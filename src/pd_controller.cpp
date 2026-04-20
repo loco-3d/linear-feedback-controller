@@ -23,10 +23,10 @@ void PDController::set_gains(const Eigen::VectorXd& p_gains,
         "set_gains().");
   }
   if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
-      throw std::invalid_argument("p_gains.size() != joint_nv.");
+    throw std::invalid_argument("p_gains.size() != joint_nv.");
   }
   if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
-      throw std::invalid_argument("d_gains.size() != joint_nv.");
+    throw std::invalid_argument("d_gains.size() != joint_nv.");
   }
   if (!p_gains.array().isFinite().all() || !d_gains.array().isFinite().all()) {
     throw std::invalid_argument(
@@ -46,10 +46,10 @@ void PDController::set_gains(const std::vector<double>& p_gains,
         "set_gains().");
   }
   if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
-      throw std::invalid_argument("p_gains.size() != joint_nv.");
+    throw std::invalid_argument("p_gains.size() != joint_nv.");
   }
   if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
-      throw std::invalid_argument("d_gains.size() != joint_nv.");
+    throw std::invalid_argument("d_gains.size() != joint_nv.");
   }
   for (const auto& val : p_gains) {
     if (!std::isfinite(val)) {
@@ -121,7 +121,7 @@ const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
     throw std::invalid_argument(
         "v.size() != model.nv. Make sure v has the right size (model.nv)");
   }
- // Embed joint-space q into full pinocchio configuration for difference()
+  // Embed joint-space q into full pinocchio configuration for difference()
   const auto full_nq = rmb_->get_nq();
   Eigen::VectorXd q_full = pinocchio::neutral(rmb_->get_model());
   q_full.tail(joint_nq) = q;
@@ -133,12 +133,10 @@ const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
       pinocchio::difference(rmb_->get_model(), q_ref_full, q_full)
           .tail(joint_nv);
 
-  control_ = tau_ref_.array()
-           - p_gains_.array() * error_q.array()
-           - d_gains_.array() * v.array();
+  control_ = tau_ref_.array() - p_gains_.array() * error_q.array() -
+             d_gains_.array() * v.array();
 
   return control_;
 }
-
 
 }  // namespace linear_feedback_controller
