@@ -9,12 +9,14 @@
 class PDControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    mock_rmb_ = std::make_shared<SmartMockRobotModelBuilder>();
+    mock_rmb_ = std::make_shared<
+        linear_feedback_controller::SmartMockRobotModelBuilder>();
     controller_ = std::make_unique<linear_feedback_controller::PDController>();
     controller_->initialize(mock_rmb_);
   }
 
-  std::shared_ptr<SmartMockRobotModelBuilder> mock_rmb_;
+  std::shared_ptr<linear_feedback_controller::SmartMockRobotModelBuilder>
+      mock_rmb_;
   std::unique_ptr<linear_feedback_controller::PDController> controller_;
 };
 
@@ -140,7 +142,9 @@ TEST_F(PDControllerTest, SetGainsWithEmptyVectorsThrows) {
 class PDControllerComputationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    mock_rmb_ = std::make_shared<SmartMockRobotModelBuilder>();  // nv = nq = 2
+    mock_rmb_ = std::make_shared<
+        linear_feedback_controller::SmartMockRobotModelBuilder>();  // nv = nq =
+                                                                    // 2
     controller_ = std::make_unique<linear_feedback_controller::PDController>();
     controller_->initialize(mock_rmb_);
     dof_ = mock_rmb_->get_nv();
@@ -158,7 +162,8 @@ class PDControllerComputationTest : public ::testing::Test {
     controller_->set_reference(tau_ref_, q_ref_);
   }
 
-  std::shared_ptr<SmartMockRobotModelBuilder> mock_rmb_;
+  std::shared_ptr<linear_feedback_controller::SmartMockRobotModelBuilder>
+      mock_rmb_;
   std::unique_ptr<linear_feedback_controller::PDController> controller_;
   int dof_;
   Eigen::VectorXd p_gains_, d_gains_, tau_ref_, q_ref_;
