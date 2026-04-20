@@ -1,5 +1,7 @@
 #include "linear_feedback_controller/pd_controller.hpp"
 
+#include "pinocchio/algorithm/joint-configuration.hpp"
+
 namespace linear_feedback_controller {
 
 PDController::PDController() {}
@@ -20,11 +22,11 @@ void PDController::set_gains(const Eigen::VectorXd& p_gains,
         "PDController is not initialized. Call initialize() before "
         "set_gains().");
   }
-  if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
-    throw std::invalid_argument("p_gains.size() != model.nv.");
+  if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
+      throw std::invalid_argument("p_gains.size() != joint_nv.");
   }
-  if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
-    throw std::invalid_argument("d_gains.size() != model.nv.");
+  if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
+      throw std::invalid_argument("d_gains.size() != joint_nv.");
   }
   if (!p_gains.array().isFinite().all() || !d_gains.array().isFinite().all()) {
     throw std::invalid_argument(
@@ -43,11 +45,11 @@ void PDController::set_gains(const std::vector<double>& p_gains,
         "PDController is not initialized. Call initialize() before "
         "set_gains().");
   }
-  if (p_gains.size() != static_cast<std::size_t>(rmb_->get_nv())) {
-    throw std::invalid_argument("p_gains.size() != model.nv.");
+  if (p_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
+      throw std::invalid_argument("p_gains.size() != joint_nv.");
   }
-  if (d_gains.size() != static_cast<std::size_t>(rmb_->get_nv())) {
-    throw std::invalid_argument("d_gains.size() != model.nv.");
+  if (d_gains.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
+      throw std::invalid_argument("d_gains.size() != joint_nv.");
   }
   for (const auto& val : p_gains) {
     if (!std::isfinite(val)) {
@@ -76,15 +78,15 @@ void PDController::set_reference(const Eigen::VectorXd& tau_ref,
         "PDController is not initialized. Call initialize() before "
         "set_reference().");
   }
-  if (tau_ref.size() != static_cast<Eigen::Index>(rmb_->get_nv())) {
-    throw std::invalid_argument("tau_ref.size() != model.nv");
+  if (tau_ref.size() != static_cast<Eigen::Index>(rmb_->get_joint_nv())) {
+    throw std::invalid_argument("tau_ref.size() != joint_nv");
   }
-  if (q_ref.size() != static_cast<Eigen::Index>(rmb_->get_nq())) {
-    throw std::invalid_argument("q_ref.size() != model.nq");
+  // q_ref is in joint space (joint_hw_nq), not full pinocchio nq
+  if (q_ref.size() != static_cast<Eigen::Index>(rmb_->get_joint_hw_nq())) {
+    throw std::invalid_argument("q_ref.size() != joint_hw_nq");
   }
   if (!tau_ref.array().isFinite().all() || !q_ref.array().isFinite().all()) {
-    throw std::invalid_argument(
-        "References should only contain valid data (no NaN or INF).");
+    throw std::invalid_argument("References should only contain valid data.");
   }
   tau_ref_ = tau_ref;
   q_ref_ = q_ref;
@@ -108,26 +110,35 @@ const Eigen::VectorXd& PDController::compute_control(const Eigen::VectorXd& q,
     throw std::runtime_error(
         "Gains are not set. Call set_gains() before compute_control().");
   }
-  const auto nq = rmb_->get_nq();
-  const auto nv = rmb_->get_nv();
+  const auto joint_nq = rmb_->get_joint_hw_nq();
+  const auto joint_nv = rmb_->get_joint_nv();
   // Check the size of q and v against the model dimensions
-  if (q.size() != static_cast<Eigen::Index>(nq)) {
+  if (q.size() != static_cast<Eigen::Index>(joint_nq)) {
     throw std::invalid_argument(
         "q.size() != model.nq. Make sure q is a full configuration vector.");
   }
-  if (v.size() != static_cast<Eigen::Index>(nv)) {
+  if (v.size() != static_cast<Eigen::Index>(joint_nv)) {
     throw std::invalid_argument(
         "v.size() != model.nv. Make sure v has the right size (model.nv)");
   }
-  // Compute the configuration error
+ // Embed joint-space q into full pinocchio configuration for difference()
+  const auto full_nq = rmb_->get_nq();
+  Eigen::VectorXd q_full = pinocchio::neutral(rmb_->get_model());
+  q_full.tail(joint_nq) = q;
+  Eigen::VectorXd q_ref_full = pinocchio::neutral(rmb_->get_model());
+  q_ref_full.tail(joint_nq) = q_ref_;
+
+  // pinocchio::difference returns full nv; take only the actuated tail
   const Eigen::VectorXd error_q =
-      pinocchio::difference(rmb_->get_model(), q_ref_, q);
-  // Compute the control input using the PD control law:
-  // tau = tau_ref - Kp * (q ⊖ q_ref) - Kd * v
-  control_ = tau_ref_.array() - p_gains_.array() * error_q.array() -
-             d_gains_.array() * v.array();
+      pinocchio::difference(rmb_->get_model(), q_ref_full, q_full)
+          .tail(joint_nv);
+
+  control_ = tau_ref_.array()
+           - p_gains_.array() * error_q.array()
+           - d_gains_.array() * v.array();
 
   return control_;
 }
+
 
 }  // namespace linear_feedback_controller
