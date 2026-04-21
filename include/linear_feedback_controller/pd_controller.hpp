@@ -16,7 +16,8 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC PDController {
 
   void initialize(const RobotModelBuilder::SharedPtr& rmb);
 
-  /// @brief q and v here are the active joint configuration built from the moving_joint_name parameter.
+  /// @brief q and v here are the active joint configuration built from the
+  /// moving_joint_name parameter.
   ///              there are no free-flyer.
   const Eigen::VectorXd& compute_control(const Eigen::VectorXd& q,
                                          const Eigen::VectorXd& v);
