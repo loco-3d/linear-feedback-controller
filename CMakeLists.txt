@@ -157,14 +157,10 @@ if(BUILD_TESTING)
         find_package(GTest REQUIRED)
     endif()
 
-    set(TESTS_LIST
-        test_pd_controller
-        test_linear_feedback_controller
-        test_robot_model_builder
-    )
+    set(TESTS_LIST test_linear_feedback_controller test_robot_model_builder)
 
     if(TARGET GTest::gmock)
-        set(TESTS_LIST ${TESTS_LIST} test_lf_controller)
+        set(TESTS_LIST ${TESTS_LIST} test_lf_controller test_pd_controller)
     endif()
 
     foreach(test_name ${TESTS_LIST})
