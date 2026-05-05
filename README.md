@@ -1,88 +1,63 @@
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/loco-3d/linear-feedback-controller/main.svg)](https://results.pre-commit.ci/latest/github/loco-3d/linear-feedback-controller/main)
 
-# linear feedback controller
+# linear-feedback-controller
 
-This repository is aimed to be used with its public API the
-[linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs).
+A [ros2_control](https://control.ros.org/rolling/index.html) package implementing linear feedback control strategies for robotic systems. It supports both fixed-base and free-flying robot configurations and is designed to integrate with external model predictive controllers.
 
-These two packages are under the license [BSD-2 license](./LICENSE).
+The public message interface is defined in [linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs).
 
-The current versions of these two packages can be found in their respective
-`package.xml` file. There **must** be an associated git tag in a shape of vX.Y.Z.
+Both packages are released under the [BSD-2 license](./LICENSE). Current versions are tracked in their respective `package.xml` files and must have an associated git tag of the form `vX.Y.Z`.
 
-Follows a quick description of these package.
+Full documentation is available on [DeepWiki](https://deepwiki.com/loco-3d/linear-feedback-controller).
 
-## The linear_feedback_controller
+## Controllers
 
-In this package we implement a [ros2_control](https://control.ros.org/rolling/index.html)
-controller.
-It is implementing a chainable controller pluggable with any kind of state
-estimator.
+The package provides three `ros2_control` controller plugins:
 
-We implement a ROS 2 topic publisher sending:
-- base configuration (only if the robot has a free-flyer, identity otherwise)
-- base velocity (only if the robot has a free-flyer, identity otherwise)
-- joint positions
-- joint velocities
-- joint efforts (torques applied to the joints)
+| Controller | Base class | Role |
+|---|---|---|
+| `LinearFeedbackControllerRos` | `ChainableControllerInterface` | Main control loop: PD → linear feedback transition with external MPC |
+| `JointStateEstimator` | `ControllerInterface` | Joint state filtering and velocity estimation |
+| `PassthroughController` | `ChainableControllerInterface` | Interface renaming / forwarding for hardware–simulation parity |
 
-We send receive the response via a topic in the shape:
+### LinearFeedbackControllerRos
+
+The main controller implements a two-phase control strategy:
+
+1. **PD phase** — Proportional-derivative control for initial stabilization using configurable per-joint gains (`p_gains`, `d_gains`).
+2. **LF phase** — Linear feedback control driven by an external controller (e.g. a whole-body MPC based on [Crocoddyl](https://github.com/loco-3d/crocoddyl)).
+
+The transition between phases is time-based and configurable via `pd_to_lf_transition_duration`.
+
+The controller **publishes** sensor data on a ROS 2 topic:
+- Base pose and velocity (free-flying robots; identity for fixed-base robots)
+- Joint positions, velocities, and efforts
+
+It **receives** control commands containing:
 - A feedback gain matrix
-- A feedforward term in torque
-- The state which was sent before used to linearize the control.
+- A feedforward torque term
+- The linearization state
 
-This allows us, for example, to use it on the Talos (1 and 3) robots with a remote controller
-using a whole body model predictive control based on [croccodyl](https://github.com/loco-3d/crocoddyl)
+### JointStateEstimator
 
-For the interfacing of a fixed robot we add a joint_state_estimator which aims
-at providing a layer of filtering from the joint sensors.
+Reads hardware state interfaces, applies exponential smoothing to joint velocities, and writes the filtered values to command interfaces. This makes raw sensor data suitable for downstream chainable controllers.
 
-In addition we provide a passthrough controller which aims at renaming some
-output interfaces downstream in case this is needed. Typically you may want the
-same configuration file for simulation and for the robot but the interfaces
-ffrom one to the other may not match. You can use the passthrough controller
-for this.
+### PassthroughController
 
+Forwards and renames reference interfaces to command interfaces. Useful when simulation and hardware use different interface names but share the same parameter file.
 
-## The linear_feedback_controller_msgs
+## Dependencies
 
-[This package](https://github.com/loco-3d/linear-feedback-controller-msgs) contains the external user interface to the linear_feedback_controller
-package. It describes the sensor data exchanged in the previously cited ROS2 topics.
+| Package | Role |
+|---|---|
+| [ros2_control](https://control.ros.org/rolling/index.html) | Controller framework and hardware abstraction |
+| [pinocchio](https://github.com/stack-of-tasks/pinocchio) | Rigid body dynamics and URDF model loading |
+| [Eigen3](https://eigen.tuxfamily.org/) | Linear algebra |
+| [linear_feedback_controller_msgs](https://github.com/loco-3d/linear-feedback-controller-msgs) | ROS topic message definitions and Eigen/NumPy conversions |
 
-And in particular it offers a very simple ROS/[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
-conversion tooling.
-And a ROS/[numpy](https://numpy.org/) conversion tooling.
-These are made to facilitate further computations with the Sensor data,
-and ease to fill in the Control message.
+## Build
 
-Please check the [README.md](https://github.com/loco-3d/linear-feedback-controller-msgs/blob/main/README.md) of the package for more details.
-
-## Example of usage
-
-This a ROS2 controller so on can simply look at the ROS2 control documentation.
-An example of configuration can be found
-[in this repository here](./config/tiago_pro_lfc_params.yaml).
-
-The example is extracted from the agimus-demos pacakges:
-https://github.com/agimus-project/agimus-demos
-
-And in particular the setup of the LFC is in the `agimus_demos_common` package.
-
-### Build the package.
-
-This package is base on ament_cmake hence one can simply use the standard:
-
-```bash
-git clone https://github.com/loco-3d/linear-feedback-controller.git
-cd linear-feedback-controller
-make _build
-cd _build
-cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/install/folder
-make
-make install
-```
-
-Or one can use the ROS2 super build system [colcon](https://colcon.readthedocs.io/en/released/):
+### With colcon (recommended)
 
 ```bash
 mkdir -p workspace/src
@@ -90,34 +65,50 @@ git -C workspace/src clone https://github.com/loco-3d/linear-feedback-controller
 colcon build
 ```
 
-One can also use [nix](https://nixos.org/) to:
-- Check the package (builds and run tests):
+### With CMake directly
+
 ```bash
 git clone https://github.com/loco-3d/linear-feedback-controller.git
 cd linear-feedback-controller
+mkdir _build && cd _build
+cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/your/install/folder
+make install
+```
+
+### With Nix
+
+```bash
+git clone https://github.com/loco-3d/linear-feedback-controller.git
+cd linear-feedback-controller
+
+# Check (build + tests)
 nix flake check -L
-```
-- Build the package:
-```bash
+
+# Build only
 nix build -L
-```
-- Create a shell in which the LFC can be built:
-```bash
+
+# Enter development shell
 nix develop
 ```
 
-Alternatively, you can use [nix-direnv](https://github.com/nix-community/nix-direnv/) to automatically activate the development environment
+[nix-direnv](https://github.com/nix-community/nix-direnv/) is also supported for automatic shell activation.
 
-### Copyrights and License
+## Configuration
 
-See the BSD-2 LICENSE file.
-For the main authors see the github repository for the main recent contributors.
+An example YAML configuration for the Tiago Pro robot is available at [`config/tiago_pro_lfc_params.yaml`](./config/tiago_pro_lfc_params.yaml).
 
-Here is the list of the historical main authors:
+Real-world usage can be found in the [agimus-demos](https://github.com/agimus-project/agimus-demos) repository, in particular in the `agimus_demos_common` package.
+
+## License and Authors
+
+BSD-2 — see [LICENSE](./LICENSE).
+
+Historical main authors:
 - Côme Perrot
 - Maximilien Naveau
+- Arthur Valiente
 
-Main maintainers
+Current maintainers:
 - Guilhem Saurel (gsaurel@laas.fr)
 - Maximilien Naveau (maximilien.naveau@gmail.com)
-- Arthur Valiente
+- Clément Pène (clement.pene@laas.fr)
