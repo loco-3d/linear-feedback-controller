@@ -99,7 +99,6 @@ function(sec_generate_parameter_library LIB_NAME TARGET_NAME YAML_FILE)
         ${TARGET_NAME}
         INTERFACE
             fmt::fmt
-            parameter_traits::parameter_traits
             rclcpp::rclcpp
             rclcpp_lifecycle::rclcpp_lifecycle
             rsl::rsl
