@@ -10,6 +10,7 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 ## [Unreleased]
 
 - PDController: use pinocchio::difference in pd controller to handle SO2 joint
+- drop removed parameter_traits, add missing libexpected_dev
 
 ## [3.2.0] - 2026-04-09
 
