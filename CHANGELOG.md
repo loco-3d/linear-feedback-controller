@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-06-02
+
 - PDController: use pinocchio::difference in pd controller to handle SO2 joint
 
 ## [3.2.0] - 2026-04-09
@@ -80,7 +82,8 @@ Implementation of linear-feedback-controller in ROS1 for Talos PAL-Robotics robo
 
 ## Git changelogs
 
-[Unreleased]: https://github.com/loco-3d/linear-feedback-controller/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/loco-3d/linear-feedback-controller/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/loco-3d/linear-feedback-controller/compare/v3.2.0...v4.0.0
 [3.2.0]: https://github.com/loco-3d/linear-feedback-controller/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/loco-3d/linear-feedback-controller/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/loco-3d/linear-feedback-controller/compare/v3.0.0...v3.0.1
