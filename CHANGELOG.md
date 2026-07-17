@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+## [4.0.2] - 2026-07-17
+
 ## [4.0.1] - 2026-06-02
 
 - fix 4.0.0 release (missing merge)
