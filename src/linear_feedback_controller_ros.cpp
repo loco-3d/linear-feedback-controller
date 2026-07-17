@@ -1,6 +1,5 @@
 #include "linear_feedback_controller/linear_feedback_controller_ros.hpp"
 
-#include "ament_index_cpp/get_package_share_directory.hpp"
 #include "controller_interface/helpers.hpp"
 #include "linear_feedback_controller_msgs/eigen_conversions.hpp"
 #include "pal_statistics/pal_statistics_macros.hpp"
