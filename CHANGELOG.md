@@ -9,7 +9,12 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+- fix changelog
+
 ## [4.0.2] - 2026-07-17
+
+- add release script
+- fix compatibility with ament_index 1.14.1
 
 ## [4.0.1] - 2026-06-02
 
