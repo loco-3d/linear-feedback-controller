@@ -12,6 +12,7 @@ using tests::utils::References;
 #include "utils/eigen_conversions.hpp"
 using linear_feedback_controller_msgs::Eigen::Control;
 using linear_feedback_controller_msgs::Eigen::Sensor;
+using tests::utils::RobotState;
 
 #include "utils/lf_controller.hpp"
 using linear_feedback_controller::RobotModelBuilder;
@@ -352,18 +353,22 @@ TEST_P(LinearFeedbackControllerTest, FeedbackGainScaleForwardsToLFController) {
                expected_lf);
 
   // Introspection getters forward too: raw is the unscaled K*diff_state, the
-  // applied one is scaled, and the desired state is control.initial_state
-  // (no free flyer on this fixture's URDF).
+  // applied one is scaled, and the desired state is control.initial_state --
+  // the full pinocchio configuration/velocity (base_pose/base_twist +
+  // joint_state when this fixture has a free flyer, joint_state alone
+  // otherwise), same recipe ExpectedLFControlFrom itself uses.
   const Eigen::VectorXd expected_lf_unscaled =
       ExpectedLFControlFrom(model, sensor, control) - control.feedforward;
   EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_feedback_torque_raw(),
                expected_lf_unscaled);
   EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_feedback_torque(),
                kScale * expected_lf_unscaled);
+  const auto expected_x0 =
+      RobotState::From(control.initial_state, model.get_robot_has_free_flyer());
   EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_desired_configuration(),
-               control.initial_state.joint_state.position);
+               expected_x0.position);
   EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_desired_velocity(),
-               control.initial_state.joint_state.velocity);
+               expected_x0.velocity);
 }
 
 TEST_P(LinearFeedbackControllerTest,
