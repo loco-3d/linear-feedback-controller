@@ -14,7 +14,11 @@ jobs:
           - {ROS_DISTRO: kilted}
           - {ROS_DISTRO: rolling}
     env:
-      UPSTREAM_WORKSPACE: github:loco-3d/linear-feedback-controller-msgs#main
+      # TEMPORARY: pin to the fork branch carrying Control.next_states
+      # (loco-3d/linear-feedback-controller-msgs#81, not merged upstream
+      # yet) -- revert to github:loco-3d/linear-feedback-controller-msgs#main
+      # once that PR is merged.
+      UPSTREAM_WORKSPACE: github:clementPene/linear-feedback-controller-msgs#feat/control-next-state
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
