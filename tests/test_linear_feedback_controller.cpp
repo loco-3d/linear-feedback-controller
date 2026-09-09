@@ -336,6 +336,12 @@ TEST_P(LinearFeedbackControllerTest, FeedbackGainScaleForwardsToLFController) {
   constexpr double kScale = 0.25;
   ctrl.set_feedback_gain_scale(kScale);
 
+  // First call always goes through PDController and latches
+  // first_control_received_time_ (see ComputeControl above) -- needed
+  // before a later call can actually reach the LF path.
+  ctrl.compute_control(first_call, sensor, control,
+                       /*gravity_compensation=*/false);
+
   // Well past the PD->LF transition: always the LF path, scale must reach
   // LFController::compute_control unchanged.
   const Eigen::VectorXd expected_lf =
@@ -370,6 +376,12 @@ TEST_P(LinearFeedbackControllerTest,
   const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
   const auto& model = *ctrl.get_robot_model();
   const auto [sensor, control] = ControllerInputs::From(model);
+
+  // First call always goes through PDController and latches
+  // first_control_received_time_ (see ComputeControl above) -- needed
+  // before a later call can actually reach the LF path.
+  ctrl.compute_control(first_call, sensor, control,
+                       /*gravity_compensation=*/false);
 
   // Disabled (cutoff <= 0) must forward through as a no-op: exact match with
   // the unfiltered expectation.
