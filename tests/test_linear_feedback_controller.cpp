@@ -12,6 +12,7 @@ using tests::utils::References;
 #include "utils/eigen_conversions.hpp"
 using linear_feedback_controller_msgs::Eigen::Control;
 using linear_feedback_controller_msgs::Eigen::Sensor;
+using tests::utils::RobotState;
 
 #include "utils/lf_controller.hpp"
 using linear_feedback_controller::RobotModelBuilder;
@@ -321,6 +322,101 @@ TEST_P(LinearFeedbackControllerTest, ComputeControl) {
         ctrl.compute_control(first_call, sensor, control, gravity_compensation),
         expected.pd);
   }
+}
+
+TEST_P(LinearFeedbackControllerTest, FeedbackGainScaleForwardsToLFController) {
+  auto ctrl = LinearFeedbackController{};
+  const auto [gains, refs] = PDParams::From(GetParam());
+  ASSERT_TRUE(ctrl.load(GetParam()) and
+              ctrl.set_initial_state(refs.tau, refs.q));
+
+  const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
+  const auto& model = *ctrl.get_robot_model();
+  const auto [sensor, control] = ControllerInputs::From(model);
+
+  constexpr double kScale = 0.25;
+  ctrl.set_feedback_gain_scale(kScale);
+
+  // First call always goes through PDController and latches
+  // first_control_received_time_ (see ComputeControl above) -- needed
+  // before a later call can actually reach the LF path.
+  ctrl.compute_control(first_call, sensor, control,
+                       /*gravity_compensation=*/false);
+
+  // Well past the PD->LF transition: always the LF path, scale must reach
+  // LFController::compute_control unchanged.
+  const Eigen::VectorXd expected_lf =
+      ExpectedLFControlFrom(model, sensor, control, kScale);
+  EXPECT_PRED2(AreAlmostEquals(1e-9),
+               ctrl.compute_control(pd_timeout + 1ms, sensor, control,
+                                    /*gravity_compensation=*/false),
+               expected_lf);
+
+  // Introspection getters forward too: raw is the unscaled K*diff_state, the
+  // applied one is scaled, and the desired state is control.initial_state --
+  // the full pinocchio configuration/velocity (base_pose/base_twist +
+  // joint_state when this fixture has a free flyer, joint_state alone
+  // otherwise), same recipe ExpectedLFControlFrom itself uses.
+  const Eigen::VectorXd expected_lf_unscaled =
+      ExpectedLFControlFrom(model, sensor, control) - control.feedforward;
+  EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_feedback_torque_raw(),
+               expected_lf_unscaled);
+  EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_feedback_torque(),
+               kScale * expected_lf_unscaled);
+  const auto expected_x0 =
+      RobotState::From(control.initial_state, model.get_robot_has_free_flyer());
+  EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_desired_configuration(),
+               expected_x0.position);
+  EXPECT_PRED2(AreAlmostEquals(1e-9), ctrl.get_lf_desired_velocity(),
+               expected_x0.velocity);
+}
+
+TEST_P(LinearFeedbackControllerTest,
+       ConfigureFeedbackLowpassForwardsToLFController) {
+  auto ctrl = LinearFeedbackController{};
+  const auto [gains, refs] = PDParams::From(GetParam());
+  ASSERT_TRUE(ctrl.load(GetParam()) and
+              ctrl.set_initial_state(refs.tau, refs.q));
+
+  const auto [first_call, pd_timeout] = Timestamps::From(GetParam());
+  const auto& model = *ctrl.get_robot_model();
+  const auto [sensor, control] = ControllerInputs::From(model);
+
+  // First call always goes through PDController and latches
+  // first_control_received_time_ (see ComputeControl above) -- needed
+  // before a later call can actually reach the LF path.
+  ctrl.compute_control(first_call, sensor, control,
+                       /*gravity_compensation=*/false);
+
+  // Disabled (cutoff <= 0) must forward through as a no-op: exact match with
+  // the unfiltered expectation.
+  ctrl.configure_feedback_lowpass(/*cutoff_hz=*/0.0, /*sample_rate_hz=*/1000.0);
+  const Eigen::VectorXd expected_lf =
+      ExpectedLFControlFrom(model, sensor, control);
+  EXPECT_PRED2(AreAlmostEquals(1e-9),
+               ctrl.compute_control(pd_timeout + 1ms, sensor, control,
+                                    /*gravity_compensation=*/false),
+               expected_lf);
+
+  // Enabled: the low-pass state is seeded on the first sample, so its very
+  // first LF-path call still matches the unfiltered expectation exactly --
+  // this alone proves the call reached LFController, with no need to
+  // reproduce the Butterworth coefficients here.
+  ctrl.configure_feedback_lowpass(/*cutoff_hz=*/10.0,
+                                  /*sample_rate_hz=*/1000.0);
+  EXPECT_PRED2(AreAlmostEquals(1e-9),
+               ctrl.compute_control(pd_timeout + 2ms, sensor, control,
+                                    /*gravity_compensation=*/false),
+               expected_lf);
+
+  // A second, different sample now differs from the naive (unfiltered)
+  // expectation: the filter has memory, confirming it is really active.
+  const auto [sensor2, control2] = ControllerInputs::From(model);
+  const Eigen::VectorXd expected_lf2 =
+      ExpectedLFControlFrom(model, sensor2, control2);
+  const Eigen::VectorXd actual2 = ctrl.compute_control(
+      pd_timeout + 3ms, sensor2, control2, /*gravity_compensation=*/false);
+  EXPECT_FALSE(AreAlmostEquals(1e-6)(actual2, expected_lf2));
 }
 
 constexpr std::string_view dummy_urdf =

@@ -86,14 +86,17 @@ inline auto MakeValidRandomControlFor(
  *
  *  @param[in] model RobotModelBuilder use to create a valid set of values
  *  @param[in] sensor, control Set of values forwarded to the LFController
+ *  @param[in] feedback_gain_scale Scalar applied to the feedback torque
+ *  (see LFController::set_feedback_gain_scale). 1.0 = nominal, matching the
+ *  behaviour before that option existed.
  *
  *  @return Eigen::VectorXd The expected set of values
  */
 inline auto ExpectedLFControlFrom(
     const linear_feedback_controller::RobotModelBuilder& model,
     const linear_feedback_controller_msgs::Eigen::Sensor& sensor,
-    const linear_feedback_controller_msgs::Eigen::Control& control)
-    -> Eigen::VectorXd {
+    const linear_feedback_controller_msgs::Eigen::Control& control,
+    double feedback_gain_scale = 1.0) -> Eigen::VectorXd {
   Eigen::VectorXd out;
 
   const auto x = RobotState::From(sensor, model.get_robot_has_free_flyer());
@@ -105,7 +108,8 @@ inline auto ExpectedLFControlFrom(
                         error.head(model.get_model().nv));
   error.tail(model.get_model().nv) = x_0.velocity - x.velocity;
 
-  out = control.feedforward + (control.feedback_gain * error);
+  out = control.feedforward +
+        feedback_gain_scale * (control.feedback_gain * error);
   return out;
 }
 

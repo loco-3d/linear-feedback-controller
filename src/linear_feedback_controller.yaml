@@ -49,3 +49,25 @@ linear_feedback_controller:
       gt_eq<>: 0.0
     }
   }
+  reference_interpolation: {
+    type: bool,
+    default_value: false,
+    description: "MPC command-delay compensation (Subburaman & Stasse, Humanoids 2024). When true, the feedback reference (control.initial_state) is linearly interpolated across the control period towards control.next_states.front(), instead of being held constant (which produces the staircase reference and jittery feedback torque). The interpolation period is read from the two states' own header.stamp, not assumed. Falls back to holding the reference if the control carries no next_states.",
+  }
+  feedback_lowpass_cutoff_hz: {
+    type: double,
+    default_value: 0.0,
+    description: "2nd-order Butterworth low-pass cutoff (Hz) applied to the feedback torque u_fb = K*(x - x_ref) before adding the feedforward. 0 disables it. Paired with reference_interpolation this is the paper's u3 policy; the paper reports the filter is a minor improvement once the interpolation is in.",
+    validation: { gt_eq<>: 0.0 }
+  }
+  feedback_gain_scale: {
+    type: double,
+    default_value: 1.0,
+    description: "Scalar multiplying the Riccati feedback torque K*(x - x_ref) before it is added to the feedforward: control = feedforward + feedback_gain_scale * u_fb. 1.0 = nominal. 0.0 = feedforward only (no fast state feedback; the OCP re-solve is then the only disturbance rejection) -- the feedforward is the full joint torque, so pair with remove_gravity_compensation_effort if the low-level does its own gravity compensation. 0 < s < 1 lowers the fast-loop gain, e.g. to damp a closed-loop resonance. Applied after the optional low-pass; u_fb_raw on lfc_debug stays the unscaled K*(x - x_ref). Read once at on_activate.",
+    validation: { gt_eq<>: 0.0 }
+  }
+  debug_publish: {
+    type: bool,
+    default_value: false,
+    description: "Publish a std_msgs/Float64MultiArray on the `lfc_debug` topic every control cycle with [alpha, q_ref, v_ref, u_ff, u_fb_raw, u_fb, u_cmd] (layout.dim labels the blocks). Realtime-safe (try-lock RealtimePublisher). For offline analysis of the delay-compensation interpolation / low-pass; leave off in production.",
+  }
