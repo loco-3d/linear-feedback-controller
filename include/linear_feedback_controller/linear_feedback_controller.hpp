@@ -77,7 +77,33 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackController {
       const TimePoint& time, const Sensor& sensor, const Control& control,
       const bool remove_gravity_compensation_effort);
 
+  /// @brief Forwards to LFController::configure_feedback_lowpass — a 2nd-order
+  /// Butterworth on the feedback torque. cutoff_hz 0 disables it.
+  void configure_feedback_lowpass(double cutoff_hz, double sample_rate_hz);
+
+  /// @brief Forwards to LFController::set_feedback_gain_scale — scales the
+  /// feedback torque before it is added to the feedforward (0 = feedforward
+  /// only, 1 = nominal).
+  void set_feedback_gain_scale(double scale);
+
   RobotModelBuilder::ConstSharedPtr get_robot_model() const;
+
+  /// @name Introspection of the last LF compute_control() (for /lfc_debug).
+  /// Values are stale during the pure-PD and PD->LF transition phases.
+  /// @{
+  const Eigen::VectorXd& get_lf_feedback_torque_raw() const {
+    return lf_controller_.get_feedback_torque_raw();
+  }
+  const Eigen::VectorXd& get_lf_feedback_torque() const {
+    return lf_controller_.get_feedback_torque();
+  }
+  const Eigen::VectorXd& get_lf_desired_configuration() const {
+    return lf_controller_.get_desired_configuration();
+  }
+  const Eigen::VectorXd& get_lf_desired_velocity() const {
+    return lf_controller_.get_desired_velocity();
+  }
+  /// @}
 
  private:
   ControllerParameters params_; /*! @brief Parameters of the controller. */

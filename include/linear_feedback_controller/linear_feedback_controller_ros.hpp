@@ -14,7 +14,9 @@
 #include "pluginlib/class_list_macros.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
+#include "realtime_tools/realtime_publisher.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 // ROS 2 control
 #include "controller_interface/chainable_controller_interface.hpp"
@@ -164,6 +166,17 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
       const JointState::ConstSharedPtr& msg_joint_state);
   void control_subscription_callback(const ControlMsg msg);
 
+  /// @brief Interpolate input_control_.initial_state (q, v) linearly towards
+  /// input_control_.next_states.front(), using the fraction of the interval
+  /// between their two stamps elapsed since @p time. No-op if
+  /// reference_interpolation is off or the control carries no next_states.
+  void interpolate_control_reference(const rclcpp::Time& time);
+
+  /// @brief Fill and publish the /lfc_debug message (no-op unless
+  /// parameters_.debug_publish). Realtime-safe: skips the cycle if the
+  /// RealtimePublisher lock is contended.
+  void publish_debug(const rclcpp::Time& time);
+
  protected:
   // ROS params.
   std::shared_ptr<linear_feedback_controller::ParamListener>
@@ -200,6 +213,24 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   rclcpp::Publisher<SensorMsg>::SharedPtr sensor_publisher_;
   rclcpp::Subscription<ControlMsg>::SharedPtr control_subscriber_;
   ProtectedControlMsg synched_input_control_msg_;
+
+  // Delay-compensation reference interpolation (see reference_interpolation).
+  // input_control_.next_states (populated by controlMsgToEigen from the
+  // /control message itself) carries the interpolation target; no separate
+  // subscription needed.
+  builtin_interfaces::msg::Time last_control_ref_stamp_;
+  rclcpp::Time last_control_switch_time_{0, 0, RCL_ROS_TIME};
+  double last_interp_alpha_ =
+      0.0;  ///< last interpolation factor, for /lfc_debug
+
+  // Optional realtime debug stream (see debug_publish param).
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr
+      debug_publisher_;
+  std::shared_ptr<
+      realtime_tools::RealtimePublisher<std_msgs::msg::Float64MultiArray>>
+      debug_publisher_rt_;
+  std_msgs::msg::Float64MultiArray
+      debug_msg_;  ///< owned buffer for try_publish
 
   // Used in the filtering of the joint velocity.
   Eigen::VectorXd new_joint_velocity_;

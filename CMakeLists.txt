@@ -138,6 +138,20 @@ target_compile_definitions(
         CONTROLLER_INTERFACE_MINOR_VERSION=${controller_interface_VERSION_MINOR}
         CONTROLLER_INTERFACE_PATCH_VERSION=${controller_interface_VERSION_PATCH}
 )
+# Same treatment for realtime_tools: RealtimePublisher::tryPublish() was
+# renamed try_publish() between 2.x and 3.x (see handle_ros_versions.hpp).
+message(STATUS "realtime_tools_VERSION: ${realtime_tools_VERSION}")
+string(REPLACE "." ";" version_list ${realtime_tools_VERSION})
+list(GET version_list 0 realtime_tools_VERSION_MAJOR)
+list(GET version_list 1 realtime_tools_VERSION_MINOR)
+list(GET version_list 2 realtime_tools_VERSION_PATCH)
+target_compile_definitions(
+    ${PROJECT_NAME}
+    PRIVATE
+        REALTIME_TOOLS_MAJOR_VERSION=${realtime_tools_VERSION_MAJOR}
+        REALTIME_TOOLS_MINOR_VERSION=${realtime_tools_VERSION_MINOR}
+        REALTIME_TOOLS_PATCH_VERSION=${realtime_tools_VERSION_PATCH}
+)
 target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 target_link_libraries(
     ${PROJECT_NAME}
