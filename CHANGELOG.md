@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+- CI: add lyrical in ROS & Nix
+
 ## [4.0.4] - 2026-07-28
 
 - add missing include for `std::cerr`
