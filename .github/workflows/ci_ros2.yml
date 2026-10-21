@@ -12,6 +12,7 @@ jobs:
           - {ROS_DISTRO: humble}
           - {ROS_DISTRO: jazzy}
           - {ROS_DISTRO: kilted}
+          - {ROS_DISTRO: lyrical}
           - {ROS_DISTRO: rolling}
     env:
       UPSTREAM_WORKSPACE: github:loco-3d/linear-feedback-controller-msgs#main
