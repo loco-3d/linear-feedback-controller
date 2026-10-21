@@ -166,6 +166,15 @@ const Eigen::VectorXd& LinearFeedbackController::compute_control(
   return control_;
 }
 
+void LinearFeedbackController::configure_feedback_lowpass(
+    double cutoff_hz, double sample_rate_hz) {
+  lf_controller_.configure_feedback_lowpass(cutoff_hz, sample_rate_hz);
+}
+
+void LinearFeedbackController::set_feedback_gain_scale(double scale) {
+  lf_controller_.set_feedback_gain_scale(scale);
+}
+
 RobotModelBuilder::ConstSharedPtr LinearFeedbackController::get_robot_model()
     const {
   return robot_model_builder_;
