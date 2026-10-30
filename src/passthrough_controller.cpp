@@ -61,9 +61,12 @@ controller_interface::CallbackReturn PassthroughController::on_configure(
 
   RCLCPP_INFO(this->get_node()->get_logger(), "configure successful");
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+#else                                               // humble version
   // for any case make reference interfaces size of command interfaces
   reference_interfaces_.resize(reference_interface_names_.size(),
                                std::numeric_limits<double>::quiet_NaN());
+#endif
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -78,6 +81,20 @@ controller_interface::CallbackReturn PassthroughController::on_activate(
   bool ret = controller_interface::get_ordered_interfaces(
       command_interfaces_, command_interface_names_, std::string(""),
       ordered_command_interfaces_);
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  if (!ret ||
+      command_interface_names_.size() != ordered_command_interfaces_.size() ||
+      command_interface_names_.size() != reference_interface_handles_.size()) {
+    RCLCPP_ERROR(this->get_node()->get_logger(),
+                 "Expected %zu command interfaces, got %zu",
+                 command_interface_names_.size(),
+                 ordered_command_interfaces_.size());
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  for (auto& handle : reference_interface_handles_) {
+    (void)handle->set_value(std::numeric_limits<double>::quiet_NaN());
+  }
+#else  // humble version
   if (!ret ||
       command_interface_names_.size() != ordered_command_interfaces_.size() ||
       command_interface_names_.size() != reference_interfaces_.size()) {
@@ -89,6 +106,7 @@ controller_interface::CallbackReturn PassthroughController::on_activate(
   }
   std::fill(reference_interfaces_.begin(), reference_interfaces_.end(),
             std::numeric_limits<double>::quiet_NaN());
+#endif
 
   RCLCPP_INFO(this->get_node()->get_logger(), "activate successful");
   return controller_interface::CallbackReturn::SUCCESS;
@@ -108,11 +126,13 @@ bool PassthroughController::on_set_chained_mode(bool /*chained_mode*/) {
 controller_interface::return_type
 PassthroughController::update_and_write_commands(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
-  for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
-    if (!std::isnan(reference_interfaces_[i])) {
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
-      bool ret = ordered_command_interfaces_[i].get().set_value(
-          reference_interfaces_[i]);
+  for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
+    const double reference =
+        reference_interface_handles_[i]->get_optional().value_or(
+            std::numeric_limits<double>::quiet_NaN());
+    if (!std::isnan(reference)) {
+      bool ret = ordered_command_interfaces_[i].get().set_value(reference);
       if (!ret) {
         RCLCPP_ERROR_STREAM(
             get_node()->get_logger(),
@@ -120,14 +140,10 @@ PassthroughController::update_and_write_commands(
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
-#else  // humble version
-      ordered_command_interfaces_[i].get().set_value(reference_interfaces_[i]);
-#endif
     } else {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "Nan detected in the reference interface : "
                               << reference_interface_names_[i]);
-#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
       bool ret = ordered_command_interfaces_[i].get().set_value(0.0);
       if (!ret) {
         RCLCPP_ERROR_STREAM(
@@ -136,16 +152,45 @@ PassthroughController::update_and_write_commands(
                 << ordered_command_interfaces_[i].get().get_name());
         return controller_interface::return_type::ERROR;
       }
-#else  // humble version
-      ordered_command_interfaces_[i].get().set_value(0.0);
-#endif
       return controller_interface::return_type::OK;
     }
   }
+#else  // humble version
+  for (size_t i = 0; i < ordered_command_interfaces_.size(); ++i) {
+    if (!std::isnan(reference_interfaces_[i])) {
+      ordered_command_interfaces_[i].get().set_value(reference_interfaces_[i]);
+    } else {
+      RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                          "Nan detected in the reference interface : "
+                              << reference_interface_names_[i]);
+
+      ordered_command_interfaces_[i].get().set_value(0.0);
+
+      return controller_interface::return_type::OK;
+    }
+  }
+#endif
 
   return controller_interface::return_type::OK;
 }
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+std::vector<hardware_interface::CommandInterface::SharedPtr>
+PassthroughController::on_export_reference_interfaces_list() {
+  reference_interface_handles_.clear();
+  reference_interface_handles_.reserve(reference_interface_names_.size());
+  for (const auto& name : reference_interface_names_) {
+    hardware_interface::InterfaceInfo info;
+    info.name = name;
+    info.data_type = "double";
+    reference_interface_handles_.push_back(
+        std::make_shared<hardware_interface::CommandInterface>(
+            hardware_interface::InterfaceDescription(get_node()->get_name(),
+                                                     info)));
+  }
+  return reference_interface_handles_;
+}
+#else  // humble version
 std::vector<hardware_interface::CommandInterface>
 PassthroughController::on_export_reference_interfaces() {
   std::vector<hardware_interface::CommandInterface> reference_interfaces;
@@ -156,6 +201,7 @@ PassthroughController::on_export_reference_interfaces() {
   }
   return reference_interfaces;
 }
+#endif
 
 controller_interface::return_type
 #if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version

@@ -49,8 +49,13 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC PassthroughController
       const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
  protected:
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  std::vector<hardware_interface::CommandInterface::SharedPtr>
+  on_export_reference_interfaces_list() override;
+#else  // humble version
   std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() override;
+#endif
 
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
   controller_interface::return_type update_reference_from_subscribers(
@@ -62,6 +67,11 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC PassthroughController
   std::shared_ptr<passthrough_controller::ParamListener> param_listener_;
   passthrough_controller::Params params_;
   std::vector<std::string> reference_interface_names_;
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  std::vector<hardware_interface::CommandInterface::SharedPtr>
+      reference_interface_handles_;
+#else  // humble version
+#endif
   std::vector<std::string> command_interface_names_;
   std::vector<
       std::reference_wrapper<hardware_interface::LoanedCommandInterface>>

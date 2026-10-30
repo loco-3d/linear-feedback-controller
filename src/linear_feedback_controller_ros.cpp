@@ -79,6 +79,24 @@ LinearFeedbackControllerRos::state_interface_configuration() const {
       controller_interface::interface_configuration_type::NONE};
 }
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+std::vector<hardware_interface::CommandInterface::SharedPtr>
+LinearFeedbackControllerRos::on_export_reference_interfaces_list() {
+  setup_reference_interface();
+  reference_interface_handles_.clear();
+  reference_interface_handles_.reserve(reference_interface_names_.size());
+  for (const auto& name : reference_interface_names_) {
+    hardware_interface::InterfaceInfo info;
+    info.name = name;
+    info.data_type = "double";
+    reference_interface_handles_.push_back(
+        std::make_shared<hardware_interface::CommandInterface>(
+            hardware_interface::InterfaceDescription(get_node()->get_name(),
+                                                     info)));
+  }
+  return reference_interface_handles_;
+}
+#else  // humble version
 std::vector<hardware_interface::CommandInterface>
 LinearFeedbackControllerRos::on_export_reference_interfaces() {
   setup_reference_interface();
@@ -91,6 +109,7 @@ LinearFeedbackControllerRos::on_export_reference_interfaces() {
   }
   return reference_interfaces;
 }
+#endif
 
 CallbackReturn LinearFeedbackControllerRos::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
@@ -124,8 +143,14 @@ CallbackReturn LinearFeedbackControllerRos::on_activate(
     return controller_interface::CallbackReturn::ERROR;
   }
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  for (auto& handle : reference_interface_handles_) {
+    (void)handle->set_value(std::numeric_limits<double>::quiet_NaN());
+  }
+#else  // humble version
   std::fill(reference_interfaces_.begin(), reference_interfaces_.end(),
             std::numeric_limits<double>::quiet_NaN());
+#endif
 
   // Feedback-torque low-pass (delay comp, paper's u3). Sample rate = the
   // controller-manager update rate. Disabled if cutoff is 0 or rate unknown.
@@ -312,6 +337,16 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
     const Eigen::Index offset_joint_eff = offset_joint_vel + joint_nv;
     const Eigen::Index expected_size = offset_joint_eff + joint_nv;
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+    if (reference_values_.size() != static_cast<size_t>(expected_size)) {
+      RCLCPP_ERROR_STREAM(
+          get_node()->get_logger(),
+          "Inconsistent size for reference_values_ (free-flyer): "
+              << "got " << reference_values_.size() << ", expected "
+              << expected_size);
+      return false;
+    }
+#else  // humble version
     if (reference_interfaces_.size() != static_cast<size_t>(expected_size)) {
       RCLCPP_ERROR_STREAM(
           get_node()->get_logger(),
@@ -320,7 +355,20 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
               << expected_size);
       return false;
     }
+#endif
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+    input_sensor_.base_pose = Eigen::VectorXd::Map(
+        &reference_values_[offset_base_pose], base_pose_size);
+    input_sensor_.joint_state.position =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_pos], joint_nv);
+    input_sensor_.base_twist = Eigen::VectorXd::Map(
+        &reference_values_[offset_base_twist], base_twist_size);
+    new_joint_velocity_ =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_vel], joint_nv);
+    input_sensor_.joint_state.effort =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_eff], joint_nv);
+#else  // humble version
     input_sensor_.base_pose = Eigen::VectorXd::Map(
         &reference_interfaces_[offset_base_pose], base_pose_size);
     input_sensor_.joint_state.position = Eigen::VectorXd::Map(
@@ -331,6 +379,7 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         &reference_interfaces_[offset_joint_vel], joint_nv);
     input_sensor_.joint_state.effort = Eigen::VectorXd::Map(
         &reference_interfaces_[offset_joint_eff], joint_nv);
+#endif
 
   } else {
     // No free-flyer: only controlled joints.
@@ -339,6 +388,16 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
     const Eigen::Index offset_joint_eff = offset_joint_vel + joint_nv;
     const Eigen::Index expected_size = offset_joint_eff + joint_nv;
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+    if (reference_values_.size() != static_cast<size_t>(expected_size)) {
+      RCLCPP_ERROR_STREAM(
+          get_node()->get_logger(),
+          "Inconsistent size for reference_values_ (fixed base): "
+              << "got " << reference_values_.size() << ", expected "
+              << expected_size);
+      return false;
+    }
+#else  // humble version
     if (reference_interfaces_.size() != static_cast<size_t>(expected_size)) {
       RCLCPP_ERROR_STREAM(
           get_node()->get_logger(),
@@ -347,16 +406,26 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
               << expected_size);
       return false;
     }
+#endif
 
     input_sensor_.base_pose.fill(std::numeric_limits<double>::signaling_NaN());
     input_sensor_.base_twist.fill(std::numeric_limits<double>::signaling_NaN());
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+    input_sensor_.joint_state.position =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_pos], joint_nv);
+    new_joint_velocity_ =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_vel], joint_nv);
+    input_sensor_.joint_state.effort =
+        Eigen::VectorXd::Map(&reference_values_[offset_joint_eff], joint_nv);
+#else  // humble version
     input_sensor_.joint_state.position = Eigen::VectorXd::Map(
         &reference_interfaces_[offset_joint_pos], joint_nv);
     new_joint_velocity_ = Eigen::VectorXd::Map(
         &reference_interfaces_[offset_joint_vel], joint_nv);
     input_sensor_.joint_state.effort = Eigen::VectorXd::Map(
         &reference_interfaces_[offset_joint_eff], joint_nv);
+#endif
   }
 
   // Ensure that velocity has the correct size.
@@ -370,6 +439,16 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
         parameters_.joint_velocity_filter_coefficient);
   }
 
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  if (reference_interface_names_.size() != reference_values_.size()) {
+    RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                        "Inconsistent size: reference_interface_names_.size("
+                            << reference_interface_names_.size()
+                            << ") != reference_values_.size("
+                            << reference_values_.size() << ").");
+    return false;
+  }
+#else  // humble version
   if (reference_interface_names_.size() != reference_interfaces_.size()) {
     RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                         "Inconsistent size: reference_interface_names_.size("
@@ -378,17 +457,27 @@ bool LinearFeedbackControllerRos::read_state_from_references() {
                             << reference_interfaces_.size() << ").");
     return false;
   }
+#endif
 
   if (input_sensor_.joint_state.position.hasNaN() ||
       input_sensor_.joint_state.velocity.hasNaN() ||
       input_sensor_.joint_state.effort.hasNaN()) {
     RCLCPP_ERROR(get_node()->get_logger(), "The joint state must be NaN free.");
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+    for (size_t i = 0; i < reference_values_.size(); ++i) {
+      RCLCPP_ERROR_STREAM(get_node()->get_logger(),
+                          "reference[" << reference_interface_names_[i]
+                                       << "] = " << reference_values_[i]
+                                       << ".");
+    }
+#else  // humble version
     for (size_t i = 0; i < reference_interfaces_.size(); ++i) {
       RCLCPP_ERROR_STREAM(get_node()->get_logger(),
                           "reference[" << reference_interface_names_[i]
                                        << "] = " << reference_interfaces_[i]
                                        << ".");
     }
+#endif
     return false;
   }
   return true;
@@ -601,8 +690,13 @@ bool LinearFeedbackControllerRos::setup_reference_interface() {
                       joint + "/" + HW_IF_EFFORT;
     reference_interface_names_.emplace_back(name);
   }
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  reference_values_.resize(reference_interface_names_.size(),
+                           std::numeric_limits<double>::quiet_NaN());
+#else  // humble version
   reference_interfaces_.resize(reference_interface_names_.size(),
                                std::numeric_limits<double>::quiet_NaN());
+#endif
   return true;
 }
 
