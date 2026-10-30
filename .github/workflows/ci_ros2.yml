@@ -15,10 +15,11 @@ jobs:
           - {ROS_DISTRO: kilted}
           - {ROS_DISTRO: lyrical}
           - {ROS_DISTRO: rolling}
+    env:
+      UPSTREAM_WORKSPACE: github:loco-3d/linear-feedback-controller-msgs#main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: sudo apt update
       - uses: 'ros-industrial/industrial_ci@125164b9f1883cdf1858897a7146d1bebf2be5c6'
         env: ${{ matrix.env }}
   check:
