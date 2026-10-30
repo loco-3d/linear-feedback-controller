@@ -9,6 +9,8 @@ Releases are available on the [github repository](https://github.com/loco-3d/lin
 
 ## [Unreleased]
 
+- add optional MPC command-delay compensation
+- fix compatibility with ros2_control 6.12.0
 - CI: add lyrical in ROS & Nix
 - CI: drop kilted in Nix
 
