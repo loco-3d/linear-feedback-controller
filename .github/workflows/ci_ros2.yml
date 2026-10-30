@@ -16,7 +16,7 @@ jobs:
           - {ROS_DISTRO: lyrical}
           - {ROS_DISTRO: rolling}
     env:
-      UPSTREAM_WORKSPACE: github:loco-3d/linear-feedback-controller-msgs#main
+      UPSTREAM_WORKSPACE: github:gepetto/example-robot-data#devel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
