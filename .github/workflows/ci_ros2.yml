@@ -7,18 +7,20 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         env:
           - {ROS_DISTRO: humble}
           - {ROS_DISTRO: jazzy}
           - {ROS_DISTRO: kilted}
+          - {ROS_DISTRO: lyrical}
           - {ROS_DISTRO: rolling}
     env:
       UPSTREAM_WORKSPACE: github:loco-3d/linear-feedback-controller-msgs#main
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: 'ros-industrial/industrial_ci@c553397753252d630e88e7e91aa69c6c8a478ee0'
+      - uses: actions/checkout@v7
+      - uses: 'ros-industrial/industrial_ci@125164b9f1883cdf1858897a7146d1bebf2be5c6'
         env: ${{ matrix.env }}
   check:
     if: always()

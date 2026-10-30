@@ -85,8 +85,13 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
   /// @brief @copydoc
   /// ChainableControllerInterface::on_export_reference_interfaces This function
   /// access the reference state from an estimator.
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  std::vector<hardware_interface::CommandInterface::SharedPtr>
+  on_export_reference_interfaces_list() final;
+#else  // humble version
   std::vector<hardware_interface::CommandInterface>
   on_export_reference_interfaces() final;
+#endif
 
   /// @brief ChainableControllerInterface::update_reference_from_subscribers
   return_type
@@ -190,6 +195,15 @@ class LINEAR_FEEDBACK_CONTROLLER_PUBLIC LinearFeedbackControllerRos
 
   // Reference interfaces.
   std::vector<std::string> reference_interface_names_;
+#if CONTROLLER_INTERFACE_VERSION_AT_LEAST(4, 0, 0)  // jazzy version
+  /// Handles exported to the preceding controller.
+  std::vector<hardware_interface::CommandInterface::SharedPtr>
+      reference_interface_handles_;
+  /// Snapshot of the handle values, updated in
+  /// read_state_from_references().
+  std::vector<double> reference_values_;
+#else  // humble version
+#endif
 
   // Command interfaces.
   InterfaceVector<hardware_interface::LoanedCommandInterface>
